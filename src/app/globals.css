@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/*
+ * Savdochi dizayn tokenlari — "Ko'mir va terrakota" (Variant D).
+ * Barcha ranglar shu yerda. Komponentlar faqat tokenlardan foydalanadi:
+ * bg-surface, text-muted, border-line, bg-accent va hokazo.
+ */
+:root {
+  --c-bg: #f6f4ef;
+  --c-surface: #ffffff;
+  --c-surface-2: #f1eee7;
+  --c-line: #e6e1d6;
+  --c-text: #1f1c17;
+  --c-muted: #5f5a50;
+  --c-header: #22201c;
+  --c-header-2: #2e2b26;
+  --c-header-line: #47423a;
+  --c-header-text: #ffffff;
+  --c-header-muted: #cfc8ba;
+  --c-accent: #9c4a24;
+  --c-accent-hover: #85401f;
+  --c-accent-fg: #ffffff;
+  --c-accent-soft: #f6e7de;
+  --c-danger: #b42318;
+  --c-danger-soft: #fce8e6;
+  --c-success: #166534;
+  --c-success-soft: #e3f3ec;
+  --c-focus: #c4683c;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --c-bg: #171512;
+  --c-surface: #211e1a;
+  --c-surface-2: #2a2621;
+  --c-line: #36312a;
+  --c-text: #f1ede6;
+  --c-muted: #b3ab9c;
+  --c-header: #110f0d;
+  --c-header-2: #1d1a16;
+  --c-header-line: #36312a;
+  --c-header-text: #f1ede6;
+  --c-header-muted: #b3ab9c;
+  --c-accent: #d9774a;
+  --c-accent-hover: #e48a60;
+  --c-accent-fg: #1f1c17;
+  --c-accent-soft: #3a2519;
+  --c-danger: #ff8a7a;
+  --c-danger-soft: #3d1e1e;
+  --c-success: #7dd3a8;
+  --c-success-soft: #173326;
+  --c-focus: #e48a60;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-line: var(--c-line);
+  --color-text: var(--c-text);
+  --color-muted: var(--c-muted);
+  --color-header: var(--c-header);
+  --color-header-2: var(--c-header-2);
+  --color-header-line: var(--c-header-line);
+  --color-header-text: var(--c-header-text);
+  --color-header-muted: var(--c-header-muted);
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-accent-fg: var(--c-accent-fg);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-success: var(--c-success);
+  --color-success-soft: var(--c-success-soft);
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 2px;
+}
