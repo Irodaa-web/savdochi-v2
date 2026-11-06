@@ -1,9 +1,10 @@
 import "server-only";
-import { isValidObjectId, type FilterQuery } from "mongoose";
+import { isValidObjectId, Types, type FilterQuery } from "mongoose";
 import { connectDb } from "@/lib/db";
 import type { CategoryCode, PriceTier, UnitCode } from "@/lib/catalog";
 import type { RegionCode } from "@/lib/regions";
 import type { ProductInput } from "@/lib/validation";
+import { Order } from "@/models/Order";
 import { Product, type ProductDoc } from "@/models/Product";
 import { User } from "@/models/User";
 
@@ -192,4 +193,68 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
     verified: s.verification === "verified",
     productCount: countBy.get(String(s._id)) ?? 0,
   }));
+}
+
+export type RankedProduct = { product: ProductView; value: number };
+
+/** Ro'yxatdagi id tartibida faol mahsulotlarni qaytaradi (bloklangan sotuvchilarsiz). */
+async function rankedViews(rows: { _id: unknown; value: number }[]): Promise<RankedProduct[]> {
+  if (!rows.length) return [];
+  const { items } = await listCatalog({ ids: rows.map((r) => String(r._id)), page: 1 });
+  const byId = new Map(items.map((p) => [p.id, p]));
+  return rows.flatMap((r) => {
+    const product = byId.get(String(r._id));
+    return product ? [{ product, value: r.value }] : [];
+  });
+}
+
+/**
+ * Kompaniyaning eng yaxshi mahsulotlari:
+ * - bestSelling — bekor qilinmagan buyurtmalardagi jami sotilgan miqdor bo'yicha;
+ * - popular — nechta do'kon tanlagan: buyurtma qilgan yoki saqlagan (sevimlilar) do'konlar soni bo'yicha.
+ */
+export async function getSellerHighlights(sellerId: string, limit = 4): Promise<{ bestSelling: RankedProduct[]; popular: RankedProduct[] }> {
+  if (!isValidObjectId(sellerId)) return { bestSelling: [], popular: [] };
+  await connectDb();
+  const seller = new Types.ObjectId(sellerId);
+  const activeIds = (await Product.find({ seller, active: true }, { _id: 1 }).lean()).map((p) => p._id);
+  if (!activeIds.length) return { bestSelling: [], popular: [] };
+
+  const [sold, buyers, saved] = await Promise.all([
+    Order.aggregate<{ _id: Types.ObjectId; value: number }>([
+      { $match: { seller, status: { $ne: "cancelled" } } },
+      { $unwind: "$items" },
+      { $match: { "items.product": { $in: activeIds } } },
+      { $group: { _id: "$items.product", value: { $sum: "$items.quantity" } } },
+      { $sort: { value: -1 } },
+      { $limit: limit },
+    ]),
+    Order.aggregate<{ _id: { product: Types.ObjectId; buyer: Types.ObjectId } }>([
+      { $match: { seller, status: { $ne: "cancelled" } } },
+      { $unwind: "$items" },
+      { $match: { "items.product": { $in: activeIds } } },
+      { $group: { _id: { product: "$items.product", buyer: "$buyer" } } },
+    ]),
+    User.aggregate<{ _id: { product: Types.ObjectId; buyer: Types.ObjectId } }>([
+      { $match: { favorites: { $in: activeIds } } },
+      { $unwind: "$favorites" },
+      { $match: { favorites: { $in: activeIds } } },
+      { $group: { _id: { product: "$favorites", buyer: "$_id" } } },
+    ]),
+  ]);
+
+  // Bir do'kon ham buyurtma qilib, ham saqlagan bo'lsa — bir marta sanaladi.
+  const shops = new Map<string, Set<string>>();
+  for (const { _id } of [...buyers, ...saved]) {
+    const key = String(_id.product);
+    if (!shops.has(key)) shops.set(key, new Set());
+    shops.get(key)!.add(String(_id.buyer));
+  }
+  const popularRows = [...shops.entries()]
+    .map(([id, set]) => ({ _id: id, value: set.size }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+
+  const [bestSelling, popular] = await Promise.all([rankedViews(sold), rankedViews(popularRows)]);
+  return { bestSelling, popular };
 }

@@ -5,11 +5,15 @@ import { fmt } from "@/i18n/format";
 import { formatAmount } from "@/lib/catalog";
 import type { ProductView } from "@/server/products";
 
-export function ProductCard({ product: p, t }: { product: ProductView; t: Dictionary }) {
+/** note — kartaning tepasida ko'rsatiladigan qisqa belgi (masalan, "120 dona sotilgan"). */
+export function ProductCard({ product: p, t, note }: { product: ProductView; t: Dictionary; note?: string }) {
   const unit = t.units[p.unit];
   const available = p.stock >= p.minOrder;
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface">
+    <article className="relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface">
+      {note && (
+        <span className="absolute top-2 left-2 z-10 rounded-md bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-fg">{note}</span>
+      )}
       <Link href={`/catalog/${p.id}`} className="flex h-32 items-center justify-center bg-surface-2 text-muted/60" tabIndex={-1} aria-hidden>
         {p.images[0] ? (
           // eslint-disable-next-line @next/next/no-img-element
