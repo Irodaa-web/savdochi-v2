@@ -165,13 +165,20 @@ export async function getProductSeller(sellerId: string): Promise<string | null>
   return seller?.name ?? null;
 }
 
-export type SupplierView ={ id: string; name: string; region: RegionCode; verified: boolean; productCount: number };
+export type SupplierView = { id: string; name: string; region: RegionCode; verified: boolean; productCount: number };
 
-export async function listSuppliers(region?: RegionCode): Promise<SupplierView[]> {
+export type SupplierQuery = { region?: RegionCode; q?: string };
+
+/** Kompaniyalar ro'yxati va qidiruvi: nomi bo'yicha (?q=) va viloyat bo'yicha (?region=). */
+export async function listSuppliers(query: SupplierQuery = {}): Promise<SupplierView[]> {
   await connectDb();
   const filter: Record<string, unknown> = { role: "seller", blocked: false, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
+  const and: Record<string, unknown>[] = [];
   // Viloyat: kompaniya shu yerda joylashgan yoki shu yerga yetkazib beradi.
-  if (region) filter.$and = [{ $or: [{ region }, { "profile.deliveryRegions": region }] }];
+  if (query.region) and.push({ $or: [{ region: query.region }, { "profile.deliveryRegions": query.region }] });
+  const q = query.q?.trim();
+  if (q) and.push({ name: { $regex: q.slice(0, 80).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } });
+  if (and.length) filter.$and = and;
   const sellers = await User.find(filter, { name: 1, region: 1, verification: 1 }).sort({ verification: -1, name: 1 }).limit(200).lean<SellerInfo[]>();
   const counts = await Product.aggregate<{ _id: unknown; n: number }>([
     { $match: { active: true, seller: { $in: sellers.map((s) => s._id) } } },

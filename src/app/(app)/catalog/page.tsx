@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { PackageSearch, Search, ShieldAlert } from "lucide-react";
+import { ArrowLeft, PackageSearch, Search, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -37,14 +37,39 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          {sellerName && (
+            <Link href="/suppliers" className="mb-1 inline-flex items-center gap-1 text-[13px] font-medium text-muted hover:text-accent">
+              <ArrowLeft size={14} aria-hidden />
+              {t.suppliers.back}
+            </Link>
+          )}
           <h1 className="text-2xl font-bold tracking-tight">{sellerName ?? t.catalog.title}</h1>
-          <p className="mt-1 text-muted">{fmt(t.catalog.count, { n: total })}</p>
+          <p className="mt-1 text-muted">
+            {fmt(t.catalog.count, { n: total })}
+            {sellerName && (
+              <>
+                {" · "}
+                <Link href={`/suppliers/${sp.seller}`} className="font-medium text-accent hover:underline">
+                  {t.suppliers.page}
+                </Link>
+              </>
+            )}
+          </p>
         </div>
-        <form action="/catalog" className="w-full sm:w-80 lg:hidden" role="search">
-          {category && <input type="hidden" name="category" value={category} />}
+        {/* Kompaniya ichida — uning mahsulotlarini qidirish; aks holda — kompaniyalarni qidirish. */}
+        <form action={sellerName ? "/catalog" : "/suppliers"} className={clsx("w-full sm:w-80", !sellerName && "lg:hidden")} role="search">
+          {sellerName && <input type="hidden" name="seller" value={sp.seller} />}
+          {sellerName && category && <input type="hidden" name="category" value={category} />}
           <label className="flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-muted focus-within:border-accent">
             <Search size={16} aria-hidden />
-            <input type="search" name="q" defaultValue={sp.q} placeholder={t.header.search} aria-label={t.header.search} className="min-w-0 flex-1 bg-transparent text-text outline-none" />
+            <input
+              type="search"
+              name="q"
+              defaultValue={sellerName ? sp.q : undefined}
+              placeholder={sellerName ? t.suppliers.searchIn : t.header.search}
+              aria-label={sellerName ? t.suppliers.searchIn : t.header.search}
+              className="min-w-0 flex-1 bg-transparent text-text outline-none"
+            />
           </label>
         </form>
       </div>

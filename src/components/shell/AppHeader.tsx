@@ -45,7 +45,8 @@ export function AppHeader({ user }: { user: SessionUser }) {
           })}
         </nav>
 
-        <form role="search" action={user.role === "buyer" ? "/catalog" : "/products"} className="hidden flex-1 lg:block">
+        {/* Qidiruv mahsulotlarni emas, kompaniyalarni topadi. */}
+        <form role="search" action="/suppliers" className="hidden flex-1 lg:block">
           <label className="flex h-10 items-center gap-2 rounded-lg border border-header-line bg-header-2 px-3 text-header-muted focus-within:border-accent">
             <Search size={16} aria-hidden />
             <input

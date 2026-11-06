@@ -87,7 +87,7 @@ const en: Dictionary = {
     stock: "Inventory",
   },
   header: {
-    search: "Product, brand or supplier",
+    search: "Search companies by name",
     chat: "Business chat",
     notifications: "Notifications",
     cart: "Cart",
@@ -160,6 +160,12 @@ const en: Dictionary = {
     empty: "No suppliers in this region yet.",
     open: "View products",
     page: "Company page",
+    resultsFor: "Companies matching “{q}”",
+    count: "{n} companies",
+    notFound: "No company with that name.",
+    notFoundHint: "Try a different spelling or clear the region filter.",
+    searchIn: "Search this company's products",
+    back: "All companies",
   },
   products: {
     title: "Products",

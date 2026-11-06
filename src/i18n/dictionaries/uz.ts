@@ -85,7 +85,7 @@ const uz = {
     stock: "Ombor",
   },
   header: {
-    search: "Mahsulot, brend yoki yetkazib beruvchi",
+    search: "Kompaniya nomini qidiring",
     chat: "Biznes chat",
     notifications: "Bildirishnomalar",
     cart: "Savat",
@@ -158,6 +158,12 @@ const uz = {
     empty: "Bu hududda hozircha yetkazib beruvchi yo‘q.",
     open: "Mahsulotlarini ko‘rish",
     page: "Kompaniya sahifasi",
+    resultsFor: "“{q}” bo‘yicha kompaniyalar",
+    count: "{n} ta kompaniya",
+    notFound: "Bunday nomli kompaniya topilmadi.",
+    notFoundHint: "Nomni boshqacha yozib ko‘ring yoki viloyat filtrini olib tashlang.",
+    searchIn: "Shu kompaniya mahsulotlari ichida qidirish",
+    back: "Barcha kompaniyalar",
   },
   products: {
     title: "Mahsulotlar",
