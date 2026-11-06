@@ -13,9 +13,13 @@ export type ApiErrorCode =
   | "INVALID_CREDENTIALS"
   | "TOO_MANY_ATTEMPTS"
   | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "NOT_FOUND"
   | "SERVER_ERROR";
 
 const STATUS: Record<ApiErrorCode, number> = {
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
   INVALID_INPUT: 400,
   PHONE_TAKEN: 409,
   INVALID_CREDENTIALS: 401,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { normalizePhone } from "./phone";
 import { REGION_CODES } from "./regions";
+import { CATEGORY_CODES, UNIT_CODES } from "./catalog";
 
 /**
  * Server va mijoz ikkalasi ishlatadigan sxemalar.
@@ -32,6 +33,39 @@ export const registerSchema = z.object({
   password,
 });
 
+const positiveInt = (max: number) => z.coerce.number().int("numberInvalid").min(1, "numberInvalid").max(max, "numberInvalid");
+
+export const productSchema = z
+  .object({
+    name: z.string().trim().min(2, "nameShort").max(160, "nameShort"),
+    category: z.enum(CATEGORY_CODES, { message: "categoryRequired" }),
+    unit: z.enum(UNIT_CODES, { message: "unitRequired" }),
+    price: positiveInt(1_000_000_000),
+    minOrder: positiveInt(1_000_000),
+    stock: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000, "numberInvalid"),
+    packSize: positiveInt(10_000),
+    description: z.string().trim().max(2000).default(""),
+    priceTiers: z
+      .array(z.object({ min: z.coerce.number().int().min(2), price: z.coerce.number().int().min(1) }))
+      .max(5)
+      .default([]),
+  })
+  .superRefine((p, ctx) => {
+    // Pog'onalar o'sib boruvchi miqdor va kamayib boruvchi narx bo'lishi kerak.
+    const tiers = [...p.priceTiers].sort((a, b) => a.min - b.min);
+    let last = p.price;
+    let lastMin = 1;
+    for (const tier of tiers) {
+      if (tier.min <= lastMin || tier.price >= last) {
+        ctx.addIssue({ code: "custom", path: ["priceTiers"], message: "tiersInvalid" });
+        return;
+      }
+      last = tier.price;
+      lastMin = tier.min;
+    }
+  });
+
+export type ProductInput = z.infer<typeof productSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 

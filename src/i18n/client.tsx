@@ -18,7 +18,4 @@ export function useI18n(): I18nValue {
   return value;
 }
 
-/** "{name}" kabi joylarni qiymat bilan almashtiradi. */
-export function format(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? "");
-}
+export { fmt } from "./format";

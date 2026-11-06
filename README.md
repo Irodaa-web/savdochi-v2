@@ -45,12 +45,17 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 | POST | `/api/v1/auth/login` | `{ phone, password }` → cookie + `token` (mobil uchun) |
 | POST | `/api/v1/auth/logout` | sessiyani yopadi |
 | GET  | `/api/v1/auth/me` | joriy foydalanuvchi (cookie yoki `Authorization: Bearer`) |
+| GET  | `/api/v1/products?q=&category=&seller=&page=` | katalog |
+| POST | `/api/v1/products` | yangi mahsulot (sotuvchi) |
+| GET/PATCH/DELETE | `/api/v1/products/:id` | ko'rish / tahrirlash / arxivlash (egasi) |
+| GET  | `/api/v1/seller/products` | sotuvchining o'z mahsulotlari |
+| GET  | `/api/v1/suppliers?region=` | yetkazib beruvchilar |
 
 ## Bosqichlar
 
 - [x] 0. Asos: tuzilma, dizayn tokenlari, uz/ru/en, light/dark, ilova qobig'i
 - [x] 1. Kirish: ro'yxatdan o'tish, kirish, chiqish, sessiya, urinishlar cheklovi *(qisman — profil va parolni tiklash qoldi)*
-- [ ] 2. Mahsulotlar va katalog
+- [x] 2. Mahsulotlar va katalog: sotuvchi mahsulot qo'shadi/tahrirlaydi/arxivlaydi, narx pog'onalari; katalog (qidiruv, kategoriya, sahifalash), mahsulot sahifasi, yetkazib beruvchilar (viloyat filtri)
 - [ ] 3. Hamkorlik
 - [ ] 4. Savat va buyurtmalar
 - [ ] 5. Chat va bildirishnomalar
