@@ -86,6 +86,10 @@ const uz = {
   },
   header: {
     search: "Kompaniya nomini qidiring",
+    searchProducts: "Mahsulot nomini qidiring",
+    searchMode: "Nimani qidirish",
+    modeCompanies: "Kompaniya",
+    modeProducts: "Mahsulot",
     chat: "Biznes chat",
     notifications: "Bildirishnomalar",
     cart: "Savat",
@@ -129,6 +133,10 @@ const uz = {
     litre: "litr",
   },
   catalog: {
+    companiesTab: "Kompaniyalar",
+    productsTab: "Mahsulotlar",
+    viewSwitch: "Ko‘rinish",
+    companiesEmpty: "Hozircha mos kompaniya topilmadi.",
     title: "Katalog",
     all: "Barchasi",
     count: "{n} ta mahsulot",

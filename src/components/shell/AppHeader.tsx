@@ -1,9 +1,10 @@
 "use client";
 
 import clsx from "clsx";
-import { MessageSquare, Search, ShoppingCart } from "lucide-react";
+import { MessageSquare, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SearchBox } from "@/components/catalog/SearchBox";
 import { ThemeToggle } from "@/components/Preferences";
 import { Logo } from "@/components/ui/Logo";
 import { useI18n } from "@/i18n/client";
@@ -45,19 +46,8 @@ export function AppHeader({ user }: { user: SessionUser }) {
           })}
         </nav>
 
-        {/* Qidiruv mahsulotlarni emas, kompaniyalarni topadi. */}
-        <form role="search" action="/suppliers" className="hidden flex-1 lg:block">
-          <label className="flex h-10 items-center gap-2 rounded-lg border border-header-line bg-header-2 px-3 text-header-muted focus-within:border-accent">
-            <Search size={16} aria-hidden />
-            <input
-              type="search"
-              name="q"
-              aria-label={t.header.search}
-              placeholder={t.header.search}
-              className="min-w-0 flex-1 bg-transparent text-header-text outline-none placeholder:text-header-muted"
-            />
-          </label>
-        </form>
+        {/* Qidiruv: Kompaniya | Mahsulot almashtirgichi bilan. */}
+        <SearchBox className="hidden flex-1 lg:block" />
 
         <div className="ml-auto flex items-center gap-0.5 lg:ml-0">
           <Link href="/chat" aria-label={t.header.chat} title={t.header.chat} className={clsx(headerIconClass, "relative hidden sm:flex")}>

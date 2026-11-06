@@ -88,6 +88,10 @@ const en: Dictionary = {
   },
   header: {
     search: "Search companies by name",
+    searchProducts: "Search products by name",
+    searchMode: "What to search",
+    modeCompanies: "Company",
+    modeProducts: "Product",
     chat: "Business chat",
     notifications: "Notifications",
     cart: "Cart",
@@ -131,6 +135,10 @@ const en: Dictionary = {
     litre: "l",
   },
   catalog: {
+    companiesTab: "Companies",
+    productsTab: "Products",
+    viewSwitch: "View",
+    companiesEmpty: "No matching companies yet.",
     title: "Catalog",
     all: "All",
     count: "{n} products",

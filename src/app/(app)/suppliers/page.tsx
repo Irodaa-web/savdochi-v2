@@ -1,12 +1,12 @@
-import { BadgeCheck, ChevronRight, MapPin, Search, Truck } from "lucide-react";
-import Link from "next/link";
+import { Search, Truck } from "lucide-react";
+import { RegionFilter } from "@/components/catalog/RegionFilter";
+import { SupplierCard } from "@/components/catalog/SupplierCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import { listSuppliers } from "@/server/products";
-import { RegionFilter } from "./RegionFilter";
 
 /** Kompaniyalar qidiruvi. Kartani bosish — shu kompaniya mahsulotlari. */
 export default async function SuppliersPage({ searchParams }: { searchParams: Promise<{ region?: string; q?: string }> }) {
@@ -48,27 +48,7 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {suppliers.map((s) => (
-            <li
-              key={s.id}
-              className="relative flex flex-col gap-2 rounded-xl border border-line bg-surface p-4 transition-colors focus-within:border-accent hover:border-accent hover:bg-surface-2"
-            >
-              {/* Butun karta bosiladi: kompaniya mahsulotlari ochiladi. */}
-              <Link href={`/catalog?seller=${s.id}`} className="flex items-center gap-1.5 font-semibold outline-none after:absolute after:inset-0 after:rounded-xl">
-                {s.name}
-                {s.verified && <BadgeCheck size={16} className="text-accent" aria-label={t.catalog.verified} />}
-                <ChevronRight size={16} className="ml-auto text-muted" aria-hidden />
-              </Link>
-              <span className="flex items-center gap-1.5 text-[13px] text-muted">
-                <MapPin size={14} aria-hidden />
-                {t.regions[s.region]} · {fmt(t.suppliers.products, { n: s.productCount })}
-              </span>
-              <div className="mt-1 flex gap-4">
-                <span className="text-[13px] font-semibold text-accent">{t.suppliers.open}</span>
-                <Link href={`/suppliers/${s.id}`} className="relative z-10 text-[13px] font-semibold text-muted hover:text-accent hover:underline">
-                  {t.suppliers.page}
-                </Link>
-              </div>
-            </li>
+            <SupplierCard key={s.id} supplier={s} t={t} />
           ))}
         </ul>
       )}

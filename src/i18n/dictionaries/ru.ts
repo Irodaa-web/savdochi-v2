@@ -88,6 +88,10 @@ const ru: Dictionary = {
   },
   header: {
     search: "Поиск компании по названию",
+    searchProducts: "Поиск товара по названию",
+    searchMode: "Что искать",
+    modeCompanies: "Компания",
+    modeProducts: "Товар",
     chat: "Бизнес-чат",
     notifications: "Уведомления",
     cart: "Корзина",
@@ -131,6 +135,10 @@ const ru: Dictionary = {
     litre: "л",
   },
   catalog: {
+    companiesTab: "Компании",
+    productsTab: "Товары",
+    viewSwitch: "Вид",
+    companiesEmpty: "Подходящих компаний пока нет.",
     title: "Каталог",
     all: "Все",
     count: "Товаров: {n}",
