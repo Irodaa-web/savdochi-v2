@@ -4,6 +4,7 @@ import { connectDb } from "@/lib/db";
 import type { CategoryCode, PriceTier, UnitCode } from "@/lib/catalog";
 import type { RegionCode } from "@/lib/regions";
 import type { ProductInput } from "@/lib/validation";
+import { Cart } from "@/models/Cart";
 import { Order } from "@/models/Order";
 import { Product, type ProductDoc } from "@/models/Product";
 import { User } from "@/models/User";
@@ -257,4 +258,32 @@ export async function getSellerHighlights(sellerId: string, limit = 4): Promise<
 
   const [bestSelling, popular] = await Promise.all([rankedViews(sold), rankedViews(popularRows)]);
   return { bestSelling, popular };
+}
+
+export type CartStat = { shops: number; quantity: number };
+
+/**
+ * Sotuvchi mahsulotlari nechta do'kon savatida turibdi (hali buyurtma qilinmagan).
+ * Bloklangan do'konlar hisobga olinmaydi.
+ * byProduct: productId → { shops, quantity }; shops — kamida bitta mahsuloti savatda turgan do'konlar soni.
+ */
+export async function cartStatsForSeller(sellerId: string): Promise<{ byProduct: Map<string, CartStat>; shops: number }> {
+  const empty = { byProduct: new Map<string, CartStat>(), shops: 0 };
+  if (!isValidObjectId(sellerId)) return empty;
+  await connectDb();
+  const productIds = (await Product.find({ seller: sellerId, active: true }, { _id: 1 }).lean()).map((p) => p._id);
+  if (!productIds.length) return empty;
+  const blocked = (await User.find({ role: "buyer", blocked: true }, { _id: 1 }).lean()).map((u) => u._id);
+  const match = { "items.product": { $in: productIds }, ...(blocked.length ? { buyer: { $nin: blocked } } : {}) };
+  const [rows, buyers] = await Promise.all([
+    Cart.aggregate<{ _id: Types.ObjectId; shops: number; quantity: number }>([
+      { $match: match },
+      { $unwind: "$items" },
+      { $match: { "items.product": { $in: productIds } } },
+      { $group: { _id: "$items.product", buyers: { $addToSet: "$buyer" }, quantity: { $sum: "$items.quantity" } } },
+      { $project: { shops: { $size: "$buyers" }, quantity: 1 } },
+    ]),
+    Cart.distinct("buyer", match),
+  ]);
+  return { byProduct: new Map(rows.map((r) => [String(r._id), { shops: r.shops, quantity: r.quantity }])), shops: buyers.length };
 }

@@ -21,3 +21,8 @@ export function unitPriceFor(quantity: number, basePrice: number, tiers: PriceTi
   }
   return price;
 }
+
+/** Mahsulot rasmlari: 4 tomondan, shu tartibda. Birinchisi katalogda ko'rinadi. */
+export const PRODUCT_ANGLES = ["front", "back", "side", "top"] as const;
+export type ProductAngle = (typeof PRODUCT_ANGLES)[number];
+export const PRODUCT_IMAGES = PRODUCT_ANGLES.length;

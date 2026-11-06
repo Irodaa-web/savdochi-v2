@@ -47,7 +47,7 @@ export const productSchema = z
     stock: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000, "numberInvalid"),
     packSize: positiveInt(10_000),
     description: z.string().trim().max(2000).default(""),
-    images: z.array(z.string().url().max(500)).max(6).default([]),
+    images: z.array(z.string().url().max(500)).max(4).default([]),
     priceTiers: z
       .array(z.object({ min: z.coerce.number().int().min(2), price: z.coerce.number().int().min(1) }))
       .max(5)
