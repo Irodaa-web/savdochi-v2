@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function LoginPage() {
   return (
     <Suspense>
-      <LoginForm />
+      <LoginForm demo={process.env.DEMO_MODE === "1"} />
     </Suspense>
   );
 }

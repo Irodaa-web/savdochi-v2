@@ -6,6 +6,8 @@ import { hit } from "@/lib/rateLimit";
 import { fieldErrors, registerSchema } from "@/lib/validation";
 import { User } from "@/models/User";
 
+const TRIAL_DAYS = 30;
+
 export async function POST(request: Request) {
   const parsed = registerSchema.safeParse(await readJson(request));
   if (!parsed.success) return fail("INVALID_INPUT", fieldErrors(parsed.error));
@@ -21,6 +23,8 @@ export async function POST(request: Request) {
       phone: input.phone,
       region: input.region,
       passwordHash: await hashPassword(input.password),
+      // Kompaniyalarga 30 kunlik bepul sinov muddati.
+      subscriptionUntil: input.role === "seller" ? new Date(Date.now() + TRIAL_DAYS * 86_400_000) : null,
     });
 
     const token = await startSession({ id: String(user._id), role: user.role, authVersion: user.authVersion });

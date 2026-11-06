@@ -16,11 +16,15 @@ export interface ProductDoc {
   /** Bir birlikdagi dona soni (masalan, blokda 6 ta shisha). */
   packSize: number;
   description: string;
+  /** Rasm manzillari (Vercel Blob). */
+  images: string[];
   /** Arxivlangan mahsulot katalogda ko'rinmaydi, lekin eski buyurtmalarda qoladi. */
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const tierSchema = new Schema<PriceTier>({ min: { type: Number, min: 2 }, price: { type: Number, min: 1 } }, { _id: false });
 
 const productSchema = new Schema<ProductDoc>(
   {
@@ -29,11 +33,12 @@ const productSchema = new Schema<ProductDoc>(
     category: { type: String, enum: CATEGORY_CODES, required: true, index: true },
     unit: { type: String, enum: UNIT_CODES, required: true },
     price: { type: Number, required: true, min: 1 },
-    priceTiers: { type: [{ _id: false, min: { type: Number, min: 2 }, price: { type: Number, min: 1 } }], default: [] },
+    priceTiers: { type: [tierSchema], default: [] },
     minOrder: { type: Number, default: 1, min: 1 },
     stock: { type: Number, default: 0, min: 0 },
     packSize: { type: Number, default: 1, min: 1 },
     description: { type: String, default: "", maxlength: 2000 },
+    images: { type: [String], default: [] },
     active: { type: Boolean, default: true, index: true },
   },
   { timestamps: true },

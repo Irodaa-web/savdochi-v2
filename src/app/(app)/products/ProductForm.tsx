@@ -11,6 +11,7 @@ import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { CATEGORY_CODES, UNIT_CODES } from "@/lib/catalog";
 import type { ProductView } from "@/server/products";
+import { ImagesField } from "./ImagesField";
 
 type Tier = { min: string; price: string };
 
@@ -34,6 +35,7 @@ export function ProductForm({ product }: { product?: ProductView }) {
     description: product?.description ?? "",
   });
   const [tiers, setTiers] = useState<Tier[]>(product?.priceTiers.map((x) => ({ min: String(x.min), price: String(x.price) })) ?? []);
+  const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -46,7 +48,7 @@ export function ProductForm({ product }: { product?: ProductView }) {
     setSaving(true);
     setError(null);
     setFields({});
-    const body = { ...form, priceTiers: tiers.filter((x) => x.min && x.price) };
+    const body = { ...form, images, priceTiers: tiers.filter((x) => x.min && x.price) };
     const res = product
       ? await api(`/api/v1/products/${product.id}`, { method: "PATCH", body })
       : await api("/api/v1/products", { method: "POST", body });
@@ -105,6 +107,8 @@ export function ProductForm({ product }: { product?: ProductView }) {
           />
         </div>
       </section>
+
+      <ImagesField value={images} onChange={setImages} />
 
       <section className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
         <div>

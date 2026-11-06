@@ -11,3 +11,10 @@ export async function requireUser(role?: Role): Promise<SessionUser> {
   if (role && user.role !== role) redirect(homePath[user.role]);
   return user;
 }
+
+/** Faqat administrator (ADMIN_PHONES ro'yxatidagi telefonlar). */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!user.isAdmin) redirect(homePath[user.role]);
+  return user;
+}

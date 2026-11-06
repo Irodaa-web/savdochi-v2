@@ -1,11 +1,13 @@
-import { ArrowLeft, BadgeCheck, MapPin, Package, ShoppingCart } from "lucide-react";
+import { ArrowLeft, BadgeCheck, MapPin, Package } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
-import { getProduct } from "@/server/products";
+import { BuyBox } from "@/components/catalog/BuyBox";
+import { StartChatButton } from "@/components/chat/StartChatButton";
+import { getProduct, isFavorite } from "@/server/products";
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -23,9 +25,24 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex flex-col gap-5">
-          <div className="flex aspect-[16/9] items-center justify-center rounded-xl border border-line bg-surface-2 text-muted/50">
-            <Package size={56} strokeWidth={1.2} aria-hidden />
-          </div>
+          {p.images.length > 0 ? (
+            <div className="grid gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.images[0]} alt={p.name} className="aspect-[16/9] w-full rounded-xl border border-line bg-surface-2 object-contain" />
+              {p.images.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto">
+                  {p.images.slice(1).map((src) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={src} src={src} alt="" className="size-20 shrink-0 rounded-lg border border-line object-cover" />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex aspect-[16/9] items-center justify-center rounded-xl border border-line bg-surface-2 text-muted/50">
+              <Package size={56} strokeWidth={1.2} aria-hidden />
+            </div>
+          )}
           {p.description && <p className="leading-relaxed whitespace-pre-line">{p.description}</p>}
         </div>
 
@@ -68,13 +85,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             )}
 
             {user.role === "buyer" && (
-              <>
-                <button type="button" disabled className="flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-accent font-semibold text-accent-fg opacity-60">
-                  <ShoppingCart size={18} aria-hidden />
-                  {t.catalog.addToCart}
-                </button>
-                <p className="text-center text-[12px] text-muted">{t.catalog.cartSoon}</p>
-              </>
+              <BuyBox productId={p.id} price={p.price} tiers={p.priceTiers} minOrder={p.minOrder} stock={p.stock} unit={unit} saved={await isFavorite(user.id, p.id)} />
             )}
           </div>
 
@@ -88,9 +99,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               <MapPin size={14} aria-hidden />
               {t.regions[p.seller.region]}
             </span>
-            <Link href={`/catalog?seller=${p.seller.id}`} className="mt-1 text-[13px] font-semibold text-accent hover:underline">
+            <Link href={`/suppliers/${p.seller.id}`} className="mt-1 text-[13px] font-semibold text-accent hover:underline">
+              {t.suppliers.page}
+            </Link>
+            <Link href={`/catalog?seller=${p.seller.id}`} className="text-[13px] font-semibold text-accent hover:underline">
               {t.catalog.sellerProducts}
             </Link>
+            {user.role === "buyer" && <StartChatButton partnerId={p.seller.id} className="mt-2" />}
           </div>
         </aside>
       </div>

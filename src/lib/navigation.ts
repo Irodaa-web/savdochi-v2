@@ -1,4 +1,4 @@
-import { ClipboardList, LayoutGrid, LayoutDashboard, MessageSquare, Package, ShoppingCart, Truck, Users, type LucideIcon } from "lucide-react";
+import { ClipboardList, LayoutGrid, LayoutDashboard, MessageSquare, Package, ShoppingCart, Truck, Users, Warehouse, type LucideIcon } from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 import type { Role } from "@/lib/auth/token";
 
@@ -10,6 +10,7 @@ export const mainNav: Record<Role, NavItem[]> = {
     { href: "/catalog", label: "catalog", Icon: LayoutGrid },
     { href: "/suppliers", label: "suppliers", Icon: Truck },
     { href: "/orders", label: "orders", Icon: ClipboardList },
+    { href: "/stock", label: "stock", Icon: Warehouse },
   ],
   seller: [
     { href: "/dashboard", label: "dashboard", Icon: LayoutDashboard },

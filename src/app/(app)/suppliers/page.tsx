@@ -36,9 +36,14 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
                 <MapPin size={14} aria-hidden />
                 {t.regions[s.region]} · {fmt(t.suppliers.products, { n: s.productCount })}
               </span>
-              <Link href={`/catalog?seller=${s.id}`} className="mt-1 text-[13px] font-semibold text-accent hover:underline">
-                {t.suppliers.open}
-              </Link>
+              <div className="mt-1 flex gap-4">
+                <Link href={`/suppliers/${s.id}`} className="text-[13px] font-semibold text-accent hover:underline">
+                  {t.suppliers.page}
+                </Link>
+                <Link href={`/catalog?seller=${s.id}`} className="text-[13px] font-semibold text-accent hover:underline">
+                  {t.suppliers.open}
+                </Link>
+              </div>
             </li>
           ))}
         </ul>

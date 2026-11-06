@@ -57,13 +57,14 @@ Jarayon: **Topish → Kelishish → Buyurtma → Boshqarish**.
 ## Bosqichlar
 
 - [x] **0. Asos:** tuzilma, dizayn, uz/ru/en, light/dark
-- [x] **1. Kirish:** ro'yxatdan o'tish, kirish, sessiya *(profil va parolni tiklash qoldi)*
+- [x] **1. Kirish:** ro'yxatdan o'tish, kirish, sessiya, profil, parolni almashtirish *(unutilgan parolni SMS orqali tiklash — keyingi qadam)*
 - [x] **2. Mahsulotlar va katalog**
-- [ ] **3. Hamkorlik va kompaniya profili:** yetkazish shartlari, hamkorlik so'rovi, chegirma, Hamkorlarim; profil tahriri
-- [ ] **4. Savat va buyurtma:** rasmlar, saqlanganlar, savat, xarita, to'lov usuli, holatlar, to'lov holati, takrorlash
-- [ ] **5. Chat va bildirishnomalar**
-- [ ] **6. Ombor, obuna, admin:** do'kon qoldig'i va hamkorga ko'rinishi, obuna, moderatsiya, murojaatlar, demo hisoblar
-- [ ] **7. Hisobot, xavfsizlik, deploy:** hisobot, admin MFA, audit log, testlar, Vercel + MongoDB Atlas
+- [x] **3. Hamkorlik va kompaniya profili:** yetkazish shartlari, hamkorlik so'rovi, chegirma, Hamkorlarim; profil tahriri
+- [x] **4. Savat va buyurtma:** rasmlar, saqlanganlar, savat, xarita, to'lov usuli, holatlar, to'lov holati, takrorlash
+- [x] **5. Chat va bildirishnomalar**
+- [x] **6. Ombor, obuna, admin:** do'kon qoldig'i va hamkorga ko'rinishi, obuna, moderatsiya, murojaatlar, demo hisoblar
+- [x] **7. Hisobot va audit log** *(admin MFA va avtomatik testlar — keyingi qadam)*
+- [ ] **Deploy:** Vercel + MongoDB Atlas
 
 ## MVP'dan keyin
 

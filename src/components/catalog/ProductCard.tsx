@@ -11,7 +11,12 @@ export function ProductCard({ product: p, t }: { product: ProductView; t: Dictio
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-line bg-surface">
       <Link href={`/catalog/${p.id}`} className="flex h-32 items-center justify-center bg-surface-2 text-muted/60" tabIndex={-1} aria-hidden>
-        <Package size={30} strokeWidth={1.4} />
+        {p.images[0] ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={p.images[0]} alt="" loading="lazy" className="size-full object-cover" />
+        ) : (
+          <Package size={30} strokeWidth={1.4} />
+        )}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3.5">
         <span className="text-[12px] text-muted">{t.categories[p.category]}</span>

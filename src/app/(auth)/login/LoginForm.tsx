@@ -10,7 +10,7 @@ import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { errorText, safeNext } from "../authHelpers";
 
-export function LoginForm() {
+export function LoginForm({ demo = false }: { demo?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
   const next = safeNext(useSearchParams().get("next"));
@@ -34,6 +34,19 @@ export function LoginForm() {
     setLoading(false);
     if (res.fields) setFields(res.fields);
     else setError(errorText(t, res.error));
+  }
+
+  async function demoLogin(role: "buyer" | "seller") {
+    setLoading(true);
+    setError(null);
+    const res = await api("/api/v1/auth/demo", { body: { role } });
+    if (res.ok) {
+      router.replace("/");
+      router.refresh();
+      return;
+    }
+    setLoading(false);
+    setError(errorText(t, res.error));
   }
 
   return (
@@ -72,6 +85,20 @@ export function LoginForm() {
       <Button type="submit" size="lg" block loading={loading}>
         {t.auth.loginButton}
       </Button>
+
+      {demo && (
+        <div className="flex flex-col gap-2 rounded-xl border border-dashed border-line p-4">
+          <p className="text-[13px] text-muted">{t.auth.demoHint}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button type="button" variant="secondary" disabled={loading} onClick={() => demoLogin("buyer")}>
+              {t.auth.demoBuyer}
+            </Button>
+            <Button type="button" variant="secondary" disabled={loading} onClick={() => demoLogin("seller")}>
+              {t.auth.demoSeller}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <p className="text-center text-muted">
         {t.auth.noAccount}{" "}

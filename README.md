@@ -49,14 +49,58 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 | POST | `/api/v1/products` | yangi mahsulot (sotuvchi) |
 | GET/PATCH/DELETE | `/api/v1/products/:id` | ko'rish / tahrirlash / arxivlash (egasi) |
 | GET  | `/api/v1/seller/products` | sotuvchining o'z mahsulotlari |
-| GET  | `/api/v1/suppliers?region=` | yetkazib beruvchilar |
+| GET  | `/api/v1/suppliers?region=` | yetkazib beruvchilar (viloyat yoki yetkazish hududi bo'yicha) |
+| GET  | `/api/v1/sellers/:id` | kompaniya sahifasi va yetkazish shartlari |
+| GET/PUT | `/api/v1/profile` | o'z profili (kompaniya uchun yetkazish shartlari) |
+| POST | `/api/v1/profile/password` | parolni almashtirish (barcha sessiyalar yopiladi) |
+| GET/POST | `/api/v1/partnerships` | hamkorlar ro'yxati / so'rov `{ partnerId }` |
+| PATCH | `/api/v1/partnerships/:id` | `{ action: accept \| reject \| update, discount?, terms?, shareStock? }` |
+| GET  | `/api/v1/partners/:id/stock` | kompaniya: hamkor do'kon omboridagi o'z mahsulotlari |
+| GET/PUT | `/api/v1/cart` | savat (kompaniyalar bo'yicha guruhlangan) / `{ productId, quantity, add? }` |
+| GET/POST | `/api/v1/orders` | buyurtmalar `?status=&partner=` / savatdan buyurtma berish |
+| GET/PATCH | `/api/v1/orders/:id` | buyurtma / holat, to'lov holati, yetkazish sanasi |
+| POST | `/api/v1/orders/:id/reorder` | buyurtmani takrorlash (savatga) |
+| GET/POST | `/api/v1/chats` | suhbatlar / suhbat ochish `{ partnerId }` |
+| GET/POST | `/api/v1/chats/:id` | xabarlar `?after=` / xabar yuborish |
+| GET/POST | `/api/v1/notifications` | bildirishnomalar / barchasini o'qilgan qilish |
+| GET  | `/api/v1/badges` | header belgilari: savat, chat, bildirishnomalar |
+| GET/PUT | `/api/v1/stock`, DELETE `/api/v1/stock/:id` | do'kon ombori |
+| GET/POST | `/api/v1/favorites` | saqlangan mahsulotlar |
+| GET/POST | `/api/v1/tickets` | murojaatlar |
+| GET  | `/api/v1/reports?days=` | kompaniya hisoboti |
+| POST | `/api/v1/uploads` | mahsulot rasmi (Vercel Blob) |
+| POST | `/api/v1/auth/demo` | demo hisobga kirish (`DEMO_MODE=1`) |
+| GET/PATCH | `/api/v1/admin/users[/:id]` | admin: tasdiqlash, bloklash, obunani uzaytirish |
+| GET/PATCH | `/api/v1/admin/tickets[/:id]` | admin: murojaatlarga javob |
+| GET  | `/api/v1/admin/audit` | admin: audit jurnali |
 
 ## Bosqichlar
 
 - [x] 0. Asos: tuzilma, dizayn tokenlari, uz/ru/en, light/dark, ilova qobig'i
-- [x] 1. Kirish: ro'yxatdan o'tish, kirish, chiqish, sessiya, urinishlar cheklovi *(qisman — profil va parolni tiklash qoldi)*
-- [x] 2. Mahsulotlar va katalog: sotuvchi mahsulot qo'shadi/tahrirlaydi/arxivlaydi, narx pog'onalari; katalog (qidiruv, kategoriya, sahifalash), mahsulot sahifasi, yetkazib beruvchilar (viloyat filtri)
-- [ ] 3. Hamkorlik
-- [ ] 4. Savat va buyurtmalar
-- [ ] 5. Chat va bildirishnomalar
-- [ ] 6. Admin, demo, testlar, deploy
+- [x] 1. Kirish: ro'yxatdan o'tish, kirish, chiqish, sessiya, urinishlar cheklovi, profil, parolni almashtirish
+- [x] 2. Mahsulotlar va katalog: narx pog'onalari, rasmlar, qidiruv, kategoriya, yetkazib beruvchilar
+- [x] 3. Hamkorlik va kompaniya profili: yetkazish shartlari, so'rov/qabul/rad, chegirma va shartlar
+- [x] 4. Savat va buyurtmalar: kompaniya bo'yicha savat, xaritada nuqta, to'lov usuli, holatlar, to'lov holati, takrorlash, saqlanganlar
+- [x] 5. Biznes chat (buyurtma havolasi bilan) va bildirishnomalar
+- [x] 6. Do'kon ombori (hamkorga ko'rinadi), obuna, admin, murojaatlar, demo
+- [x] 7. Hisobot, audit jurnali
+- [ ] Deploy: Vercel + MongoDB Atlas (sozlash pastda)
+
+## Sinov
+
+Mahalliy MongoDB (replica set) bilan:
+
+```bash
+docker run -d --name mongo -p 27017:27017 mongo:7 --replSet rs0
+docker exec mongo mongosh --eval 'rs.initiate()'
+```
+
+`.env.local` da `MONGODB_URI=mongodb://127.0.0.1:27017/savdochi?replicaSet=rs0`, `DEMO_MODE=1`.
+
+## Deploy (Vercel)
+
+1. MongoDB Atlas'da bepul klaster oching, `MONGODB_URI` ni oling (Network Access: `0.0.0.0/0`).
+2. Vercel'da reponi import qiling.
+3. Environment Variables: `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_PHONES`, `DEMO_MODE` (ixtiyoriy).
+4. Storage → Blob → loyihaga ulang (rasmlar uchun `BLOB_READ_WRITE_TOKEN` avtomatik qo'shiladi).
+5. Deploy.

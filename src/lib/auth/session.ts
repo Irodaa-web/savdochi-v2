@@ -14,6 +14,9 @@ export type SessionUser = {
   region: RegionCode;
   verification: Verification;
   isAdmin: boolean;
+  demo: boolean;
+  /** Kompaniya obunasi: null — cheklovsiz. */
+  subscriptionUntil: string | null;
 };
 
 function adminPhones(): Set<string> {
@@ -49,6 +52,8 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     region: user.region,
     verification: user.verification,
     isAdmin: adminPhones().has(user.phone),
+    demo: Boolean(user.demo),
+    subscriptionUntil: user.subscriptionUntil ? new Date(user.subscriptionUntil).toISOString() : null,
   };
 });
 

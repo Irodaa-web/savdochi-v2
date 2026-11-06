@@ -15,7 +15,15 @@ export type ApiErrorCode =
   | "UNAUTHORIZED"
   | "FORBIDDEN"
   | "NOT_FOUND"
-  | "SERVER_ERROR";
+  | "SERVER_ERROR"
+  | "OUT_OF_STOCK"
+  | "BELOW_MIN_ORDER"
+  | "CART_EMPTY"
+  | "INVALID_STATE"
+  | "SUBSCRIPTION_EXPIRED"
+  | "NOT_PARTNER"
+  | "UPLOAD_DISABLED"
+  | "DEMO_DISABLED";
 
 const STATUS: Record<ApiErrorCode, number> = {
   FORBIDDEN: 403,
@@ -26,7 +34,25 @@ const STATUS: Record<ApiErrorCode, number> = {
   TOO_MANY_ATTEMPTS: 429,
   UNAUTHORIZED: 401,
   SERVER_ERROR: 500,
+  OUT_OF_STOCK: 409,
+  BELOW_MIN_ORDER: 400,
+  CART_EMPTY: 400,
+  INVALID_STATE: 409,
+  SUBSCRIPTION_EXPIRED: 402,
+  NOT_PARTNER: 403,
+  UPLOAD_DISABLED: 503,
+  DEMO_DISABLED: 404,
 };
+
+/** Biznes qoidasi buzilganda server funksiyalari tashlaydigan xato. */
+export class AppError extends Error {
+  constructor(
+    public code: ApiErrorCode,
+    public fields?: Record<string, string>,
+  ) {
+    super(code);
+  }
+}
 
 export function ok<T>(data: T, init?: ResponseInit) {
   return NextResponse.json({ ok: true, data }, init);

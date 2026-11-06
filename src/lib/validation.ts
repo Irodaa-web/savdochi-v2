@@ -2,6 +2,8 @@ import { z } from "zod";
 import { normalizePhone } from "./phone";
 import { REGION_CODES } from "./regions";
 import { CATEGORY_CODES, UNIT_CODES } from "./catalog";
+import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "./orders";
+import { TICKET_STATUSES } from "./tickets";
 
 /**
  * Server va mijoz ikkalasi ishlatadigan sxemalar.
@@ -45,6 +47,7 @@ export const productSchema = z
     stock: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000, "numberInvalid"),
     packSize: positiveInt(10_000),
     description: z.string().trim().max(2000).default(""),
+    images: z.array(z.string().url().max(500)).max(6).default([]),
     priceTiers: z
       .array(z.object({ min: z.coerce.number().int().min(2), price: z.coerce.number().int().min(1) }))
       .max(5)
@@ -78,3 +81,90 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
   }
   return out;
 }
+
+const money = z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(1_000_000_000, "numberInvalid");
+const coord = (max: number) =>
+  z
+    .union([z.coerce.number().min(-max).max(max), z.literal(""), z.null()])
+    .optional()
+    .transform((v) => (typeof v === "number" ? v : null));
+
+export const profileSchema = z.object({
+  name: z.string().trim().min(2, "nameShort").max(120, "nameShort"),
+  region: z.enum(REGION_CODES, { message: "regionRequired" }),
+  about: z.string().trim().max(1000).default(""),
+  address: z.string().trim().max(300).default(""),
+  lat: coord(90),
+  lng: coord(180),
+  deliveryRegions: z.array(z.enum(REGION_CODES)).max(REGION_CODES.length).default([]),
+  deliveryDays: z.array(z.coerce.number().int().min(1).max(7)).max(7).default([]),
+  leadDays: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(60, "numberInvalid").default(1),
+  deliveryFee: money.default(0),
+  minOrderTotal: money.default(0),
+  paymentMethods: z.array(z.enum(PAYMENT_METHODS)).max(3).default(["cash"]),
+});
+export type ProfileInput = z.infer<typeof profileSchema>;
+
+export const passwordChangeSchema = z.object({ current: z.string().min(1, "passwordShort").max(128), next: password });
+
+export const partnershipUpdateSchema = z.object({
+  action: z.enum(["accept", "reject", "update"]),
+  discount: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(50, "numberInvalid").optional(),
+  terms: z.string().trim().max(1000).optional(),
+  shareStock: z.boolean().optional(),
+});
+
+export const cartSetSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(1_000_000, "numberInvalid"),
+  /** true — mavjud miqdorga qo'shadi, aks holda almashtiradi. */
+  add: z.boolean().optional(),
+});
+
+export const checkoutSchema = z.object({
+  sellerId: z.string().min(1),
+  phone,
+  region: z.enum(REGION_CODES, { message: "regionRequired" }),
+  address: z.string().trim().min(3, "addressRequired").max(300, "addressRequired"),
+  lat: coord(90),
+  lng: coord(180),
+  paymentMethod: z.enum(PAYMENT_METHODS, { message: "paymentRequired" }),
+  comment: z.string().trim().max(1000).default(""),
+});
+export type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+export const orderUpdateSchema = z.object({
+  status: z.enum(ORDER_STATUSES).optional(),
+  paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+  paidAmount: money.optional(),
+  deliveryDate: z.union([z.string().date(), z.literal(""), z.null()]).optional(),
+});
+
+export const messageSchema = z.object({
+  text: z.string().trim().min(1, "messageEmpty").max(2000),
+  orderId: z.string().optional(),
+  productId: z.string().optional(),
+});
+
+export const stockSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000, "numberInvalid"),
+  minLevel: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000, "numberInvalid"),
+});
+
+export const ticketSchema = z.object({
+  subject: z.string().trim().min(3, "subjectShort").max(160, "subjectShort"),
+  message: z.string().trim().min(5, "messageEmpty").max(3000),
+});
+
+export const ticketReplySchema = z.object({
+  status: z.enum(TICKET_STATUSES),
+  reply: z.string().trim().max(3000).default(""),
+});
+
+export const adminUserSchema = z.object({
+  verification: z.enum(["unverified", "pending", "verified", "rejected"]).optional(),
+  blocked: z.boolean().optional(),
+  /** Obunani shuncha oyga uzaytirish (0 — o'zgarmaydi, -1 — to'xtatish). */
+  extendMonths: z.coerce.number().int().min(-1).max(24).optional(),
+});

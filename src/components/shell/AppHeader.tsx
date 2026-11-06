@@ -11,11 +11,13 @@ import type { SessionUser } from "@/lib/auth/session";
 import { homePath, mainNav } from "@/lib/navigation";
 import { AccountMenu } from "./AccountMenu";
 import { NotificationsMenu } from "./NotificationsMenu";
+import { useBadges } from "./useBadges";
 import { headerIconClass } from "./styles";
 
 export function AppHeader({ user }: { user: SessionUser }) {
   const { t } = useI18n();
   const pathname = usePathname();
+  const [badges, refreshBadges] = useBadges();
 
   return (
     <header className="sticky top-0 z-30 bg-header text-header-text">
@@ -57,13 +59,15 @@ export function AppHeader({ user }: { user: SessionUser }) {
         </form>
 
         <div className="ml-auto flex items-center gap-0.5 lg:ml-0">
-          <Link href="/chat" aria-label={t.header.chat} title={t.header.chat} className={clsx(headerIconClass, "hidden sm:flex")}>
+          <Link href="/chat" aria-label={t.header.chat} title={t.header.chat} className={clsx(headerIconClass, "relative hidden sm:flex")}>
             <MessageSquare size={20} aria-hidden />
+            <CountBadge count={badges.chats} />
           </Link>
-          <NotificationsMenu />
+          <NotificationsMenu count={badges.notifications} onChange={refreshBadges} />
           {user.role === "buyer" && (
-            <Link href="/cart" aria-label={t.header.cart} title={t.header.cart} className={clsx(headerIconClass, "hidden sm:flex")}>
+            <Link href="/cart" aria-label={t.header.cart} title={t.header.cart} className={clsx(headerIconClass, "relative hidden sm:flex")}>
               <ShoppingCart size={20} aria-hidden />
+              <CountBadge count={badges.cart} />
             </Link>
           )}
           <ThemeToggle className={clsx(headerIconClass, "hidden sm:flex")} />

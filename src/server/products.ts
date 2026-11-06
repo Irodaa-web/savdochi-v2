@@ -19,11 +19,18 @@ export type ProductView = {
   stock: number;
   packSize: number;
   description: string;
+  images: string[];
   active: boolean;
   seller: { id: string; name: string; region: RegionCode; verified: boolean };
 };
 
 type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification: string };
+
+/** Katalogda ko'rinmaydigan sotuvchilar: bloklangan yoki obunasi tugagan. */
+async function hiddenSellers(): Promise<unknown[]> {
+  const rows = await User.find({ role: "seller", $or: [{ blocked: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean();
+  return rows.map((r) => r._id);
+}
 
 function toView(p: ProductDoc, seller: SellerInfo | undefined): ProductView {
   return {
@@ -37,6 +44,7 @@ function toView(p: ProductDoc, seller: SellerInfo | undefined): ProductView {
     stock: p.stock,
     packSize: p.packSize,
     description: p.description,
+    images: p.images ?? [],
     active: p.active,
     seller: {
       id: String(p.seller),
@@ -54,7 +62,7 @@ async function withSellers(products: ProductDoc[]): Promise<ProductView[]> {
   return products.map((p) => toView(p, byId.get(String(p.seller))));
 }
 
-export type CatalogQuery = { q?: string; category?: CategoryCode; seller?: string; page?: number };
+export type CatalogQuery = { q?: string; category?: CategoryCode; seller?: string; page?: number; ids?: string[] };
 export const PAGE_SIZE = 24;
 
 /** Katalog: faqat faol mahsulotlar, bloklanmagan sotuvchilardan. */
@@ -63,13 +71,14 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
   const filter: FilterQuery<ProductDoc> = { active: true };
   if (query.category) filter.category = query.category;
   if (query.seller && isValidObjectId(query.seller)) filter.seller = query.seller;
+  if (query.ids) filter._id = { $in: query.ids.filter((id) => isValidObjectId(id)) };
   const q = query.q?.trim();
   if (q) {
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 80);
     filter.name = { $regex: escaped, $options: "i" };
   }
-  const blocked = await User.find({ blocked: true }, { _id: 1 }).lean();
-  if (blocked.length) filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $nin: blocked.map((b) => b._id) };
+  const hidden = await hiddenSellers();
+  if (hidden.length) filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $nin: hidden };
 
   const page = Math.max(1, query.page ?? 1);
   const [docs, total] = await Promise.all([
@@ -123,6 +132,31 @@ export async function archiveProduct(sellerId: string, id: string): Promise<bool
   return res.modifiedCount === 1;
 }
 
+/** Do'kon saqlagan mahsulotlar. */
+export async function listFavorites(buyerId: string): Promise<ProductView[]> {
+  await connectDb();
+  const u = await User.findById(buyerId, { favorites: 1 }).lean();
+  const ids = (u?.favorites ?? []).map(String);
+  if (!ids.length) return [];
+  return (await listCatalog({ ids, page: 1 })).items;
+}
+
+export async function toggleFavorite(buyerId: string, productId: string): Promise<boolean> {
+  if (!isValidObjectId(productId)) return false;
+  await connectDb();
+  const u = await User.findById(buyerId, { favorites: 1 });
+  if (!u) return false;
+  const has = u.favorites.some((f) => String(f) === productId);
+  await User.updateOne({ _id: buyerId }, has ? { $pull: { favorites: productId } } : { $addToSet: { favorites: productId } });
+  return !has;
+}
+
+export async function isFavorite(buyerId: string, productId: string): Promise<boolean> {
+  if (!isValidObjectId(productId)) return false;
+  await connectDb();
+  return (await User.countDocuments({ _id: buyerId, favorites: productId })) > 0;
+}
+
 /** Katalogni bitta sotuvchi bo'yicha ko'rsatganda sarlavha uchun. */
 export async function getProductSeller(sellerId: string): Promise<string | null> {
   if (!isValidObjectId(sellerId)) return null;
@@ -135,8 +169,9 @@ export type SupplierView ={ id: string; name: string; region: RegionCode; verifi
 
 export async function listSuppliers(region?: RegionCode): Promise<SupplierView[]> {
   await connectDb();
-  const filter: Record<string, unknown> = { role: "seller", blocked: false };
-  if (region) filter.region = region;
+  const filter: Record<string, unknown> = { role: "seller", blocked: false, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
+  // Viloyat: kompaniya shu yerda joylashgan yoki shu yerga yetkazib beradi.
+  if (region) filter.$and = [{ $or: [{ region }, { "profile.deliveryRegions": region }] }];
   const sellers = await User.find(filter, { name: 1, region: 1, verification: 1 }).sort({ verification: -1, name: 1 }).limit(200).lean<SellerInfo[]>();
   const counts = await Product.aggregate<{ _id: unknown; n: number }>([
     { $match: { active: true, seller: { $in: sellers.map((s) => s._id) } } },

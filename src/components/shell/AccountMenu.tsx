@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, LogOut, Settings, UserRound, Users } from "lucide-react";
+import { CircleHelp, Heart, LogOut, Settings, ShieldCheck, UserRound, Users, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -66,6 +66,24 @@ export function AccountMenu({ user }: { user: SessionUser }) {
             <Users size={16} aria-hidden />
             {t.header.myPartners}
           </Link>
+          {user.role === "buyer" && (
+            <>
+              <Link role="menuitem" href="/stock" onClick={close} className={itemClass}>
+                <Warehouse size={16} aria-hidden />
+                {t.nav.stock}
+              </Link>
+              <Link role="menuitem" href="/favorites" onClick={close} className={itemClass}>
+                <Heart size={16} aria-hidden />
+                {t.favorites.title}
+              </Link>
+            </>
+          )}
+          {user.isAdmin && (
+            <Link role="menuitem" href="/admin" onClick={close} className={itemClass}>
+              <ShieldCheck size={16} aria-hidden />
+              {t.admin.title}
+            </Link>
+          )}
           <Link role="menuitem" href="/settings" onClick={close} className={itemClass}>
             <Settings size={16} aria-hidden />
             {t.header.settings}
