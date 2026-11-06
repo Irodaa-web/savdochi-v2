@@ -1,4 +1,4 @@
-import { ClipboardList, LayoutGrid, LayoutDashboard, MessageSquare, Package, ShoppingCart, Truck, Users, Warehouse, type LucideIcon } from "lucide-react";
+import { ClipboardList, LayoutGrid, LayoutDashboard, MessageSquare, Package, ShoppingCart, Users, Warehouse, type LucideIcon } from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 import type { Role } from "@/lib/auth/token";
 
@@ -8,7 +8,6 @@ export type NavItem = { href: string; label: keyof Dictionary["nav"]; Icon: Luci
 export const mainNav: Record<Role, NavItem[]> = {
   buyer: [
     { href: "/catalog", label: "catalog", Icon: LayoutGrid },
-    { href: "/suppliers", label: "suppliers", Icon: Truck },
     { href: "/orders", label: "orders", Icon: ClipboardList },
     { href: "/stock", label: "stock", Icon: Warehouse },
   ],

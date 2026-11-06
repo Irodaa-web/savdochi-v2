@@ -5,7 +5,7 @@ import { useI18n } from "@/i18n/client";
 import { REGION_CODES } from "@/lib/regions";
 
 /** Viloyat filtri. base — qaysi sahifada ishlaydi; qidiruv so'zi (q) va boshqa parametrlar saqlanadi. */
-export function RegionFilter({ value, q, base = "/suppliers" }: { value: string; q?: string; base?: string }) {
+export function RegionFilter({ value, q, base = "/catalog" }: { value: string; q?: string; base?: string }) {
   const { t } = useI18n();
   const router = useRouter();
   return (

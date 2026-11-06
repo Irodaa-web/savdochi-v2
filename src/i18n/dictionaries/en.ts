@@ -77,7 +77,6 @@ const en: Dictionary = {
   nav: {
     cart: "Cart",
     catalog: "Catalog",
-    suppliers: "Suppliers",
     orders: "Orders",
     dashboard: "Home",
     products: "Products",
@@ -162,10 +161,8 @@ const en: Dictionary = {
     sellerProducts: "More from this supplier",
   },
   suppliers: {
-    title: "Suppliers",
     allRegions: "All regions",
     products: "{n} products",
-    empty: "No suppliers in this region yet.",
     open: "View products",
     page: "Company page",
     resultsFor: "Companies matching “{q}”",

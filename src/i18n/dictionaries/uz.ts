@@ -75,7 +75,6 @@ const uz = {
   nav: {
     cart: "Savat",
     catalog: "Katalog",
-    suppliers: "Yetkazib beruvchilar",
     orders: "Buyurtmalar",
     dashboard: "Bosh sahifa",
     products: "Mahsulotlar",
@@ -160,10 +159,8 @@ const uz = {
     sellerProducts: "Shu yetkazib beruvchining mahsulotlari",
   },
   suppliers: {
-    title: "Yetkazib beruvchilar",
     allRegions: "Barcha viloyatlar",
     products: "{n} ta mahsulot",
-    empty: "Bu hududda hozircha yetkazib beruvchi yo‘q.",
     open: "Mahsulotlarini ko‘rish",
     page: "Kompaniya sahifasi",
     resultsFor: "“{q}” bo‘yicha kompaniyalar",

@@ -77,7 +77,6 @@ const ru: Dictionary = {
   nav: {
     cart: "Корзина",
     catalog: "Каталог",
-    suppliers: "Поставщики",
     orders: "Заказы",
     dashboard: "Главная",
     products: "Товары",
@@ -162,10 +161,8 @@ const ru: Dictionary = {
     sellerProducts: "Товары этого поставщика",
   },
   suppliers: {
-    title: "Поставщики",
     allRegions: "Все регионы",
     products: "Товаров: {n}",
-    empty: "В этом регионе поставщиков пока нет.",
     open: "Смотреть товары",
     page: "Страница компании",
     resultsFor: "Компании по запросу «{q}»",
