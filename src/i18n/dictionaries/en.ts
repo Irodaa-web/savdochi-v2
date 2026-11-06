@@ -320,7 +320,7 @@ const en: Dictionary = {
     requestIncoming: "You have a request — reply in My partners",
     status: { pending: "Pending", active: "Active partner", rejected: "Declined" },
     empty: "No partners yet.",
-    emptyBuyer: "Pick a company on the Suppliers page and send a partnership request.",
+    emptyBuyer: "Pick a company in the catalog (Companies tab) and send a partnership request.",
     emptySeller: "Stores appear here after they send a request or place their first order.",
     orders: "Orders",
     value: "Amount",
@@ -481,7 +481,7 @@ const en: Dictionary = {
       ["What is the Inventory page for?", "Delivered products are added there automatically. Keep levels updated to see what's running low."],
     ],
     faqSeller: [
-      ["How do stores find me?", "Through the catalog and the Suppliers page. Fill in your delivery regions in the profile — stores search by region."],
+      ["How do stores find me?", "Through the catalog — the Companies tab searches by name. Fill in your delivery regions in the profile — stores search by region."],
       ["How does the subscription work?", "30 days free after sign-up. After that a monthly subscription is needed — write to Help and the administrator extends it."],
       ["How do I see a partner's inventory?", "When the partnership is active, Partners → store page shows the levels of your products."],
     ],

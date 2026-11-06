@@ -318,7 +318,7 @@ const uz = {
     requestIncoming: "Sizga so‘rov kelgan — Hamkorlarim bo‘limida javob bering",
     status: { pending: "Kutilmoqda", active: "Faol hamkor", rejected: "Rad etilgan" },
     empty: "Hali hamkor yo‘q.",
-    emptyBuyer: "Yetkazib beruvchilar sahifasidan kompaniyani tanlab, hamkorlik so‘rovi yuboring.",
+    emptyBuyer: "Katalogning “Kompaniyalar” bo‘limidan kompaniyani tanlab, hamkorlik so‘rovi yuboring.",
     emptySeller: "Do‘konlar sizga so‘rov yuborganda yoki birinchi buyurtmadan keyin shu yerda ko‘rinadi.",
     orders: "Buyurtmalar",
     value: "Summa",
@@ -479,7 +479,7 @@ const uz = {
       ["Ombor bo‘limi nima uchun?", "Yetkazilgan mahsulotlar u yerga avtomatik qo‘shiladi. Qoldiqni yangilab tursangiz, kam qolganini darhol ko‘rasiz."],
     ],
     faqSeller: [
-      ["Do‘konlar meni qanday topadi?", "Katalog va Yetkazib beruvchilar sahifasida. Profilda yetkazish hududlarini to‘ldiring — do‘konlar viloyat bo‘yicha qidiradi."],
+      ["Do‘konlar meni qanday topadi?", "Katalogning “Kompaniyalar” bo‘limida nomingiz bo‘yicha qidiradi. Profilda yetkazish hududlarini to‘ldiring — do‘konlar viloyat bo‘yicha qidiradi."],
       ["Obuna qanday ishlaydi?", "Ro‘yxatdan o‘tgach 30 kun bepul. Keyin oylik obuna kerak — Yordam orqali yozing, administrator uzaytiradi."],
       ["Hamkor omborini qanday ko‘raman?", "Do‘kon bilan hamkorlik faol bo‘lsa, Hamkorlar → do‘kon sahifasida mahsulotlaringiz qoldig‘i ko‘rinadi."],
     ],
