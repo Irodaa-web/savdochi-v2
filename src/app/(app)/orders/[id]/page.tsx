@@ -143,6 +143,12 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <span className="text-muted">
               {t.checkout.payment}: {t.payment[o.paymentMethod]}
             </span>
+            {o.dueDate && o.paymentStatus !== "paid" && o.status !== "cancelled" && (
+              <span className="text-muted">
+                {t.orders.dueDate}: <b className={new Date(o.dueDate).getTime() < Date.now() ? "text-danger" : "text-text"}>{formatDateTime(o.dueDate, locale, false)}</b>
+                {new Date(o.dueDate).getTime() < Date.now() && <> · <Link href={`/debts/${partner.id}`} className="font-semibold text-danger hover:underline">{t.orders.overdue}</Link></>}
+              </span>
+            )}
             {d.date && (
               <span className="text-muted">
                 {t.orders.deliveryDate}: <b className="text-text">{formatDateTime(d.date, locale, false)}</b>

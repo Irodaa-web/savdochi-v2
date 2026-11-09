@@ -1,5 +1,5 @@
 import mongoose, { Schema, type Model, type Types } from "mongoose";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
+import { PROFILE_PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 
 export type Verification = "unverified" | "pending" | "verified" | "rejected";
@@ -54,7 +54,7 @@ const profileSchema = new Schema<Profile>(
     leadDays: { type: Number, default: 1, min: 0, max: 60 },
     deliveryFee: { type: Number, default: 0, min: 0 },
     minOrderTotal: { type: Number, default: 0, min: 0 },
-    paymentMethods: { type: [String], enum: PAYMENT_METHODS, default: ["cash"] },
+    paymentMethods: { type: [String], enum: PROFILE_PAYMENT_METHODS, default: ["cash"] },
   },
   { _id: false },
 );

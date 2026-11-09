@@ -7,6 +7,7 @@ export const NOTIFICATION_TYPES = [
   "orderNew",
   "orderStatus",
   "orderPayment",
+  "paymentReceived",
   "stockLow",
   "ticketReply",
   "verified",

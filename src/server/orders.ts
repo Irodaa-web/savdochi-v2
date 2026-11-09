@@ -11,7 +11,9 @@ import { Order, type OrderDoc } from "@/models/Order";
 import { Product } from "@/models/Product";
 import { StoreStock } from "@/models/StoreStock";
 import { User } from "@/models/User";
+import { Partnership } from "@/models/Partnership";
 import { getCart, removeCartItems, setCartItem } from "./cart";
+import { logOrderPayment, outstandingBetween } from "./debts";
 import { notify } from "./notify";
 
 export type OrderView = {
@@ -32,6 +34,7 @@ export type OrderView = {
   delivery: { phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: string | null };
   comment: string;
   history: { status: OrderStatus; by: string; at: string }[];
+  dueDate: string | null;
   createdAt: string;
 };
 
@@ -61,6 +64,7 @@ async function toViews(docs: OrderDoc[]): Promise<OrderView[]> {
     delivery: { ...d.delivery, date: d.delivery.date ? new Date(d.delivery.date).toISOString() : null },
     comment: d.comment,
     history: (d.history ?? []).map((h) => ({ status: h.status, by: h.by, at: new Date(h.at).toISOString() })),
+    dueDate: d.dueDate ? new Date(d.dueDate).toISOString() : null,
     createdAt: d.createdAt.toISOString(),
   }));
 }
@@ -129,6 +133,15 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
   let order: OrderDoc;
   try {
     order = await withTransaction(async (session) => {
+      let dueDate: Date | null = null;
+      if (input.paymentMethod === "credit") {
+        // Hamkorlik yozuviga yozish: bir do'konning parallel nasiya buyurtmalari navbatma-navbat tekshiriladi.
+        const p = await Partnership.findOneAndUpdate({ seller: input.sellerId, buyer: user.id, status: "active", creditLimit: { $gt: 0 } }, { $set: { updatedAt: new Date() } }, { session, new: true });
+        if (!p) throw new AppError("CREDIT_LIMIT");
+        const used = await outstandingBetween(input.sellerId, user.id, session);
+        if (used + group.total > p.creditLimit) throw new AppError("CREDIT_LIMIT");
+        dueDate = new Date(Date.now() + (p.paymentDays ?? 14) * 24 * 60 * 60 * 1000);
+      }
       await takeStock(items, session);
       const [created] = await Order.create(
         [
@@ -147,6 +160,7 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
             comment: input.comment,
             history: [{ status: "new", by: "buyer", at: new Date() }],
             ...(input.requestId ? { requestId: input.requestId } : {}),
+            dueDate,
           },
         ],
         { session },
@@ -214,7 +228,9 @@ export async function updateOrder(
       paymentChanged = true;
     }
     if (input.deliveryDate !== undefined) order.delivery.date = input.deliveryDate ? new Date(input.deliveryDate) : null;
+    const paidBefore = (await Order.findById(order._id, { paidAmount: 1 }).lean())?.paidAmount ?? 0;
     await Order.updateOne({ _id: order._id }, { $set: { paymentStatus: order.paymentStatus, paidAmount: order.paidAmount, "delivery.date": order.delivery.date } });
+    if (order.paidAmount !== paidBefore) await logOrderPayment(order, order.paidAmount - paidBefore);
     if (paymentChanged) await notify(other, "orderPayment", { number: order.number, status: order.paymentStatus }, link);
   }
 

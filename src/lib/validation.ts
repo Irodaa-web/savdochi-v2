@@ -2,7 +2,7 @@ import { z } from "zod";
 import { normalizePhone } from "./phone";
 import { REGION_CODES } from "./regions";
 import { CATEGORY_CODES, UNIT_CODES } from "./catalog";
-import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "./orders";
+import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, PROFILE_PAYMENT_METHODS } from "./orders";
 import { TICKET_STATUSES } from "./tickets";
 
 /**
@@ -101,7 +101,7 @@ export const profileSchema = z.object({
   leadDays: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(60, "numberInvalid").default(1),
   deliveryFee: money.default(0),
   minOrderTotal: money.default(0),
-  paymentMethods: z.array(z.enum(PAYMENT_METHODS)).max(3).default(["cash"]),
+  paymentMethods: z.array(z.enum(PROFILE_PAYMENT_METHODS)).max(3).default(["cash"]),
 });
 export type ProfileInput = z.infer<typeof profileSchema>;
 
@@ -112,6 +112,15 @@ export const partnershipUpdateSchema = z.object({
   discount: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(50, "numberInvalid").optional(),
   terms: z.string().trim().max(1000).optional(),
   shareStock: z.boolean().optional(),
+  /** Nasiya limiti, so'm (0 — nasiya yo'q). */
+  creditLimit: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000_000, "numberInvalid").optional(),
+  /** Nasiya to'lov muddati, kun. */
+  paymentDays: z.coerce.number().int("numberInvalid").min(1, "numberInvalid").max(180, "numberInvalid").optional(),
+});
+
+export const debtPaymentSchema = z.object({
+  amount: z.coerce.number().int("numberInvalid").min(1, "numberInvalid").max(10_000_000_000, "numberInvalid"),
+  note: z.string().trim().max(300).default(""),
 });
 
 export const cartSetSchema = z.object({

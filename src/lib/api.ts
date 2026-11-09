@@ -23,7 +23,8 @@ export type ApiErrorCode =
   | "SUBSCRIPTION_EXPIRED"
   | "NOT_PARTNER"
   | "UPLOAD_DISABLED"
-  | "DEMO_DISABLED";
+  | "DEMO_DISABLED"
+  | "CREDIT_LIMIT";
 
 const STATUS: Record<ApiErrorCode, number> = {
   FORBIDDEN: 403,
@@ -42,6 +43,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   NOT_PARTNER: 403,
   UPLOAD_DISABLED: 503,
   DEMO_DISABLED: 404,
+  CREDIT_LIMIT: 409,
 };
 
 /** Biznes qoidasi buzilganda server funksiyalari tashlaydigan xato. */

@@ -9,6 +9,7 @@ import { Cart, type CartDoc } from "@/models/Cart";
 import { Partnership } from "@/models/Partnership";
 import { Product, type ProductDoc } from "@/models/Product";
 import { User, type Profile } from "@/models/User";
+import { creditInfo } from "./debts";
 import { profileOf, subscriptionActive } from "./profile";
 
 export type CartLine = {
@@ -36,6 +37,8 @@ export type CartGroup = {
   total: number;
   belowMinTotal: boolean;
   canOrder: boolean;
+  /** Nasiya: hamkorlik limiti va bo'sh qismi (nasiya berilmagan bo'lsa null). */
+  credit: { limit: number; used: number; available: number; days: number } | null;
 };
 
 export type CartView = { groups: CartGroup[]; count: number };
@@ -84,6 +87,7 @@ export async function getCart(buyerId: string): Promise<CartView> {
         total: 0,
         belowMinTotal: false,
         canOrder: true,
+        credit: null,
       };
       groups.set(sellerId, group);
     }
@@ -112,6 +116,13 @@ export async function getCart(buyerId: string): Promise<CartView> {
     g.belowMinTotal = g.subtotal < g.terms.minOrderTotal;
     g.canOrder = g.subtotal > 0 && !g.belowMinTotal && g.lines.every((l) => !l.problem);
   }
+  // Nasiya faqat limit berilgan faol hamkorga, to'lov usuli sifatida qo'shiladi.
+  await Promise.all(
+    [...groups.values()].map(async (g) => {
+      g.credit = await creditInfo(g.seller.id, buyerId);
+      if (g.credit) g.terms.paymentMethods = [...g.terms.paymentMethods, "credit"];
+    }),
+  );
   return { groups: [...groups.values()], count: items.length };
 }
 

@@ -38,6 +38,8 @@ export interface OrderDoc {
   history: OrderEvent[];
   /** Mijoz yuborgan so'rov kaliti: bir xil kalit bilan qayta yuborilsa, yangi buyurtma yaratilmaydi. */
   requestId?: string;
+  /** To'lov muddati (nasiya buyurtmalarida). */
+  dueDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,11 +84,13 @@ const schema = new Schema<OrderDoc>(
     comment: { type: String, default: "", maxlength: 1000 },
     history: { type: [eventSchema], default: [] },
     requestId: { type: String, maxlength: 64 },
+    dueDate: { type: Date, default: null },
   },
   { timestamps: true },
 );
 schema.index({ seller: 1, createdAt: -1 });
 schema.index({ buyer: 1, createdAt: -1 });
+schema.index({ seller: 1, buyer: 1, paymentStatus: 1 });
 schema.index({ buyer: 1, requestId: 1 }, { unique: true, partialFilterExpression: { requestId: { $type: "string" } } });
 
 export const Order: Model<OrderDoc> = (mongoose.models.Order as Model<OrderDoc>) ?? mongoose.model<OrderDoc>("Order", schema);

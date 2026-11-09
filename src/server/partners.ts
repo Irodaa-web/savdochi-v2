@@ -18,6 +18,8 @@ export type PartnerView = {
   discount: number;
   terms: string;
   shareStock: boolean;
+  creditLimit: number;
+  paymentDays: number;
   partner: { id: string; name: string; region: RegionCode; verified: boolean; phone: string };
   orderCount: number;
   orderValue: number;
@@ -55,6 +57,8 @@ export async function listPartners(user: SessionUser): Promise<PartnerView[]> {
         discount: d.discount,
         terms: d.terms,
         shareStock: d.shareStock,
+        creditLimit: d.creditLimit ?? 0,
+        paymentDays: d.paymentDays ?? 14,
         partner: { id: String(u._id), name: u.name, region: u.region, verified: u.verification === "verified", phone: d.status === "active" ? u.phone : "" },
         orderCount: s?.n ?? 0,
         orderValue: s?.sum ?? 0,
@@ -103,7 +107,7 @@ export async function requestPartnership(user: SessionUser, otherId: string): Pr
 export async function updatePartnership(
   user: SessionUser,
   id: string,
-  input: { action: "accept" | "reject" | "update"; discount?: number; terms?: string; shareStock?: boolean },
+  input: { action: "accept" | "reject" | "update"; discount?: number; terms?: string; shareStock?: boolean; creditLimit?: number; paymentDays?: number },
 ): Promise<void> {
   if (!isValidObjectId(id)) throw new AppError("NOT_FOUND");
   await connectDb();
@@ -122,6 +126,8 @@ export async function updatePartnership(
   if (me === "seller") {
     if (input.discount !== undefined) doc.discount = input.discount;
     if (input.terms !== undefined) doc.terms = input.terms;
+    if (input.creditLimit !== undefined) doc.creditLimit = input.creditLimit;
+    if (input.paymentDays !== undefined) doc.paymentDays = input.paymentDays;
   } else if (input.shareStock !== undefined) {
     doc.shareStock = input.shareStock;
   }

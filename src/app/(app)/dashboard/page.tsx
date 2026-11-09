@@ -10,6 +10,7 @@ import { fmt, formatDateTime } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
+import { listDebts } from "@/server/debts";
 import { listOrders } from "@/server/orders";
 import { listSellerProducts } from "@/server/products";
 import { subscriptionActive } from "@/server/profile";
@@ -25,7 +26,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const t = getDictionary(locale);
   const daysParam = (await searchParams).days;
   const days = PERIODS.find((d) => String(d) === daysParam) ?? 30;
-  const [products, report, open, partnerLow] = await Promise.all([listSellerProducts(user.id), sellerReport(user.id, days), listOrders(user, { status: "open", limit: 8 }), lowStockAcrossPartners(user.id)]);
+  const [products, report, open, partnerLow, debts] = await Promise.all([
+    listSellerProducts(user.id),
+    sellerReport(user.id, days),
+    listOrders(user, { status: "open", limit: 8 }),
+    lowStockAcrossPartners(user.id),
+    listDebts(user),
+  ]);
   const lowOwn = products.filter((p) => p.stock < p.minOrder);
   const maxDaily = Math.max(1, ...report.daily.map((d) => d.value));
 
@@ -33,6 +40,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <div className="flex flex-col gap-5">
       <Welcome user={user} />
       {!subscriptionActive(user.subscriptionUntil) && <Alert>{t.subscription.expiredNote}</Alert>}
+      {debts.totalOverdue > 0 && (
+        <Alert>
+          <Link href="/debts" className="hover:underline">
+            {fmt(t.dashboard.overdueAlert, { n: debts.overdueCount, sum: formatAmount(debts.totalOverdue) })}
+          </Link>
+        </Alert>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">{t.dashboard.report}</h2>

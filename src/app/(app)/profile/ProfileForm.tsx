@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
+import { PROFILE_PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import type { ProfileView } from "@/server/profile";
 
@@ -107,7 +107,7 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
             <TextField label={t.profile.deliveryFee} type="number" min={0} value={form.deliveryFee} onChange={set("deliveryFee")} error={fe("deliveryFee")} />
             <TextField label={t.profile.minOrderTotal} type="number" min={0} value={form.minOrderTotal} onChange={set("minOrderTotal")} error={fe("minOrderTotal")} />
           </div>
-          <Chips label={t.profile.paymentMethods} options={PAYMENT_METHODS.map((m) => ({ value: m, label: t.payment[m] }))} value={methods} onChange={setMethods} />
+          <Chips label={t.profile.paymentMethods} options={PROFILE_PAYMENT_METHODS.map((m) => ({ value: m, label: t.payment[m] }))} value={methods} onChange={setMethods} />
         </section>
       )}
 

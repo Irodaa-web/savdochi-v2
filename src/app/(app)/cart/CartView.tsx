@@ -196,6 +196,11 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
         <SelectField label={t.auth.region} value={form.region} onChange={set("region")} error={fe("region")} options={REGION_CODES.map((r) => ({ value: r, label: t.regions[r] }))} />
       </div>
       {outsideArea && <Alert tone="info">{t.checkout.outsideArea}</Alert>}
+      {form.paymentMethod === "credit" && g.credit && (
+        <Alert tone={g.credit.available >= g.total ? "info" : "danger"}>
+          {fmt(t.checkout.creditAvailable, { available: formatAmount(g.credit.available), limit: formatAmount(g.credit.limit), days: g.credit.days })}
+        </Alert>
+      )}
       <TextField label={t.checkout.address} value={form.address} onChange={set("address")} error={fe("address")} placeholder={t.checkout.addressPlaceholder} required />
       <LocationField value={point} onChange={setPoint} />
       <SelectField
