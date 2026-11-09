@@ -21,3 +21,23 @@ export async function connectDb(): Promise<typeof mongoose> {
   }
   return cache.conn;
 }
+
+/**
+ * Bir nechta yozuvni bitta tranzaksiyada bajaradi: hammasi saqlanadi yoki hech biri.
+ * MongoDB replica set talab qiladi (Atlas'da bor). Vaqtinchalik ziddiyatda
+ * `fn` qayta chaqirilishi mumkin — shuning uchun ichida faqat `session` bilan ishlang
+ * va bildirishnoma kabi tashqi ishlarni tranzaksiyadan keyin bajaring.
+ */
+export async function withTransaction<T>(fn: (session: mongoose.ClientSession) => Promise<T>): Promise<T> {
+  await connectDb();
+  const session = await mongoose.startSession();
+  try {
+    let result!: T;
+    await session.withTransaction(async () => {
+      result = await fn(session);
+    });
+    return result;
+  } finally {
+    await session.endSession();
+  }
+}

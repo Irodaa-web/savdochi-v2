@@ -1,4 +1,5 @@
 import "server-only";
+import type { ClientSession } from "mongoose";
 import { isValidObjectId } from "mongoose";
 import { AppError } from "@/lib/api";
 import { unitPriceFor } from "@/lib/catalog";
@@ -142,6 +143,6 @@ export async function setCartItem(buyerId: string, productId: string, quantity: 
   return cart.items.length;
 }
 
-export async function removeCartItems(buyerId: string, productIds: string[]): Promise<void> {
-  await Cart.updateOne({ buyer: buyerId }, { $pull: { items: { product: { $in: productIds } } } });
+export async function removeCartItems(buyerId: string, productIds: string[], session?: ClientSession): Promise<void> {
+  await Cart.updateOne({ buyer: buyerId }, { $pull: { items: { product: { $in: productIds } } } }, { session });
 }

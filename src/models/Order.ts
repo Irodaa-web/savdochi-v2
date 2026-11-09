@@ -36,6 +36,8 @@ export interface OrderDoc {
   delivery: { phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: Date | null };
   comment: string;
   history: OrderEvent[];
+  /** Mijoz yuborgan so'rov kaliti: bir xil kalit bilan qayta yuborilsa, yangi buyurtma yaratilmaydi. */
+  requestId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,10 +81,12 @@ const schema = new Schema<OrderDoc>(
     },
     comment: { type: String, default: "", maxlength: 1000 },
     history: { type: [eventSchema], default: [] },
+    requestId: { type: String, maxlength: 64 },
   },
   { timestamps: true },
 );
 schema.index({ seller: 1, createdAt: -1 });
 schema.index({ buyer: 1, createdAt: -1 });
+schema.index({ buyer: 1, requestId: 1 }, { unique: true, partialFilterExpression: { requestId: { $type: "string" } } });
 
 export const Order: Model<OrderDoc> = (mongoose.models.Order as Model<OrderDoc>) ?? mongoose.model<OrderDoc>("Order", schema);

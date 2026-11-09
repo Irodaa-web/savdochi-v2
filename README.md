@@ -57,7 +57,7 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 | PATCH | `/api/v1/partnerships/:id` | `{ action: accept \| reject \| update, discount?, terms?, shareStock? }` |
 | GET  | `/api/v1/partners/:id/stock` | kompaniya: hamkor do'kon omboridagi o'z mahsulotlari |
 | GET/PUT | `/api/v1/cart` | savat (kompaniyalar bo'yicha guruhlangan) / `{ productId, quantity, add? }` |
-| GET/POST | `/api/v1/orders` | buyurtmalar `?status=&partner=` / savatdan buyurtma berish |
+| GET/POST | `/api/v1/orders` | buyurtmalar `?status=&partner=` / savatdan buyurtma berish (`requestId` — qayta yuborilsa o'sha buyurtma qaytadi) |
 | GET/PATCH | `/api/v1/orders/:id` | buyurtma / holat, to'lov holati, yetkazish sanasi |
 | POST | `/api/v1/orders/:id/reorder` | buyurtmani takrorlash (savatga) |
 | GET/POST | `/api/v1/chats` | suhbatlar / suhbat ochish `{ partnerId }` |
@@ -87,6 +87,8 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 - [ ] Deploy: Vercel + MongoDB Atlas (sozlash pastda)
 
 ## Sinov
+
+Buyurtma berish va holat o'zgarishi MongoDB tranzaksiyasida bajariladi — **replica set shart** (Atlas'da avtomatik bor).
 
 Mahalliy MongoDB (replica set) bilan:
 

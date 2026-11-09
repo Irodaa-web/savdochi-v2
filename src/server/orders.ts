@@ -1,8 +1,8 @@
 import "server-only";
-import { isValidObjectId, type FilterQuery } from "mongoose";
+import { isValidObjectId, type ClientSession, type FilterQuery } from "mongoose";
 import { AppError } from "@/lib/api";
 import type { SessionUser } from "@/lib/auth/session";
-import { connectDb } from "@/lib/db";
+import { connectDb, withTransaction } from "@/lib/db";
 import { ORDER_TRANSITIONS, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
 import type { RegionCode } from "@/lib/regions";
 import type { CheckoutInput } from "@/lib/validation";
@@ -84,26 +84,37 @@ export async function getOrder(user: SessionUser, id: string): Promise<OrderView
   return doc ? (await toViews([doc]))[0]! : null;
 }
 
-/** Omborni kamaytiradi; birortasi yetmasa — kamaytirilganlarni qaytaradi va xato tashlaydi. */
-async function reserveStock(items: { productId: string; quantity: number }[]): Promise<void> {
-  const done: typeof items = [];
+type StockLine = { productId: string; quantity: number };
+
+/** Omborni kamaytiradi; birortasi yetmasa xato tashlaydi (tranzaksiya hammasini bekor qiladi). */
+async function takeStock(items: StockLine[], session: ClientSession): Promise<void> {
   for (const item of items) {
-    const res = await Product.updateOne({ _id: item.productId, active: true, stock: { $gte: item.quantity } }, { $inc: { stock: -item.quantity } });
-    if (res.modifiedCount !== 1) {
-      await releaseStock(done);
-      throw new AppError("OUT_OF_STOCK");
-    }
-    done.push(item);
+    const res = await Product.updateOne({ _id: item.productId, active: true, stock: { $gte: item.quantity } }, { $inc: { stock: -item.quantity } }, { session });
+    if (res.modifiedCount !== 1) throw new AppError("OUT_OF_STOCK");
   }
 }
 
-async function releaseStock(items: { productId: string; quantity: number }[]): Promise<void> {
-  for (const item of items) await Product.updateOne({ _id: item.productId }, { $inc: { stock: item.quantity } });
+async function returnStock(items: StockLine[], session: ClientSession): Promise<void> {
+  for (const item of items) await Product.updateOne({ _id: item.productId }, { $inc: { stock: item.quantity } }, { session });
 }
 
-/** Savatdagi bitta sotuvchi guruhidan buyurtma yaratadi. */
+const isDuplicateKey = (error: unknown) => (error as { code?: number } | null)?.code === 11000;
+
+async function findByRequestId(user: SessionUser, requestId: string | undefined): Promise<OrderView | null> {
+  if (!requestId) return null;
+  const doc = await Order.findOne({ buyer: user.id, requestId }).lean<OrderDoc>();
+  return doc ? (await toViews([doc]))[0]! : null;
+}
+
+/**
+ * Savatdagi bitta sotuvchi guruhidan buyurtma yaratadi.
+ * Ombor, buyurtma va savat bitta tranzaksiyada o'zgaradi; `requestId` qayta kelsa — o'sha buyurtma qaytadi.
+ */
 export async function checkout(user: SessionUser, input: CheckoutInput): Promise<OrderView> {
   await connectDb();
+  const existing = await findByRequestId(user, input.requestId);
+  if (existing) return existing;
+
   const cart = await getCart(user.id);
   const group = cart.groups.find((g) => g.seller.id === input.sellerId);
   if (!group || !group.lines.length) throw new AppError("CART_EMPTY");
@@ -113,33 +124,49 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
   if (!group.terms.paymentMethods.includes(input.paymentMethod)) throw new AppError("INVALID_INPUT", { paymentMethod: "paymentRequired" });
 
   const items = group.lines.map((l) => ({ productId: l.productId, quantity: l.quantity }));
-  await reserveStock(items);
+  // Raqam tranzaksiyadan tashqarida olinadi: hisoblagich hujjati ziddiyat nuqtasiga aylanmasin (bo'shliq bo'lishi mumkin).
+  const number = await nextSeq("order");
+  let order: OrderDoc;
   try {
-    const now = new Date();
-    const order = await Order.create({
-      number: await nextSeq("order"),
-      buyer: user.id,
-      seller: input.sellerId,
-      items: group.lines.map((l) => ({ product: l.productId, name: l.name, unit: l.unit, quantity: l.quantity, unitPrice: l.unitPrice, total: l.total })),
-      subtotal: group.subtotal,
-      discountPercent: group.discountPercent,
-      discount: group.discount,
-      deliveryFee: group.deliveryFee,
-      total: group.total,
-      paymentMethod: input.paymentMethod,
-      delivery: { phone: input.phone, region: input.region, address: input.address, lat: input.lat, lng: input.lng, date: null },
-      comment: input.comment,
-      history: [{ status: "new", by: "buyer", at: now }],
+    order = await withTransaction(async (session) => {
+      await takeStock(items, session);
+      const [created] = await Order.create(
+        [
+          {
+            number,
+            buyer: user.id,
+            seller: input.sellerId,
+            items: group.lines.map((l) => ({ product: l.productId, name: l.name, unit: l.unit, quantity: l.quantity, unitPrice: l.unitPrice, total: l.total })),
+            subtotal: group.subtotal,
+            discountPercent: group.discountPercent,
+            discount: group.discount,
+            deliveryFee: group.deliveryFee,
+            total: group.total,
+            paymentMethod: input.paymentMethod,
+            delivery: { phone: input.phone, region: input.region, address: input.address, lat: input.lat, lng: input.lng, date: null },
+            comment: input.comment,
+            history: [{ status: "new", by: "buyer", at: new Date() }],
+            ...(input.requestId ? { requestId: input.requestId } : {}),
+          },
+        ],
+        { session },
+      );
+      await removeCartItems(user.id, items.map((i) => i.productId), session);
+      return created!.toObject() as OrderDoc;
     });
-    await removeCartItems(user.id, items.map((i) => i.productId));
-    // Do'kon manzilini keyingi safar uchun eslab qoladi.
-    await User.updateOne({ _id: user.id }, { $set: { "profile.address": input.address, ...(input.lat !== null ? { "profile.lat": input.lat, "profile.lng": input.lng } : {}) } });
-    await notify(input.sellerId, "orderNew", { number: order.number, name: user.name }, `/orders/${order._id}`);
-    return (await toViews([order.toObject() as OrderDoc]))[0]!;
   } catch (error) {
-    await releaseStock(items);
+    // Bir xil requestId bilan parallel so'rov: birinchisi yutdi — o'shani qaytaramiz.
+    if (isDuplicateKey(error)) {
+      const winner = await findByRequestId(user, input.requestId);
+      if (winner) return winner;
+    }
     throw error;
   }
+
+  // Do'kon manzilini keyingi safar uchun eslab qoladi.
+  await User.updateOne({ _id: user.id }, { $set: { "profile.address": input.address, ...(input.lat !== null ? { "profile.lat": input.lat, "profile.lng": input.lng } : {}) } });
+  await notify(input.sellerId, "orderNew", { number: order.number, name: user.name }, `/orders/${order._id}`);
+  return (await toViews([order]))[0]!;
 }
 
 /** Holat, to'lov va yetkazish sanasini o'zgartirish (har bir tomon o'z huquqi doirasida). */
@@ -160,12 +187,17 @@ export async function updateOrder(
     const allowed = ORDER_TRANSITIONS[side][order.status] ?? [];
     if (!allowed.includes(input.status)) throw new AppError("INVALID_STATE");
     const from = order.status;
-    // Shartli yangilash: ikki tomon bir vaqtda o'zgartirsa, faqat bittasi o'tadi.
-    const res = await Order.updateOne({ _id: order._id, status: from }, { $set: { status: input.status }, $push: { history: { status: input.status, by: side, at: new Date() } } });
-    if (res.modifiedCount !== 1) throw new AppError("INVALID_STATE");
-    order.status = input.status;
-    if (input.status === "cancelled") await releaseStock(order.items.map((i) => ({ productId: String(i.product), quantity: i.quantity })));
-    if (input.status === "delivered") await addToStoreStock(order.toObject() as OrderDoc);
+    const to = input.status;
+    const snapshot = order.toObject() as OrderDoc;
+    // Holat va ombor bitta tranzaksiyada: ombor faqat bir marta qaytariladi/qo'shiladi.
+    await withTransaction(async (session) => {
+      // Shartli yangilash: ikki tomon bir vaqtda o'zgartirsa, faqat bittasi o'tadi.
+      const res = await Order.updateOne({ _id: order._id, status: from }, { $set: { status: to }, $push: { history: { status: to, by: side, at: new Date() } } }, { session });
+      if (res.modifiedCount !== 1) throw new AppError("INVALID_STATE");
+      if (to === "cancelled") await returnStock(snapshot.items.map((i) => ({ productId: String(i.product), quantity: i.quantity })), session);
+      if (to === "delivered") await addToStoreStock(snapshot, session);
+    });
+    order.status = to;
     await notify(other, "orderStatus", { number: order.number, status: input.status }, link);
   }
 
@@ -190,12 +222,12 @@ export async function updateOrder(
 }
 
 /** Yetkazilgan mahsulotlar do'kon omboriga qo'shiladi. */
-async function addToStoreStock(order: OrderDoc): Promise<void> {
+async function addToStoreStock(order: OrderDoc, session: ClientSession): Promise<void> {
   for (const item of order.items) {
     await StoreStock.updateOne(
       { buyer: order.buyer, product: item.product },
       { $inc: { quantity: item.quantity }, $setOnInsert: { seller: order.seller, name: item.name, unit: item.unit, minLevel: 0 } },
-      { upsert: true },
+      { upsert: true, session },
     );
   }
 }

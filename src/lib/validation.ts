@@ -130,6 +130,8 @@ export const checkoutSchema = z.object({
   lng: coord(180),
   paymentMethod: z.enum(PAYMENT_METHODS, { message: "paymentRequired" }),
   comment: z.string().trim().max(1000).default(""),
+  /** Ikki marta bosish yoki tarmoq uzilib qayta yuborishdan himoya (ixtiyoriy). */
+  requestId: z.string().trim().regex(/^[A-Za-z0-9_-]{8,64}$/).optional(),
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 

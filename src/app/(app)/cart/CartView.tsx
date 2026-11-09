@@ -150,6 +150,11 @@ function CartRow({ line, unit }: { line: CartLine; unit: string }) {
   );
 }
 
+function newRequestId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defaults: Defaults; onCancel: () => void }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -159,6 +164,8 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Forma ochiq turganda bitta kalit: qayta bosish yoki tarmoq xatosidan keyin qayta yuborish ikkinchi buyurtma yaratmaydi.
+  const [requestId] = useState(newRequestId);
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const outsideArea = g.terms.deliveryRegions.length > 0 && !g.terms.deliveryRegions.includes(form.region as RegionCode);
 
@@ -167,7 +174,7 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
     setBusy(true);
     setError(null);
     setFields({});
-    const res = await api<{ id: string }>("/api/v1/orders", { body: { ...form, sellerId: g.seller.id, lat: point?.lat ?? null, lng: point?.lng ?? null } });
+    const res = await api<{ id: string }>("/api/v1/orders", { body: { ...form, requestId, sellerId: g.seller.id, lat: point?.lat ?? null, lng: point?.lng ?? null } });
     if (res.ok) {
       router.push(`/orders/${res.data.id}?placed=1`);
       router.refresh();
