@@ -27,7 +27,7 @@ export default async function PartnersPage() {
 
   return (
     <section className="flex flex-col gap-5">
-      <PageTitle action={!isSeller && <LinkButton href="/catalog" variant="secondary">{t.partners.find}</LinkButton>}>{t.header.myPartners}</PageTitle>
+      <PageTitle action={!isSeller && <LinkButton href="/catalog" variant="secondary">{t.partners.find}</LinkButton>}>{isSeller ? t.header.myClients : t.header.myPartners}</PageTitle>
       <p className="max-w-2xl text-muted">{isSeller ? t.partners.leadSeller : t.partners.leadBuyer}</p>
 
       {incoming.length > 0 && (

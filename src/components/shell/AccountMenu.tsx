@@ -64,7 +64,7 @@ export function AccountMenu({ user }: { user: SessionUser }) {
           </Link>
           <Link role="menuitem" href="/partners" onClick={close} className={itemClass}>
             <Users size={16} aria-hidden />
-            {t.header.myPartners}
+            {user.role === "seller" ? t.header.myClients : t.header.myPartners}
           </Link>
           <Link role="menuitem" href="/debts" onClick={close} className={itemClass}>
             <Wallet size={16} aria-hidden />

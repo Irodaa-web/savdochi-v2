@@ -85,13 +85,21 @@ export async function partnerStock(sellerId: string, buyerId: string): Promise<S
 /** Kompaniya bosh sahifasi uchun: qaysi hamkor do'konlarda mahsulotim kam qolgan. */
 export async function lowStockAcrossPartners(sellerId: string): Promise<{ buyerId: string; buyerName: string; items: number }[]> {
   await connectDb();
-  const partners = await Partnership.find({ seller: sellerId, status: "active", shareStock: true }, { buyer: 1 }).lean();
-  if (!partners.length) return [];
-  const rows = await StoreStock.aggregate<{ _id: Types.ObjectId; n: number }>([
-    { $match: { seller: new Types.ObjectId(sellerId), buyer: { $in: partners.map((p) => p.buyer) }, $expr: { $lte: ["$quantity", "$minLevel"] } } },
+  // Bitta so'rov: kam qolganlar → faqat qoldig'ini ko'rsatadigan faol hamkorlar → do'kon nomi.
+  const rows = await StoreStock.aggregate<{ _id: Types.ObjectId; n: number; name: string }>([
+    { $match: { seller: new Types.ObjectId(sellerId), $expr: { $lte: ["$quantity", "$minLevel"] } } },
     { $group: { _id: "$buyer", n: { $sum: 1 } } },
+    {
+      $lookup: {
+        from: Partnership.collection.name,
+        let: { b: "$_id" },
+        pipeline: [{ $match: { $expr: { $and: [{ $eq: ["$buyer", "$$b"] }, { $eq: ["$seller", new Types.ObjectId(sellerId)] }, { $eq: ["$status", "active"] }, { $eq: ["$shareStock", true] }] } } }],
+        as: "p",
+      },
+    },
+    { $match: { "p.0": { $exists: true } } },
+    { $lookup: { from: User.collection.name, localField: "_id", foreignField: "_id", as: "u" } },
+    { $project: { n: 1, name: { $first: "$u.name" } } },
   ]);
-  const names = await User.find({ _id: { $in: rows.map((r) => r._id) } }, { name: 1 }).lean();
-  const name = new Map(names.map((u) => [String(u._id), u.name]));
-  return rows.map((r) => ({ buyerId: String(r._id), buyerName: name.get(String(r._id)) ?? "—", items: r.n })).sort((a, b) => b.items - a.items);
+  return rows.map((r) => ({ buyerId: String(r._id), buyerName: r.name ?? "—", items: r.n })).sort((a, b) => b.items - a.items);
 }

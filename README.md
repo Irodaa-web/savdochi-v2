@@ -115,7 +115,12 @@ docker exec mongo mongosh --eval 'rs.initiate()'
 
 ## Deploy (Vercel)
 
-1. MongoDB Atlas'da bepul klaster oching, `MONGODB_URI` ni oling (Network Access: `0.0.0.0/0`).
+**Tezlik uchun eng muhimi:** Vercel funksiyalari va MongoDB Atlas bir joyda bo'lsin.
+`vercel.json` da region — `fra1` (Frankfurt, O'zbekistonga eng yaqin). Atlas klasterini ham
+**AWS / Frankfurt (eu-central-1)** da oching. Har sahifa bazaga bir necha marta murojaat qiladi —
+okean ortidagi baza har biriga 100–200 ms qo'shadi.
+
+1. MongoDB Atlas'da bepul klaster oching (region: AWS Frankfurt `eu-central-1`), `MONGODB_URI` ni oling (Network Access: `0.0.0.0/0`).
 2. Vercel'da reponi import qiling.
 3. Environment Variables: `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_PHONES`, `APP_URL`, `DEMO_MODE` (ixtiyoriy).
    Telegram uchun (ixtiyoriy): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`.

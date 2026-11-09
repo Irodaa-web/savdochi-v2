@@ -31,7 +31,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ id: st
     <article className="flex flex-col gap-5">
       <Link href="/partners" className="inline-flex w-fit items-center gap-1.5 text-muted hover:text-text">
         <ArrowLeft size={16} aria-hidden />
-        {t.header.myPartners}
+        {t.header.myClients}
       </Link>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
