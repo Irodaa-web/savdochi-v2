@@ -73,6 +73,7 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 | POST | `/api/v1/debts/:partnerId/payments` | kompaniya: to'lov `{ amount, note? }` (eng eski buyurtmadan taqsimlanadi) |
 | GET/POST/DELETE | `/api/v1/telegram/link` | Telegram holati / ulash havolasi / uzish |
 | POST | `/api/v1/telegram/webhook` | Telegram bot webhook (secret sarlavha bilan) |
+| GET | `/api/v1/health` | server regioni va bazagacha ping (ms) |
 | POST | `/api/v1/admin/telegram` | admin: webhook'ni o'rnatish |
 | POST | `/api/v1/uploads` | mahsulot rasmi (Vercel Blob) |
 | POST | `/api/v1/auth/demo` | demo hisobga kirish (`DEMO_MODE=1`) |
@@ -115,12 +116,12 @@ docker exec mongo mongosh --eval 'rs.initiate()'
 
 ## Deploy (Vercel)
 
-**Tezlik uchun eng muhimi:** Vercel funksiyalari va MongoDB Atlas bir joyda bo'lsin.
-`vercel.json` da region — `fra1` (Frankfurt, O'zbekistonga eng yaqin). Atlas klasterini ham
-**AWS / Frankfurt (eu-central-1)** da oching. Har sahifa bazaga bir necha marta murojaat qiladi —
-okean ortidagi baza har biriga 100–200 ms qo'shadi.
+**Tezlik uchun eng muhimi:** Vercel funksiyalari va MongoDB Atlas bir regionda bo'lsin.
+Tekshirish: `/api/v1/health` — `dbPingMs` 10 ms dan kichik bo'lsa hammasi joyida; 50+ bo'lsa
+Vercel → Settings → Functions → Region ni Atlas klasteri joylashgan regionga moslang
+(Atlas us-east-1 → `iad1`, eu-central-1 → `fra1`).
 
-1. MongoDB Atlas'da bepul klaster oching (region: AWS Frankfurt `eu-central-1`), `MONGODB_URI` ni oling (Network Access: `0.0.0.0/0`).
+1. MongoDB Atlas'da bepul klaster oching, `MONGODB_URI` ni oling (Network Access: `0.0.0.0/0`).
 2. Vercel'da reponi import qiling.
 3. Environment Variables: `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_PHONES`, `APP_URL`, `DEMO_MODE` (ixtiyoriy).
    Telegram uchun (ixtiyoriy): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`.
