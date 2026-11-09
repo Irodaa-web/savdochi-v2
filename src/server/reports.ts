@@ -1,4 +1,5 @@
 import "server-only";
+import { TIME_ZONE } from "@/i18n/format";
 import { Types } from "mongoose";
 import { connectDb } from "@/lib/db";
 import { Order } from "@/models/Order";
@@ -39,7 +40,7 @@ export async function sellerReport(sellerId: string, days = 30): Promise<SellerR
   ]);
   const daily = await Order.aggregate<{ _id: string; value: number }>([
     { $match: match },
-    { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, value: { $sum: "$total" } } },
+    { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: TIME_ZONE } }, value: { $sum: "$total" } } },
     { $sort: { _id: 1 } },
   ]);
   const newOrders = await Order.countDocuments({ seller, status: "new" });
@@ -73,7 +74,8 @@ export async function sellerReport(sellerId: string, days = 30): Promise<SellerR
 function fillDays(since: Date, days: number, rows: { _id: string; value: number }[]): { day: string; value: number }[] {
   const by = new Map(rows.map((r) => [r._id, r.value]));
   return Array.from({ length: days + 1 }, (_, i) => {
-    const day = new Date(since.getTime() + i * 86_400_000).toISOString().slice(0, 10);
+    // Toshkent (UTC+5) kuni — agregatsiyadagi timezone bilan mos.
+    const day = new Date(since.getTime() + i * 86_400_000 + 5 * 3_600_000).toISOString().slice(0, 10);
     return { day, value: by.get(day) ?? 0 };
   });
 }

@@ -37,7 +37,7 @@ export default async function LedgerPage({ params }: { params: Promise<{ id: str
           {partner.phone && <p className="text-muted">{formatPhone(partner.phone)}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
-          <LinkButton href={`/debts/${partner.id}/statement`} variant="secondary">
+          <LinkButton href={`/print/statement/${partner.id}`} variant="secondary">
             <FileText size={16} aria-hidden />
             {t.debts.statement}
           </LinkButton>

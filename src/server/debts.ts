@@ -191,3 +191,79 @@ export async function creditInfo(sellerId: string, buyerId: string): Promise<{ l
   const used = await outstandingBetween(sellerId, buyerId);
   return { limit: p.creditLimit, used, available: Math.max(0, p.creditLimit - used), days: p.paymentDays ?? 14 };
 }
+
+export type StatementParty = { id: string; name: string; phone: string; address: string; inn: string; bankName: string; bankAccount: string; mfo: string };
+export type StatementRow = { date: string; kind: "order" | "payment" | "correction"; number: number | null; debit: number; credit: number };
+export type Statement = {
+  seller: StatementParty;
+  buyer: StatementParty;
+  from: string;
+  to: string;
+  opening: number;
+  rows: StatementRow[];
+  totalDebit: number;
+  totalCredit: number;
+  closing: number;
+};
+
+/** "YYYY-MM-DD" ni Toshkent vaqti bo'yicha kun boshi/oxiriga aylantiradi. */
+export function tashkentDay(day: string, end = false): Date {
+  return new Date(`${day}T${end ? "23:59:59.999" : "00:00:00.000"}+05:00`);
+}
+
+/**
+ * Akt sverka: davr boshidagi qoldiq, davrdagi jo'natmalar (buyurtmalar) va to'lovlar, oxirgi qoldiq.
+ * Musbat qoldiq — do'konning kompaniya oldidagi qarzi.
+ * Qarz daftari paydo bo'lishidan oldin qayd etilgan to'lovlar buyurtmadagi to'langan summadan tiklanadi.
+ */
+export async function statement(user: SessionUser, partnerId: string, fromDay: string, toDay: string): Promise<Statement | null> {
+  if (!isValidObjectId(partnerId)) return null;
+  await connectDb();
+  const { me, other } = sideOf(user);
+  const pair = { [me]: user.id, [other]: partnerId } as { seller: string; buyer: string };
+  const users = await User.find({ _id: { $in: [pair.seller, pair.buyer] } }, { name: 1, phone: 1, role: 1, profile: 1 }).lean();
+  const seller = users.find((u) => String(u._id) === pair.seller && u.role === "seller");
+  const buyer = users.find((u) => String(u._id) === pair.buyer && u.role === "buyer");
+  if (!seller || !buyer) return null;
+
+  const [orders, payments] = await Promise.all([
+    Order.find({ ...pair, status: { $ne: "cancelled" } }, { number: 1, total: 1, paidAmount: 1, createdAt: 1, updatedAt: 1 }).lean<OrderDoc[]>(),
+    Payment.find(pair).lean<PaymentDoc[]>(),
+  ]);
+  const allocated = new Map<string, number>();
+  for (const p of payments) for (const a of p.allocations) allocated.set(String(a.order), (allocated.get(String(a.order)) ?? 0) + a.amount);
+
+  const all: (StatementRow & { at: Date })[] = [];
+  for (const o of orders) {
+    all.push({ at: o.createdAt, date: o.createdAt.toISOString(), kind: "order", number: o.number, debit: o.total, credit: 0 });
+    const legacy = o.paidAmount - (allocated.get(String(o._id)) ?? 0);
+    if (legacy > 0) all.push({ at: o.updatedAt, date: o.updatedAt.toISOString(), kind: "payment", number: o.number, debit: 0, credit: legacy });
+  }
+  for (const p of payments) {
+    const single = p.allocations.length === 1 ? p.allocations[0]!.number : null;
+    all.push({ at: p.createdAt, date: p.createdAt.toISOString(), kind: p.amount < 0 ? "correction" : "payment", number: single, debit: 0, credit: p.amount });
+  }
+  all.sort((a, b) => a.at.getTime() - b.at.getTime());
+
+  const from = tashkentDay(fromDay);
+  const to = tashkentDay(toDay, true);
+  let opening = 0;
+  const rows: StatementRow[] = [];
+  for (const r of all) {
+    if (r.at < from) opening += r.debit - r.credit;
+    else if (r.at <= to) rows.push({ date: r.date, kind: r.kind, number: r.number, debit: r.debit, credit: r.credit });
+  }
+  const totalDebit = rows.reduce((s, r) => s + r.debit, 0);
+  const totalCredit = rows.reduce((s, r) => s + r.credit, 0);
+  const party = (u: (typeof users)[number]): StatementParty => ({
+    id: String(u._id),
+    name: u.name,
+    phone: u.phone,
+    address: u.profile?.address ?? "",
+    inn: u.profile?.inn ?? "",
+    bankName: u.profile?.bankName ?? "",
+    bankAccount: u.profile?.bankAccount ?? "",
+    mfo: u.profile?.mfo ?? "",
+  });
+  return { seller: party(seller), buyer: party(buyer), from: fromDay, to: toDay, opening, rows, totalDebit, totalCredit, closing: opening + totalDebit - totalCredit };
+}

@@ -102,6 +102,10 @@ export const profileSchema = z.object({
   deliveryFee: money.default(0),
   minOrderTotal: money.default(0),
   paymentMethods: z.array(z.enum(PROFILE_PAYMENT_METHODS)).max(3).default(["cash"]),
+  inn: z.string().trim().regex(/^(\d{9})?$/, "innFormat").default(""),
+  bankName: z.string().trim().max(120).default(""),
+  bankAccount: z.string().trim().regex(/^(\d{20})?$/, "accountFormat").default(""),
+  mfo: z.string().trim().regex(/^(\d{5})?$/, "mfoFormat").default(""),
 });
 export type ProfileInput = z.infer<typeof profileSchema>;
 

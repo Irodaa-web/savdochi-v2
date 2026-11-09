@@ -19,6 +19,11 @@ export interface Profile {
   deliveryFee: number;
   minOrderTotal: number;
   paymentMethods: PaymentMethod[];
+  /** Rekvizitlar (hisob-faktura va akt sverka uchun). */
+  inn: string;
+  bankName: string;
+  bankAccount: string;
+  mfo: string;
 }
 
 export interface UserDoc {
@@ -55,6 +60,10 @@ const profileSchema = new Schema<Profile>(
     deliveryFee: { type: Number, default: 0, min: 0 },
     minOrderTotal: { type: Number, default: 0, min: 0 },
     paymentMethods: { type: [String], enum: PROFILE_PAYMENT_METHODS, default: ["cash"] },
+    inn: { type: String, default: "", maxlength: 9 },
+    bankName: { type: String, default: "", maxlength: 120 },
+    bankAccount: { type: String, default: "", maxlength: 20 },
+    mfo: { type: String, default: "", maxlength: 5 },
   },
   { _id: false },
 );

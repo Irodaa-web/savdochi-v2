@@ -1,4 +1,4 @@
-import { ArrowLeft, MapPin, Phone } from "lucide-react";
+import { ArrowLeft, FileText, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StartChatButton } from "@/components/chat/StartChatButton";
@@ -37,6 +37,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         <h1 className="text-2xl font-bold tracking-tight">{fmt(t.orders.title, { n: o.number })}</h1>
         <StatusPill status={o.status} t={t} />
         <PaymentPill status={o.paymentStatus} t={t} />
+        <Link href={`/print/invoice/${o.id}`} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[14px] font-semibold hover:bg-surface-2">
+          <FileText size={16} aria-hidden />
+          {t.docs.invoice}
+        </Link>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">

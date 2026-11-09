@@ -51,6 +51,10 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
     leadDays: String(p.leadDays),
     deliveryFee: String(p.deliveryFee),
     minOrderTotal: String(p.minOrderTotal),
+    inn: p.inn,
+    bankName: p.bankName,
+    bankAccount: p.bankAccount,
+    mfo: p.mfo,
   });
   const [regions, setRegions] = useState<RegionCode[]>(p.deliveryRegions);
   const [days, setDays] = useState<number[]>(p.deliveryDays);
@@ -110,6 +114,15 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
           <Chips label={t.profile.paymentMethods} options={PROFILE_PAYMENT_METHODS.map((m) => ({ value: m, label: t.payment[m] }))} value={methods} onChange={setMethods} />
         </section>
       )}
+
+      <section className="grid gap-4 rounded-xl border border-line bg-surface p-5 sm:grid-cols-2">
+        <h2 className="font-semibold sm:col-span-2">{t.profile.requisites}</h2>
+        <p className="-mt-2 text-[13px] text-muted sm:col-span-2">{t.profile.requisitesHint}</p>
+        <TextField label={t.profile.inn} value={form.inn} onChange={set("inn")} error={fe("inn")} inputMode="numeric" maxLength={9} />
+        <TextField label={t.profile.mfo} value={form.mfo} onChange={set("mfo")} error={fe("mfo")} inputMode="numeric" maxLength={5} />
+        <TextField label={t.profile.bankName} value={form.bankName} onChange={set("bankName")} maxLength={120} />
+        <TextField label={t.profile.bankAccount} value={form.bankAccount} onChange={set("bankAccount")} error={fe("bankAccount")} inputMode="numeric" maxLength={20} />
+      </section>
 
       {status === "error" && <Alert>{errors.INVALID_INPUT}</Alert>}
       {status === "saved" && <Alert tone="success">{t.products.saved}</Alert>}

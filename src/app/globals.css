@@ -92,3 +92,32 @@ body {
   outline: 2px solid var(--c-focus);
   outline-offset: 2px;
 }
+
+/* Chop etiladigan hujjatlar (hisob-faktura, akt sverka): mavzudan qat'i nazar oq qog'oz. */
+.print-doc {
+  background: #fff;
+  color: #111;
+}
+.print-doc table td,
+.print-doc table th {
+  border: 1px solid #999;
+  padding: 4px 6px;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-doc {
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+}

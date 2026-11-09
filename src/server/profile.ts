@@ -32,6 +32,10 @@ export const DEFAULT_PROFILE: Profile = {
   deliveryFee: 0,
   minOrderTotal: 0,
   paymentMethods: ["cash"] as PaymentMethod[],
+  inn: "",
+  bankName: "",
+  bankAccount: "",
+  mfo: "",
 };
 
 export function profileOf(user: Pick<UserDoc, "profile">): Profile {
