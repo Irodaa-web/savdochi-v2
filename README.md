@@ -94,6 +94,14 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 
 ## Sinov
 
+```bash
+npm test                     # unit testlar (narx pog'onalari, holatlar, validatsiya, tarjimalar, qarz taqsimoti)
+SAVDOCHI_TEST_URL=http://localhost:3000 npm run test:integration   # ishlab turgan serverga haqiqiy so'rovlar
+```
+
+Integratsiya testi demo hisoblarda buyurtma va to'lov yaratadi — **faqat sinov bazasida** (`DEMO_MODE=1`) ishga tushiring.
+GitHub Actions (`.github/workflows/ci.yml`) har push'da typecheck, unit va integratsiya testlarini ishlatadi.
+
 Buyurtma berish va holat o'zgarishi MongoDB tranzaksiyasida bajariladi — **replica set shart** (Atlas'da avtomatik bor).
 
 Mahalliy MongoDB (replica set) bilan:

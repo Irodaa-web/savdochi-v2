@@ -3,6 +3,7 @@ import { isValidObjectId, Types, type ClientSession } from "mongoose";
 import { AppError } from "@/lib/api";
 import type { SessionUser } from "@/lib/auth/session";
 import { connectDb, withTransaction } from "@/lib/db";
+import { allocateFifo } from "@/lib/debts";
 import { Order, type OrderDoc } from "@/models/Order";
 import { Partnership } from "@/models/Partnership";
 import { Payment, type PaymentDoc } from "@/models/Payment";
@@ -158,18 +159,14 @@ export async function recordPayment(user: SessionUser, buyerId: string, amount: 
     const orders = await Order.find({ seller: user.id, buyer: buyerId, ...unpaidFilter }).sort({ createdAt: 1 }).session(session);
     const outstanding = orders.reduce((s, o) => s + Math.max(0, o.total - o.paidAmount), 0);
     if (amount > outstanding) throw new AppError("INVALID_INPUT", { amount: "amountTooLarge" });
-    let rest = amount;
+    const plan = allocateFifo(orders.map((o) => ({ id: String(o._id), total: o.total, paid: o.paidAmount })), amount);
     const allocations: PaymentDoc["allocations"] = [];
-    for (const o of orders) {
-      if (rest <= 0) break;
-      const left = o.total - o.paidAmount;
-      if (left <= 0) continue;
-      const part = Math.min(left, rest);
-      o.paidAmount += part;
+    for (const a of plan.allocations) {
+      const o = orders.find((x) => String(x._id) === a.id)!;
+      o.paidAmount += a.amount;
       o.paymentStatus = o.paidAmount >= o.total ? "paid" : "partial";
       await o.save({ session });
-      allocations.push({ order: o._id, number: o.number, amount: part });
-      rest -= part;
+      allocations.push({ order: o._id, number: o.number, amount: a.amount });
     }
     await Payment.create([{ seller: user.id, buyer: buyerId, amount, note, source: "ledger", allocations }], { session });
   });
