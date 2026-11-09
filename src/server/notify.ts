@@ -1,6 +1,8 @@
 import "server-only";
+import { after } from "next/server";
 import { AuditLog } from "@/models/AuditLog";
 import { Notification, type NotificationType } from "@/models/Notification";
+import { notifyTelegram } from "./telegram";
 
 /** Bildirishnoma yaratadi. Xato bo'lsa asosiy amalni to'xtatmaydi. */
 export async function notify(user: unknown, type: NotificationType, params: Record<string, string | number>, link: string): Promise<void> {
@@ -8,6 +10,13 @@ export async function notify(user: unknown, type: NotificationType, params: Reco
     await Notification.create({ user, type, params, link });
   } catch (error) {
     console.error("notify failed", error);
+  }
+  // Telegram javobni kutdirmasin: so'rov tugagach yuboriladi (Vercel'da waitUntil orqali).
+  const send = () => notifyTelegram(user, type, params, link).catch((error) => console.error("telegram notify failed", error));
+  try {
+    after(send);
+  } catch {
+    await send(); // so'rovdan tashqarida (masalan, skriptda) — darhol
   }
 }
 

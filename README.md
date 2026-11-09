@@ -68,6 +68,12 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 | GET/POST | `/api/v1/favorites` | saqlangan mahsulotlar |
 | GET/POST | `/api/v1/tickets` | murojaatlar |
 | GET  | `/api/v1/reports?days=` | kompaniya hisoboti |
+| GET | `/api/v1/debts` | qarzlar: hamkorlar bo'yicha qarz, muddati o'tgan, limit |
+| GET | `/api/v1/debts/:partnerId` | qarz daftari: to'lanmagan buyurtmalar va to'lovlar |
+| POST | `/api/v1/debts/:partnerId/payments` | kompaniya: to'lov `{ amount, note? }` (eng eski buyurtmadan taqsimlanadi) |
+| GET/POST/DELETE | `/api/v1/telegram/link` | Telegram holati / ulash havolasi / uzish |
+| POST | `/api/v1/telegram/webhook` | Telegram bot webhook (secret sarlavha bilan) |
+| POST | `/api/v1/admin/telegram` | admin: webhook'ni o'rnatish |
 | POST | `/api/v1/uploads` | mahsulot rasmi (Vercel Blob) |
 | POST | `/api/v1/auth/demo` | demo hisobga kirish (`DEMO_MODE=1`) |
 | GET/PATCH | `/api/v1/admin/users[/:id]` | admin: tasdiqlash, bloklash, obunani uzaytirish |
@@ -103,6 +109,15 @@ docker exec mongo mongosh --eval 'rs.initiate()'
 
 1. MongoDB Atlas'da bepul klaster oching, `MONGODB_URI` ni oling (Network Access: `0.0.0.0/0`).
 2. Vercel'da reponi import qiling.
-3. Environment Variables: `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_PHONES`, `DEMO_MODE` (ixtiyoriy).
+3. Environment Variables: `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_PHONES`, `APP_URL`, `DEMO_MODE` (ixtiyoriy).
+   Telegram uchun (ixtiyoriy): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`.
 4. Storage → Blob → loyihaga ulang (rasmlar uchun `BLOB_READ_WRITE_TOKEN` avtomatik qo'shiladi).
 5. Deploy.
+6. Telegram ulangan bo'lsa: Admin sahifasida "Telegram webhook'ni o'rnatish" tugmasini bir marta bosing.
+
+## Hujjatlar (chop etish)
+
+- `/print/invoice/:orderId` — hisob-faktura (yuk xati)
+- `/print/statement/:partnerId?from=YYYY-MM-DD&to=YYYY-MM-DD` — akt sverka
+
+Rekvizitlar (STIR, bank, hisob raqami, MFO) Profil sahifasida to'ldiriladi.

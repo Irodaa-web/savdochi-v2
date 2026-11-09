@@ -40,6 +40,8 @@ export interface UserDoc {
   /** Parol o'zgarsa oshiriladi — eski sessiyalar bekor bo'ladi. */
   authVersion: number;
   locale: "uz" | "ru" | "en";
+  /** Telegram bildirishnomalari: ulangan chat va bir martalik ulash kodi. */
+  telegram: { chatId: number | null; linkCode: string | null; linkExpires: Date | null };
   profile: Profile;
   /** Do'kon saqlagan mahsulotlar. */
   favorites: Types.ObjectId[];
@@ -82,6 +84,11 @@ const userSchema = new Schema<UserDoc>(
     blocked: { type: Boolean, default: false },
     authVersion: { type: Number, default: 0 },
     locale: { type: String, enum: ["uz", "ru", "en"], default: "uz" },
+    telegram: {
+      chatId: { type: Number, default: null },
+      linkCode: { type: String, default: null },
+      linkExpires: { type: Date, default: null },
+    },
     profile: { type: profileSchema, default: () => ({}) },
     favorites: { type: [Schema.Types.ObjectId], ref: "Product", default: [] },
     subscriptionUntil: { type: Date, default: null },
@@ -89,5 +96,7 @@ const userSchema = new Schema<UserDoc>(
   },
   { timestamps: true },
 );
+
+userSchema.index({ "telegram.linkCode": 1 }, { sparse: true });
 
 export const User: Model<UserDoc> = (mongoose.models.User as Model<UserDoc>) ?? mongoose.model<UserDoc>("User", userSchema);
