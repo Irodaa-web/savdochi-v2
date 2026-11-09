@@ -28,7 +28,7 @@ export type CartLine = {
 
 export type CartGroup = {
   seller: { id: string; name: string; verified: boolean };
-  terms: Pick<Profile, "deliveryFee" | "minOrderTotal" | "paymentMethods" | "deliveryRegions" | "leadDays">;
+  terms: Pick<Profile, "deliveryFee" | "minOrderTotal" | "paymentMethods" | "deliveryRegions" | "leadDays" | "pickup"> & { address: string };
   lines: CartLine[];
   subtotal: number;
   discountPercent: number;
@@ -78,6 +78,8 @@ export async function getCart(buyerId: string): Promise<CartView> {
           paymentMethods: profile.paymentMethods.length ? profile.paymentMethods : (["cash"] as PaymentMethod[]),
           deliveryRegions: profile.deliveryRegions,
           leadDays: profile.leadDays,
+          pickup: profile.pickup,
+          address: profile.address,
         },
         lines: [],
         subtotal: 0,

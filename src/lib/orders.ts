@@ -4,6 +4,9 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 /** Kompaniya profilida tanlanadigan usullar. "credit" (nasiya) faqat hamkorga limit berilganda chiqadi. */
 export const PROFILE_PAYMENT_METHODS = ["cash", "transfer", "card"] as const satisfies readonly PaymentMethod[];
 
+export const DELIVERY_METHODS = ["delivery", "pickup"] as const;
+export type DeliveryMethod = (typeof DELIVERY_METHODS)[number];
+
 export const ORDER_STATUSES = ["new", "confirmed", "shipped", "delivered", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 

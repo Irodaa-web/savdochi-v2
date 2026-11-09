@@ -128,6 +128,9 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <span className="text-[12px] font-semibold tracking-wider text-muted uppercase">{t.orders.delivery}</span>
             <span className="flex items-start gap-2">
               <MapPin size={16} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+              {d.method === "pickup" ? (
+                <b>{t.orders.pickup}</b>
+              ) : (
               <span>
                 {d.address}, {t.regions[d.region]}
                 {d.lat != null && d.lng != null && (
@@ -139,6 +142,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   </>
                 )}
               </span>
+              )}
             </span>
             <a href={`tel:${d.phone}`} className="flex items-center gap-2 hover:text-accent">
               <Phone size={16} className="text-muted" aria-hidden />

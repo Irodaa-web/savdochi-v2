@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { AlertTriangle, BadgeCheck, Minus, Package, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -161,6 +162,9 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
   const errors = t.errors as Record<string, string>;
   const [form, setForm] = useState({ phone: defaults.phone, region: defaults.region as string, address: defaults.address, paymentMethod: g.terms.paymentMethods[0] ?? "cash", comment: "" });
   const [point, setPoint] = useState<Point>(defaults.point);
+  const [method, setMethod] = useState<"delivery" | "pickup">("delivery");
+  const pickup = method === "pickup";
+  const total = pickup ? g.total - g.deliveryFee : g.total;
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -174,7 +178,7 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
     setBusy(true);
     setError(null);
     setFields({});
-    const res = await api<{ id: string }>("/api/v1/orders", { body: { ...form, requestId, sellerId: g.seller.id, lat: point?.lat ?? null, lng: point?.lng ?? null } });
+    const res = await api<{ id: string }>("/api/v1/orders", { body: { ...form, method, requestId, sellerId: g.seller.id, lat: point?.lat ?? null, lng: point?.lng ?? null } });
     if (res.ok) {
       router.push(`/orders/${res.data.id}?placed=1`);
       router.refresh();
@@ -195,14 +199,37 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
         <TextField label={t.auth.phone} value={form.phone} onChange={set("phone")} error={fe("phone")} inputMode="tel" autoComplete="tel" required />
         <SelectField label={t.auth.region} value={form.region} onChange={set("region")} error={fe("region")} options={REGION_CODES.map((r) => ({ value: r, label: t.regions[r] }))} />
       </div>
-      {outsideArea && <Alert tone="info">{t.checkout.outsideArea}</Alert>}
+      {g.terms.pickup && (
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1.5 text-[13px] font-medium">{t.checkout.method}</legend>
+          <div className="flex flex-wrap gap-1.5">
+            {(["delivery", "pickup"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={method === m}
+                onClick={() => setMethod(m)}
+                className={clsx("cursor-pointer rounded-full border px-3.5 py-1.5 text-[13px] font-medium", method === m ? "border-accent bg-accent text-accent-fg" : "border-line bg-surface hover:bg-surface-2")}
+              >
+                {m === "pickup" ? t.checkout.methodPickup : t.checkout.methodDelivery}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {pickup && <Alert tone="info">{g.terms.address ? fmt(t.checkout.pickupFrom, { address: g.terms.address }) : t.checkout.pickupFromUnknown}</Alert>}
+      {!pickup && outsideArea && <Alert tone="info">{t.checkout.outsideArea}</Alert>}
       {form.paymentMethod === "credit" && g.credit && (
-        <Alert tone={g.credit.available >= g.total ? "info" : "danger"}>
+        <Alert tone={g.credit.available >= total ? "info" : "danger"}>
           {fmt(t.checkout.creditAvailable, { available: formatAmount(g.credit.available), limit: formatAmount(g.credit.limit), days: g.credit.days })}
         </Alert>
       )}
-      <TextField label={t.checkout.address} value={form.address} onChange={set("address")} error={fe("address")} placeholder={t.checkout.addressPlaceholder} required />
-      <LocationField value={point} onChange={setPoint} />
+      {!pickup && (
+        <>
+          <TextField label={t.checkout.address} value={form.address} onChange={set("address")} error={fe("address")} placeholder={t.checkout.addressPlaceholder} required />
+          <LocationField value={point} onChange={setPoint} />
+        </>
+      )}
       <SelectField
         label={t.checkout.payment}
         value={form.paymentMethod}
@@ -214,7 +241,7 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
       <p className="text-[13px] text-muted">{fmt(t.checkout.leadDays, { n: g.terms.leadDays })}</p>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" loading={busy}>
-          {fmt(t.checkout.submit, { sum: formatAmount(g.total) })}
+          {fmt(t.checkout.submit, { sum: formatAmount(total) })}
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel}>
           {t.products.cancel}

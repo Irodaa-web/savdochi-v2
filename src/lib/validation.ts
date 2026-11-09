@@ -2,7 +2,7 @@ import { z } from "zod";
 import { normalizePhone } from "./phone";
 import { REGION_CODES } from "./regions";
 import { CATEGORY_CODES, UNIT_CODES } from "./catalog";
-import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, PROFILE_PAYMENT_METHODS } from "./orders";
+import { DELIVERY_METHODS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, PROFILE_PAYMENT_METHODS } from "./orders";
 import { TICKET_STATUSES } from "./tickets";
 
 /**
@@ -102,6 +102,7 @@ export const profileSchema = z.object({
   deliveryFee: money.default(0),
   minOrderTotal: money.default(0),
   paymentMethods: z.array(z.enum(PROFILE_PAYMENT_METHODS)).max(3).default(["cash"]),
+  pickup: z.boolean().default(false),
   inn: z.string().trim().regex(/^(\d{9})?$/, "innFormat").default(""),
   bankName: z.string().trim().max(120).default(""),
   bankAccount: z.string().trim().regex(/^(\d{20})?$/, "accountFormat").default(""),
@@ -138,13 +139,17 @@ export const checkoutSchema = z.object({
   sellerId: z.string().min(1),
   phone,
   region: z.enum(REGION_CODES, { message: "regionRequired" }),
-  address: z.string().trim().min(3, "addressRequired").max(300, "addressRequired"),
+  /** "pickup" — do'kon o'zi olib ketadi: manzil shart emas, yetkazish narxi olinmaydi. */
+  method: z.enum(DELIVERY_METHODS).default("delivery"),
+  address: z.string().trim().max(300, "addressRequired").default(""),
   lat: coord(90),
   lng: coord(180),
   paymentMethod: z.enum(PAYMENT_METHODS, { message: "paymentRequired" }),
   comment: z.string().trim().max(1000).default(""),
   /** Ikki marta bosish yoki tarmoq uzilib qayta yuborishdan himoya (ixtiyoriy). */
   requestId: z.string().trim().regex(/^[A-Za-z0-9_-]{8,64}$/).optional(),
+}).superRefine((v, ctx) => {
+  if (v.method === "delivery" && v.address.length < 3) ctx.addIssue({ code: "custom", path: ["address"], message: "addressRequired" });
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 

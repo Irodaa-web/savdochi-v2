@@ -3,7 +3,7 @@ import { isValidObjectId, type ClientSession, type FilterQuery } from "mongoose"
 import { AppError } from "@/lib/api";
 import type { SessionUser } from "@/lib/auth/session";
 import { connectDb, withTransaction } from "@/lib/db";
-import { ORDER_TRANSITIONS, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
+import { ORDER_TRANSITIONS, type DeliveryMethod, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
 import type { RegionCode } from "@/lib/regions";
 import type { CheckoutInput } from "@/lib/validation";
 import { nextSeq } from "@/models/Counter";
@@ -31,7 +31,7 @@ export type OrderView = {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   paidAmount: number;
-  delivery: { phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: string | null };
+  delivery: { method: DeliveryMethod; phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: string | null };
   comment: string;
   history: { status: OrderStatus; by: string; at: string }[];
   dueDate: string | null;
@@ -61,7 +61,7 @@ async function toViews(docs: OrderDoc[]): Promise<OrderView[]> {
     paymentMethod: d.paymentMethod,
     paymentStatus: d.paymentStatus,
     paidAmount: d.paidAmount,
-    delivery: { ...d.delivery, date: d.delivery.date ? new Date(d.delivery.date).toISOString() : null },
+    delivery: { ...d.delivery, method: d.delivery.method ?? "delivery", date: d.delivery.date ? new Date(d.delivery.date).toISOString() : null },
     comment: d.comment,
     history: (d.history ?? []).map((h) => ({ status: h.status, by: h.by, at: new Date(h.at).toISOString() })),
     dueDate: d.dueDate ? new Date(d.dueDate).toISOString() : null,
@@ -71,9 +71,19 @@ async function toViews(docs: OrderDoc[]): Promise<OrderView[]> {
 
 const sideKey = (user: SessionUser) => (user.role === "seller" ? "seller" : "buyer");
 
-export async function listOrders(user: SessionUser, opts: { status?: OrderStatus | "open"; partnerId?: string; limit?: number } = {}): Promise<OrderView[]> {
+export async function listOrders(user: SessionUser, opts: { status?: OrderStatus | "open"; partnerId?: string; q?: string; limit?: number } = {}): Promise<OrderView[]> {
   await connectDb();
   const filter: FilterQuery<OrderDoc> = { [sideKey(user)]: user.id };
+  // Qidiruv: raqam bo'yicha (1012 yoki №1012) yoki hamkor nomi bo'yicha.
+  const q = opts.q?.trim().replace(/^№/, "");
+  if (q) {
+    if (/^\d+$/.test(q)) filter.number = Number(q);
+    else {
+      const escaped = q.slice(0, 60).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const partners = await User.find({ role: user.role === "seller" ? "buyer" : "seller", name: { $regex: escaped, $options: "i" } }, { _id: 1 }).limit(200).lean();
+      filter[user.role === "seller" ? "buyer" : "seller"] = { $in: partners.map((p) => p._id) };
+    }
+  }
   if (opts.status === "open") filter.status = { $in: ["new", "confirmed", "shipped"] };
   else if (opts.status) filter.status = opts.status;
   if (opts.partnerId && isValidObjectId(opts.partnerId)) filter[user.role === "seller" ? "buyer" : "seller"] = opts.partnerId;
@@ -126,6 +136,11 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
   if (group.lines.some((l) => l.problem === "outOfStock")) throw new AppError("OUT_OF_STOCK");
   if (group.lines.some((l) => l.problem === "belowMin") || group.belowMinTotal) throw new AppError("BELOW_MIN_ORDER");
   if (!group.terms.paymentMethods.includes(input.paymentMethod)) throw new AppError("INVALID_INPUT", { paymentMethod: "paymentRequired" });
+  const pickup = input.method === "pickup";
+  if (pickup && !group.terms.pickup) throw new AppError("INVALID_INPUT", { method: "pickupUnavailable" });
+  // Olib ketishda yetkazish narxi olinmaydi.
+  const deliveryFee = pickup ? 0 : group.deliveryFee;
+  const total = group.subtotal - group.discount + deliveryFee;
 
   const items = group.lines.map((l) => ({ productId: l.productId, quantity: l.quantity }));
   // Raqam tranzaksiyadan tashqarida olinadi: hisoblagich hujjati ziddiyat nuqtasiga aylanmasin (bo'shliq bo'lishi mumkin).
@@ -139,7 +154,7 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
         const p = await Partnership.findOneAndUpdate({ seller: input.sellerId, buyer: user.id, status: "active", creditLimit: { $gt: 0 } }, { $set: { updatedAt: new Date() } }, { session, new: true });
         if (!p) throw new AppError("CREDIT_LIMIT");
         const used = await outstandingBetween(input.sellerId, user.id, session);
-        if (used + group.total > p.creditLimit) throw new AppError("CREDIT_LIMIT");
+        if (used + total > p.creditLimit) throw new AppError("CREDIT_LIMIT");
         dueDate = new Date(Date.now() + (p.paymentDays ?? 14) * 24 * 60 * 60 * 1000);
       }
       await takeStock(items, session);
@@ -153,10 +168,12 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
             subtotal: group.subtotal,
             discountPercent: group.discountPercent,
             discount: group.discount,
-            deliveryFee: group.deliveryFee,
-            total: group.total,
+            deliveryFee,
+            total,
             paymentMethod: input.paymentMethod,
-            delivery: { phone: input.phone, region: input.region, address: input.address, lat: input.lat, lng: input.lng, date: null },
+            delivery: pickup
+              ? { method: "pickup", phone: input.phone, region: input.region, address: "", lat: null, lng: null, date: null }
+              : { method: "delivery", phone: input.phone, region: input.region, address: input.address, lat: input.lat, lng: input.lng, date: null },
             comment: input.comment,
             history: [{ status: "new", by: "buyer", at: new Date() }],
             ...(input.requestId ? { requestId: input.requestId } : {}),
@@ -178,7 +195,7 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
   }
 
   // Do'kon manzilini keyingi safar uchun eslab qoladi.
-  await User.updateOne({ _id: user.id }, { $set: { "profile.address": input.address, ...(input.lat !== null ? { "profile.lat": input.lat, "profile.lng": input.lng } : {}) } });
+  if (!pickup) await User.updateOne({ _id: user.id }, { $set: { "profile.address": input.address, ...(input.lat !== null ? { "profile.lat": input.lat, "profile.lng": input.lng } : {}) } });
   await notify(input.sellerId, "orderNew", { number: order.number, name: user.name }, `/orders/${order._id}`);
   return (await toViews([order]))[0]!;
 }

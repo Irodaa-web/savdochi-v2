@@ -41,6 +41,7 @@ const uz = {
     demoSeller: "Demo: kompaniya",
   },
   errors: {
+    pickupUnavailable: "Bu kompaniya olib ketish usulini qo‘llamaydi.",
     innFormat: "STIR 9 ta raqamdan iborat.",
     accountFormat: "Hisob raqami 20 ta raqamdan iborat.",
     mfoFormat: "MFO 5 ta raqamdan iborat.",
@@ -275,6 +276,8 @@ const uz = {
   paymentStatus: { unpaid: "To‘lanmagan", partial: "Qisman to‘langan", paid: "To‘langan" },
   ticketStatus: { open: "Ochiq", in_progress: "Ko‘rilmoqda", resolved: "Hal qilingan" },
   supplierPage: {
+    pickup: "Olib ketish",
+    pickupYes: "Mumkin — omborimizdan",
     terms: "Yetkazib berish shartlari",
     leadDays: "{n} kunda",
     free: "Bepul",
@@ -288,6 +291,8 @@ const uz = {
     all: "Barcha mahsulotlar",
   },
   profile: {
+    pickup: "Do‘konlar buyurtmani omborimizdan o‘zi olib keta oladi",
+    pickupHint: "Olib ketishda yetkazish narxi olinmaydi. Manzil — profilingizdagi manzil.",
     requisites: "Rekvizitlar",
     requisitesHint: "Hisob-faktura va akt sverkada chiqadi. Ixtiyoriy.",
     inn: "STIR (INN)",
@@ -371,6 +376,11 @@ const uz = {
     },
   },
   checkout: {
+    method: "Qabul qilish usuli",
+    methodDelivery: "Yetkazib berish",
+    methodPickup: "O‘zim olib ketaman",
+    pickupFrom: "Olib ketish manzili: {address}. Yetkazish narxi olinmaydi.",
+    pickupFromUnknown: "Manzilni kompaniya bilan chatda kelishing. Yetkazish narxi olinmaydi.",
     creditAvailable: "Nasiya: {available} so‘m bo‘sh (limit {limit}). To‘lov muddati — {days} kun.",
     title: "Yetkazib berish ma’lumotlari",
     address: "Manzil",
@@ -388,6 +398,10 @@ const uz = {
     submit: "Buyurtma yuborish · {sum} so‘m",
   },
   orders: {
+    pickup: "Do‘kon o‘zi olib ketadi",
+    searchPlaceholder: "Raqam yoki hamkor nomi",
+    search: "Qidirish",
+    notFound: "Hech narsa topilmadi.",
     dueDate: "To‘lov muddati",
     overdue: "Muddati o‘tgan",
     title: "Buyurtma №{n}",

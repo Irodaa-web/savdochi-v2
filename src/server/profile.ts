@@ -32,6 +32,7 @@ export const DEFAULT_PROFILE: Profile = {
   deliveryFee: 0,
   minOrderTotal: 0,
   paymentMethods: ["cash"] as PaymentMethod[],
+  pickup: false,
   inn: "",
   bankName: "",
   bankAccount: "",

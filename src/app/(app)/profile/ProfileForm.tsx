@@ -59,6 +59,7 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
   const [regions, setRegions] = useState<RegionCode[]>(p.deliveryRegions);
   const [days, setDays] = useState<number[]>(p.deliveryDays);
   const [methods, setMethods] = useState<PaymentMethod[]>(p.paymentMethods);
+  const [pickup, setPickup] = useState(p.pickup);
   const [point, setPoint] = useState<Point>(p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -71,7 +72,7 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
     setFields({});
     const res = await api("/api/v1/profile", {
       method: "PUT",
-      body: { ...form, deliveryRegions: regions, deliveryDays: days.sort(), paymentMethods: methods.length ? methods : ["cash"], lat: point?.lat ?? null, lng: point?.lng ?? null },
+      body: { ...form, pickup, deliveryRegions: regions, deliveryDays: days.sort(), paymentMethods: methods.length ? methods : ["cash"], lat: point?.lat ?? null, lng: point?.lng ?? null },
     });
     if (!res.ok) {
       if (res.fields) setFields(res.fields);
@@ -112,6 +113,13 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
             <TextField label={t.profile.minOrderTotal} type="number" min={0} value={form.minOrderTotal} onChange={set("minOrderTotal")} error={fe("minOrderTotal")} />
           </div>
           <Chips label={t.profile.paymentMethods} options={PROFILE_PAYMENT_METHODS.map((m) => ({ value: m, label: t.payment[m] }))} value={methods} onChange={setMethods} />
+          <label className="flex cursor-pointer items-start gap-2.5 text-[14px]">
+            <input type="checkbox" checked={pickup} onChange={(e) => setPickup(e.target.checked)} className="mt-0.5 size-4 accent-[var(--color-accent)]" />
+            <span>
+              <span className="font-medium">{t.profile.pickup}</span>
+              <span className="block text-[13px] text-muted">{t.profile.pickupHint}</span>
+            </span>
+          </label>
         </section>
       )}
 

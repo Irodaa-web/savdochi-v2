@@ -43,6 +43,7 @@ const ru: Dictionary = {
     demoSeller: "Демо: компания",
   },
   errors: {
+    pickupUnavailable: "Эта компания не поддерживает самовывоз.",
     innFormat: "ИНН состоит из 9 цифр.",
     accountFormat: "Расчётный счёт состоит из 20 цифр.",
     mfoFormat: "МФО состоит из 5 цифр.",
@@ -277,6 +278,8 @@ const ru: Dictionary = {
   paymentStatus: { unpaid: "Не оплачен", partial: "Оплачен частично", paid: "Оплачен" },
   ticketStatus: { open: "Открыто", in_progress: "В работе", resolved: "Решено" },
   supplierPage: {
+    pickup: "Самовывоз",
+    pickupYes: "Возможен — с нашего склада",
     terms: "Условия доставки",
     leadDays: "за {n} дн.",
     free: "Бесплатно",
@@ -290,6 +293,8 @@ const ru: Dictionary = {
     all: "Все товары",
   },
   profile: {
+    pickup: "Магазины могут забирать заказ с нашего склада",
+    pickupHint: "При самовывозе доставка не оплачивается. Адрес — адрес из вашего профиля.",
     requisites: "Реквизиты",
     requisitesHint: "Печатаются в счёт-фактуре и акте сверки. Необязательно.",
     inn: "ИНН",
@@ -373,6 +378,11 @@ const ru: Dictionary = {
     },
   },
   checkout: {
+    method: "Способ получения",
+    methodDelivery: "Доставка",
+    methodPickup: "Самовывоз",
+    pickupFrom: "Адрес самовывоза: {address}. Доставка не оплачивается.",
+    pickupFromUnknown: "Адрес уточните с компанией в чате. Доставка не оплачивается.",
     creditAvailable: "Насия: свободно {available} сум (лимит {limit}). Срок оплаты — {days} дн.",
     title: "Данные доставки",
     address: "Адрес",
@@ -390,6 +400,10 @@ const ru: Dictionary = {
     submit: "Отправить заказ · {sum} сум",
   },
   orders: {
+    pickup: "Самовывоз магазином",
+    searchPlaceholder: "Номер или имя партнёра",
+    search: "Найти",
+    notFound: "Ничего не найдено.",
     dueDate: "Срок оплаты",
     overdue: "Просрочено",
     title: "Заказ №{n}",

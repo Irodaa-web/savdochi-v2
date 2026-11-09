@@ -1,5 +1,5 @@
 import mongoose, { Schema, type Model, type Types } from "mongoose";
-import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
+import { DELIVERY_METHODS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, type DeliveryMethod, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 
 /** Buyurtma qatori — narx va nom buyurtma paytidagi holatda saqlanadi. */
@@ -33,7 +33,7 @@ export interface OrderDoc {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   paidAmount: number;
-  delivery: { phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: Date | null };
+  delivery: { method: DeliveryMethod; phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: Date | null };
   comment: string;
   history: OrderEvent[];
   /** Mijoz yuborgan so'rov kaliti: bir xil kalit bilan qayta yuborilsa, yangi buyurtma yaratilmaydi. */
@@ -74,9 +74,10 @@ const schema = new Schema<OrderDoc>(
     paymentStatus: { type: String, enum: PAYMENT_STATUSES, default: "unpaid" },
     paidAmount: { type: Number, default: 0, min: 0 },
     delivery: {
+      method: { type: String, enum: DELIVERY_METHODS, default: "delivery" },
       phone: { type: String, required: true },
       region: { type: String, enum: REGION_CODES, required: true },
-      address: { type: String, required: true, maxlength: 300 },
+      address: { type: String, default: "", maxlength: 300 },
       lat: { type: Number, default: null },
       lng: { type: Number, default: null },
       date: { type: Date, default: null },

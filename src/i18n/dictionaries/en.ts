@@ -43,6 +43,7 @@ const en: Dictionary = {
     demoSeller: "Demo: company",
   },
   errors: {
+    pickupUnavailable: "This company does not offer pickup.",
     innFormat: "Tax ID (INN) must be 9 digits.",
     accountFormat: "Bank account must be 20 digits.",
     mfoFormat: "Bank code (MFO) must be 5 digits.",
@@ -277,6 +278,8 @@ const en: Dictionary = {
   paymentStatus: { unpaid: "Unpaid", partial: "Partly paid", paid: "Paid" },
   ticketStatus: { open: "Open", in_progress: "In progress", resolved: "Resolved" },
   supplierPage: {
+    pickup: "Pickup",
+    pickupYes: "Available — from our warehouse",
     terms: "Delivery terms",
     leadDays: "in {n} day(s)",
     free: "Free",
@@ -290,6 +293,8 @@ const en: Dictionary = {
     all: "All products",
   },
   profile: {
+    pickup: "Stores can pick up orders from our warehouse",
+    pickupHint: "No delivery fee for pickup. The address is the one in your profile.",
     requisites: "Company details",
     requisitesHint: "Printed on invoices and reconciliation statements. Optional.",
     inn: "Tax ID (INN)",
@@ -373,6 +378,11 @@ const en: Dictionary = {
     },
   },
   checkout: {
+    method: "How to receive",
+    methodDelivery: "Delivery",
+    methodPickup: "I'll pick it up",
+    pickupFrom: "Pickup address: {address}. No delivery fee.",
+    pickupFromUnknown: "Agree on the address with the company in chat. No delivery fee.",
     creditAvailable: "Credit: {available} UZS available (limit {limit}). Payment due in {days} days.",
     title: "Delivery details",
     address: "Address",
@@ -390,6 +400,10 @@ const en: Dictionary = {
     submit: "Send order · {sum} UZS",
   },
   orders: {
+    pickup: "Picked up by the store",
+    searchPlaceholder: "Number or partner name",
+    search: "Search",
+    notFound: "Nothing found.",
     dueDate: "Payment due",
     overdue: "Overdue",
     title: "Order #{n}",

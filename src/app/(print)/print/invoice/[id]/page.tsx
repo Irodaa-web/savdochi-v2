@@ -20,7 +20,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const [sp, bp] = await Promise.all([getProfile(o.seller.id), getProfile(o.buyer.id)]);
   const units = t.units as Record<string, string>;
   const seller: PartyInfo = { name: o.seller.name, phone: o.seller.phone, address: sp?.profile.address ?? "", ...(sp ? sp.profile : {}) };
-  const buyer: PartyInfo = { name: o.buyer.name, phone: o.delivery.phone, address: o.delivery.address ? `${o.delivery.address}, ${t.regions[o.delivery.region]}` : "", ...(bp ? { inn: bp.profile.inn, bankName: bp.profile.bankName, bankAccount: bp.profile.bankAccount, mfo: bp.profile.mfo } : {}) };
+  const buyer: PartyInfo = { name: o.buyer.name, phone: o.delivery.phone, address: o.delivery.method === "pickup" ? t.orders.pickup : o.delivery.address ? `${o.delivery.address}, ${t.regions[o.delivery.region]}` : "", ...(bp ? { inn: bp.profile.inn, bankName: bp.profile.bankName, bankAccount: bp.profile.bankAccount, mfo: bp.profile.mfo } : {}) };
 
   return (
     <>

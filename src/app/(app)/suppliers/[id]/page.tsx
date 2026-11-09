@@ -1,4 +1,4 @@
-import { BadgeCheck, CalendarDays, Clock, Flame, MapPin, Package, Star, Truck, Wallet, type LucideIcon } from "lucide-react";
+import { BadgeCheck, CalendarDays, Clock, Flame, MapPin, Package, Star, Store, Truck, Wallet, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -34,6 +34,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
     [Truck, t.profile.deliveryFee, p.deliveryFee ? `${formatAmount(p.deliveryFee)} ${t.common.sum}` : t.supplierPage.free],
     [Package, t.profile.minOrderTotal, p.minOrderTotal ? `${formatAmount(p.minOrderTotal)} ${t.common.sum}` : "—"],
     [Wallet, t.profile.paymentMethods, p.paymentMethods.map((m) => t.payment[m]).join(", ")],
+    ...(p.pickup ? ([[Store, t.supplierPage.pickup, t.supplierPage.pickupYes]] as [typeof Truck, string, string][]) : []),
   ];
 
   return (
