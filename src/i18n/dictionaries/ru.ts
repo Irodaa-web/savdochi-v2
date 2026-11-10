@@ -380,6 +380,7 @@ const ru: Dictionary = {
     },
   },
   checkout: {
+    creditOver: "Лимит насии будет превышен на {over} сум — заказ будет принят после подтверждения компании.",
     method: "Способ получения",
     methodDelivery: "Доставка",
     methodPickup: "Самовывоз",
@@ -402,6 +403,12 @@ const ru: Dictionary = {
     submit: "Отправить заказ · {sum} сум",
   },
   orders: {
+    creditPill: "Ждёт подтверждения",
+    creditPendingSeller: "Заказ превышает лимит насии на {over} сум. «Одобрить превышение лимита» — заказ будет принят; «Отменить» — отклонён.",
+    creditPendingBuyer: "Заказ превышает лимит насии на {over} сум — ожидается подтверждение компании.",
+    creditApproved: "Компания одобрила превышение лимита насии на {over} сум.",
+    creditRejected: "Компания отклонила заказ из-за превышения лимита насии.",
+    approveCredit: "Одобрить превышение лимита",
     pickup: "Самовывоз магазином",
     searchPlaceholder: "Номер или имя партнёра",
     search: "Найти",
@@ -441,6 +448,7 @@ const ru: Dictionary = {
   notifications: {
     readAll: "Прочитать все",
     types: {
+      creditApproval: "Заказ №{number} ({name}) превышает лимит насии на {amount} сум — подтвердите или отклоните",
       debtDueSoon: "Напоминание: завтра истекает срок оплаты {amount} сум по заказу №{number} перед {name}",
       debtOverdue: "Оплата заказа №{number} просрочена на {days} дн.: долг перед {name} — {amount} сум",
       debtOverdueSeller: "Просрочена оплата {n} заказов — всего {amount} сум. Откройте раздел «Долги»",

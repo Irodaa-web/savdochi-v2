@@ -8,6 +8,7 @@ export const NOTIFICATION_TYPES = [
   "orderStatus",
   "orderPayment",
   "paymentReceived",
+  "creditApproval",
   "debtDueSoon",
   "debtOverdue",
   "debtOverdueSeller",

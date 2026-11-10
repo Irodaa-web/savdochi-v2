@@ -35,6 +35,8 @@ export type OrderView = {
   comment: string;
   history: { status: OrderStatus; by: string; at: string }[];
   dueDate: string | null;
+  creditApproval: "pending" | "approved" | "rejected" | null;
+  creditOver: number;
   createdAt: string;
 };
 
@@ -65,6 +67,8 @@ async function toViews(docs: OrderDoc[]): Promise<OrderView[]> {
     comment: d.comment,
     history: (d.history ?? []).map((h) => ({ status: h.status, by: h.by, at: new Date(h.at).toISOString() })),
     dueDate: d.dueDate ? new Date(d.dueDate).toISOString() : null,
+    creditApproval: d.creditApproval ?? null,
+    creditOver: d.creditOver ?? 0,
     createdAt: d.createdAt.toISOString(),
   }));
 }
@@ -149,12 +153,14 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
   try {
     order = await withTransaction(async (session) => {
       let dueDate: Date | null = null;
+      let creditOver = 0;
       if (input.paymentMethod === "credit") {
         // Hamkorlik yozuviga yozish: bir do'konning parallel nasiya buyurtmalari navbatma-navbat tekshiriladi.
         const p = await Partnership.findOneAndUpdate({ seller: input.sellerId, buyer: user.id, status: "active", creditLimit: { $gt: 0 } }, { $set: { updatedAt: new Date() } }, { session, new: true });
         if (!p) throw new AppError("CREDIT_LIMIT");
         const used = await outstandingBetween(input.sellerId, user.id, session);
-        if (used + total > p.creditLimit) throw new AppError("CREDIT_LIMIT");
+        // Limitdan oshsa — rad etilmaydi: buyurtma kompaniya tasdig'iga boradi.
+        creditOver = Math.max(0, used + total - p.creditLimit);
         dueDate = new Date(Date.now() + (p.paymentDays ?? 14) * 24 * 60 * 60 * 1000);
       }
       await takeStock(items, session);
@@ -178,6 +184,8 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
             history: [{ status: "new", by: "buyer", at: new Date() }],
             ...(input.requestId ? { requestId: input.requestId } : {}),
             dueDate,
+            creditApproval: creditOver > 0 ? "pending" : null,
+            creditOver,
           },
         ],
         { session },
@@ -196,7 +204,9 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
 
   // Do'kon manzilini keyingi safar uchun eslab qoladi.
   if (!pickup) await User.updateOne({ _id: user.id }, { $set: { "profile.address": input.address, ...(input.lat !== null ? { "profile.lat": input.lat, "profile.lng": input.lng } : {}) } });
-  await notify(input.sellerId, "orderNew", { number: order.number, name: user.name }, `/orders/${order._id}`);
+  if (order.creditApproval === "pending")
+    await notify(input.sellerId, "creditApproval", { number: order.number, name: user.name, amount: order.creditOver.toLocaleString("ru-RU") }, `/orders/${order._id}`);
+  else await notify(input.sellerId, "orderNew", { number: order.number, name: user.name }, `/orders/${order._id}`);
   return (await toViews([order]))[0]!;
 }
 
@@ -223,7 +233,9 @@ export async function updateOrder(
     // Holat va ombor bitta tranzaksiyada: ombor faqat bir marta qaytariladi/qo'shiladi.
     await withTransaction(async (session) => {
       // Shartli yangilash: ikki tomon bir vaqtda o'zgartirsa, faqat bittasi o'tadi.
-      const res = await Order.updateOne({ _id: order._id, status: from }, { $set: { status: to }, $push: { history: { status: to, by: side, at: new Date() } } }, { session });
+      // Limitdan oshgan nasiya: kompaniya tasdiqlasa — oshiq summa ham ma'qullandi; bekor qilinsa — rad etildi.
+      const approval = snapshot.creditApproval === "pending" ? (to === "confirmed" ? { creditApproval: "approved" } : to === "cancelled" ? { creditApproval: "rejected" } : {}) : {};
+      const res = await Order.updateOne({ _id: order._id, status: from }, { $set: { status: to, ...approval }, $push: { history: { status: to, by: side, at: new Date() } } }, { session });
       if (res.modifiedCount !== 1) throw new AppError("INVALID_STATE");
       if (to === "cancelled") await returnStock(snapshot.items.map((i) => ({ productId: String(i.product), quantity: i.quantity })), session);
       if (to === "delivered") await addToStoreStock(snapshot, session);

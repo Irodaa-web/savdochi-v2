@@ -228,8 +228,9 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
       {pickup && <Alert tone="info">{g.terms.address ? fmt(t.checkout.pickupFrom, { address: g.terms.address }) : t.checkout.pickupFromUnknown}</Alert>}
       {!pickup && outsideArea && <Alert tone="info">{t.checkout.outsideArea}</Alert>}
       {form.paymentMethod === "credit" && g.credit && (
-        <Alert tone={g.credit.available >= total ? "info" : "danger"}>
+        <Alert tone="info">
           {fmt(t.checkout.creditAvailable, { available: formatAmount(g.credit.available), limit: formatAmount(g.credit.limit), days: g.credit.days })}
+          {g.credit.available < total && <span className="mt-1 block font-semibold">{fmt(t.checkout.creditOver, { over: formatAmount(total - g.credit.available) })}</span>}
         </Alert>
       )}
       {!pickup && (

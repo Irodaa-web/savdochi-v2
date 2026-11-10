@@ -42,6 +42,10 @@ export interface OrderDoc {
   dueDate: Date | null;
   /** Oxirgi qarz eslatmasi yuborilgan kun (Toshkent, YYYY-MM-DD) — kuniga bir martadan ko'p emas. */
   lastReminder: string | null;
+  /** Nasiya limitidan oshgan buyurtma: kompaniya tasdig'i. null — oshmagan. */
+  creditApproval: "pending" | "approved" | "rejected" | null;
+  /** Limitdan qancha oshgani (so'm). */
+  creditOver: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -89,6 +93,8 @@ const schema = new Schema<OrderDoc>(
     requestId: { type: String, maxlength: 64 },
     dueDate: { type: Date, default: null },
     lastReminder: { type: String, default: null },
+    creditApproval: { type: String, enum: ["pending", "approved", "rejected", null], default: null },
+    creditOver: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

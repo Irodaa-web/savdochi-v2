@@ -32,6 +32,11 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         {t.nav.orders}
       </Link>
       {placed && <Alert tone="success">{t.orders.placed}</Alert>}
+      {o.creditApproval === "pending" && o.status === "new" && (
+        <Alert tone="info">{fmt(isSeller ? t.orders.creditPendingSeller : t.orders.creditPendingBuyer, { over: formatAmount(o.creditOver) })}</Alert>
+      )}
+      {o.creditApproval === "approved" && <Alert tone="success">{fmt(t.orders.creditApproved, { over: formatAmount(o.creditOver) })}</Alert>}
+      {o.creditApproval === "rejected" && <Alert>{t.orders.creditRejected}</Alert>}
 
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold tracking-tight">{fmt(t.orders.title, { n: o.number })}</h1>
@@ -113,7 +118,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
         <aside className="flex flex-col gap-4">
           <Card className="flex flex-col gap-3">
-            <OrderActions id={o.id} role={user.role} status={o.status} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
+            <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
           </Card>
 
           <Card className="flex flex-col gap-2 text-[14px]">

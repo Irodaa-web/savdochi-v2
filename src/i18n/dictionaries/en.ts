@@ -380,6 +380,7 @@ const en: Dictionary = {
     },
   },
   checkout: {
+    creditOver: "This exceeds the credit limit by {over} UZS — the order will be accepted once the company approves.",
     method: "How to receive",
     methodDelivery: "Delivery",
     methodPickup: "I'll pick it up",
@@ -402,6 +403,12 @@ const en: Dictionary = {
     submit: "Send order · {sum} UZS",
   },
   orders: {
+    creditPill: "Awaiting approval",
+    creditPendingSeller: "This order exceeds the credit limit by {over} UZS. “Approve exceeding the limit” accepts the order; “Cancel” rejects it.",
+    creditPendingBuyer: "This order exceeds the credit limit by {over} UZS — waiting for the company to approve.",
+    creditApproved: "The company approved exceeding the credit limit by {over} UZS.",
+    creditRejected: "The company rejected the order for exceeding the credit limit.",
+    approveCredit: "Approve exceeding the limit",
     pickup: "Picked up by the store",
     searchPlaceholder: "Number or partner name",
     search: "Search",
@@ -441,6 +448,7 @@ const en: Dictionary = {
   notifications: {
     readAll: "Mark all as read",
     types: {
+      creditApproval: "Order #{number} ({name}) exceeds the credit limit by {amount} UZS — approve or reject",
       debtDueSoon: "Reminder: payment of {amount} UZS for order #{number} to {name} is due tomorrow",
       debtOverdue: "Payment for order #{number} is {days} days overdue: {amount} UZS owed to {name}",
       debtOverdueSeller: "{n} order payments are overdue — {amount} UZS in total. Open Debts",

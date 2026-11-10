@@ -93,7 +93,7 @@ test("holat zanjiri va yetkazilganda do'kon omboriga bir marta qo'shiladi", asyn
   assert.equal(await storeQty(), s0 + qty);
 });
 
-test("nasiya: limit, to'lov muddati, limitdan oshganda rad etiladi", async () => {
+test("nasiya: limit, to'lov muddati, limitdan oshganda kompaniya tasdig'i", async () => {
   const pid = await partnership();
   await payOffDebt();
   await fillCart();
@@ -107,9 +107,25 @@ test("nasiya: limit, to'lov muddati, limitdan oshganda rad etiladi", async () =>
   const days = (new Date(o1.data.dueDate) - new Date(o1.data.createdAt)) / 86_400_000;
   assert.ok(Math.abs(days - 10) < 0.01, `to'lov muddati 10 kun bo'lishi kerak, ${days}`);
 
+  // Limitdan oshsa — rad etilmaydi, kompaniya tasdig'iga boradi.
   await fillCart();
-  assert.equal((await checkout({ paymentMethod: "credit", requestId: randomUUID() })).error, "CREDIT_LIMIT");
+  const o2 = await checkout({ paymentMethod: "credit", requestId: randomUUID() });
+  assert.ok(o2.ok, o2.error);
+  assert.equal(o2.data.creditApproval, "pending");
+  assert.equal(o2.data.creditOver, o1.data.total + o2.data.total - (cart.total * 2 - 1));
+  const confirmed = await call(seller, `/orders/${o2.data.id}`, "PATCH", { status: "confirmed" });
+  assert.equal(confirmed.data.creditApproval, "approved");
+
+  // Bekor qilinsa — rad etildi.
+  await fillCart();
+  const o3 = await checkout({ paymentMethod: "credit", requestId: randomUUID() });
+  assert.equal(o3.data.creditApproval, "pending");
+  assert.equal((await call(seller, `/orders/${o3.data.id}`, "PATCH", { status: "cancelled" })).data.creditApproval, "rejected");
+
+  // Limit olib tashlansa — "Nasiya" to'lov usuli umuman chiqmaydi.
   assert.ok((await call(seller, `/partnerships/${pid}`, "PATCH", { action: "update", creditLimit: 0 })).ok);
+  await fillCart();
+  assert.deepEqual((await checkout({ paymentMethod: "credit", requestId: randomUUID() })).fields, { paymentMethod: "paymentRequired" });
   await fillCart(0);
 });
 

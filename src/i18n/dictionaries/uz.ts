@@ -378,6 +378,7 @@ const uz = {
     },
   },
   checkout: {
+    creditOver: "Nasiya limitidan {over} so‘m oshadi — buyurtma kompaniya tasdiqlagandan keyin qabul qilinadi.",
     method: "Qabul qilish usuli",
     methodDelivery: "Yetkazib berish",
     methodPickup: "O‘zim olib ketaman",
@@ -400,6 +401,12 @@ const uz = {
     submit: "Buyurtma yuborish · {sum} so‘m",
   },
   orders: {
+    creditPill: "Tasdiq kutilmoqda",
+    creditPendingSeller: "Bu buyurtma nasiya limitidan {over} so‘m oshgan. “Limitdan oshishni tasdiqlash” bossangiz — buyurtma qabul qilinadi; “Bekor qilish” — rad etiladi.",
+    creditPendingBuyer: "Buyurtma nasiya limitidan {over} so‘m oshgan — kompaniya tasdig‘i kutilmoqda.",
+    creditApproved: "Nasiya limitidan {over} so‘m oshishi kompaniya tomonidan tasdiqlangan.",
+    creditRejected: "Nasiya limitidan oshgani uchun kompaniya buyurtmani rad etdi.",
+    approveCredit: "Limitdan oshishni tasdiqlash",
     pickup: "Do‘kon o‘zi olib ketadi",
     searchPlaceholder: "Raqam yoki hamkor nomi",
     search: "Qidirish",
@@ -439,6 +446,7 @@ const uz = {
   notifications: {
     readAll: "Barchasini o‘qilgan qilish",
     types: {
+      creditApproval: "№{number} buyurtma ({name}) nasiya limitidan {amount} so‘m oshdi — tasdiqlang yoki rad eting",
       debtDueSoon: "Eslatma: {name} oldidagi №{number} buyurtma bo‘yicha {amount} so‘m to‘lov muddati ertaga tugaydi",
       debtOverdue: "№{number} buyurtma to‘lovi {days} kun kechikdi: {name} oldida {amount} so‘m qarz",
       debtOverdueSeller: "{n} ta buyurtma to‘lovi kechikmoqda — jami {amount} so‘m. Qarzlar bo‘limini ko‘ring",

@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { ClipboardList, Search } from "lucide-react";
 import Link from "next/link";
 import { PaymentPill, StatusPill } from "@/components/orders/StatusPill";
-import { PageTitle } from "@/components/ui/Card";
+import { PageTitle, Pill } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDateTime } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
@@ -84,6 +84,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   </span>
                 </span>
                 <span className="flex gap-1.5">
+                  {o.creditApproval === "pending" && o.status === "new" && <Pill tone="accent">{t.orders.creditPill}</Pill>}
                   <StatusPill status={o.status} t={t} />
                   <PaymentPill status={o.paymentStatus} t={t} />
                 </span>
