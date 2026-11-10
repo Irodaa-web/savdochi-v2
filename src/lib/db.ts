@@ -12,9 +12,17 @@ export async function connectDb(): Promise<typeof mongoose> {
   if (cache.conn) return cache.conn;
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("MONGODB_URI sozlanmagan");
-  cache.promise ??= mongoose.connect(uri, { bufferCommands: false, serverSelectionTimeoutMS: 8000 });
+  // minPoolSize: bir nechta ulanish oldindan ochiladi — parallel so'rovlar (Promise.all) har biri uchun
+  // yangi TLS+autentifikatsiya kutmaydi. Serverless'da bitta instance uchun 10 ta ulanish yetarli.
+  // autoIndex: production'da har sovuq startda indeks yaratmaslik uchun o'chiq — ensureIndexesOncePerDeploy ga qarang.
+  const production = process.env.NODE_ENV === "production";
+  cache.promise ??= mongoose.connect(uri, { bufferCommands: false, serverSelectionTimeoutMS: 8000, minPoolSize: 4, maxPoolSize: 10, autoIndex: !production });
   try {
     cache.conn = await cache.promise;
+    if (production) {
+      // Fonda, so'rovni kutdirmasdan.
+      void import("@/models/indexes").then((m) => m.ensureIndexesOncePerDeploy()).catch((error) => console.error("ensureIndexes", error));
+    }
   } catch (error) {
     cache.promise = null;
     throw error;

@@ -1,4 +1,5 @@
 import "server-only";
+import { forgetSessionUser } from "@/lib/auth/session";
 import { isValidObjectId } from "mongoose";
 import { AppError } from "@/lib/api";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
@@ -69,6 +70,7 @@ export async function updateProfile(userId: string, input: ProfileInput): Promis
   const { name, region, ...profile } = input;
   const u = await User.findByIdAndUpdate(userId, { $set: { name, region, profile } }, { new: true, runValidators: true }).lean<UserDoc>();
   if (!u) throw new AppError("NOT_FOUND");
+  forgetSessionUser(userId);
   // Hisob ma'lumotlari to'ldirilsa — tekshiruvga navbatga qo'yiladi.
   if (u.verification === "unverified" && profile.address) await User.updateOne({ _id: userId }, { $set: { verification: "pending" } });
   return toView(u);
@@ -85,9 +87,9 @@ export async function changePassword(userId: string, current: string, next: stri
 
 /** Kompaniyaning ommaviy sahifasi uchun: profil + mahsulotlar soni. */
 export async function getSellerPublic(sellerId: string): Promise<(ProfileView & { productCount: number }) | null> {
-  const view = await getProfile(sellerId);
+  if (!isValidObjectId(sellerId)) return null;
+  const [view, productCount] = await Promise.all([getProfile(sellerId), Product.countDocuments({ seller: sellerId, active: true })]);
   if (!view || view.role !== "seller") return null;
-  const productCount = await Product.countDocuments({ seller: sellerId, active: true });
   return { ...view, productCount };
 }
 

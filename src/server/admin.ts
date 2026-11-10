@@ -1,4 +1,5 @@
 import "server-only";
+import { forgetSessionUser } from "@/lib/auth/session";
 import { isValidObjectId } from "mongoose";
 import { AppError } from "@/lib/api";
 import { connectDb } from "@/lib/db";
@@ -85,6 +86,7 @@ export async function adminUpdateUser(adminId: string, id: string, input: { veri
     u.subscriptionUntil = base;
   }
   await u.save();
+  forgetSessionUser(id);
   await audit(adminId, "admin.user.update", `user:${id}`, input, ip);
 }
 

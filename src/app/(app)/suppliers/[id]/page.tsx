@@ -18,13 +18,11 @@ import type { Dictionary } from "@/i18n/dictionaries/uz";
 export default async function SupplierPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const t = getDictionary(await getLocale());
-  const s = await getSellerPublic((await params).id);
+  const id = (await params).id;
+  // Uchala so'rov parallel — bazaga bir "aylanish".
+  const [s, partnership, highlights] = await Promise.all([getSellerPublic(id), user.role === "buyer" ? findPartnership(id, user.id) : null, getSellerHighlights(id)]);
   if (!s) notFound();
   const p = s.profile;
-  const [partnership, highlights] = await Promise.all([
-    user.role === "buyer" ? findPartnership(s.id, user.id) : null,
-    getSellerHighlights(s.id),
-  ]);
   const hasStats = highlights.bestSelling.length > 0 || highlights.popular.length > 0;
 
   const rows: [typeof Truck, string, string][] = [
