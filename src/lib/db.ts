@@ -14,15 +14,21 @@ export async function connectDb(): Promise<typeof mongoose> {
   if (!uri) throw new Error("MONGODB_URI sozlanmagan");
   // minPoolSize: bir nechta ulanish oldindan ochiladi — parallel so'rovlar (Promise.all) har biri uchun
   // yangi TLS+autentifikatsiya kutmaydi. Serverless'da bitta instance uchun 10 ta ulanish yetarli.
-  // autoIndex: production'da har sovuq startda indeks yaratmaslik uchun o'chiq — ensureIndexesOncePerDeploy ga qarang.
+  // autoIndex: production'da o'chiq — indekslar ensureIndexesOncePerDeploy orqali (src/models/indexes.ts).
   const production = process.env.NODE_ENV === "production";
-  cache.promise ??= mongoose.connect(uri, { bufferCommands: false, serverSelectionTimeoutMS: 8000, minPoolSize: 4, maxPoolSize: 10, autoIndex: !production });
+  // Ulanish va indeks tekshiruvi bitta va'da: bir instance ichidagi parallel so'rovlar ham
+  // indekslar tayyor bo'lguncha kutadi (cache.conn faqat ikkalasi tugagach qo'yiladi).
+  cache.promise ??= mongoose
+    .connect(uri, { bufferCommands: false, serverSelectionTimeoutMS: 8000, minPoolSize: 4, maxPoolSize: 10, autoIndex: !production })
+    .then(async (m) => {
+      if (production) {
+        const { ensureIndexesOncePerDeploy } = await import("@/models/indexes");
+        await ensureIndexesOncePerDeploy().catch((error) => console.error("ensureIndexes", error));
+      }
+      return m;
+    });
   try {
     cache.conn = await cache.promise;
-    if (production) {
-      // Fonda, so'rovni kutdirmasdan.
-      void import("@/models/indexes").then((m) => m.ensureIndexesOncePerDeploy()).catch((error) => console.error("ensureIndexes", error));
-    }
   } catch (error) {
     cache.promise = null;
     throw error;

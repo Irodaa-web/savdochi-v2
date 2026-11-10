@@ -179,7 +179,8 @@ test("onlayn to'lov: Payme Merchant API (auth, summa, tranzaksiya holatlari, qay
   assert.ok(o.ok, o.error);
   const start = await call(buyer, `/orders/${o.data.id}/pay`, "POST", { provider: "payme" });
   assert.ok(start.ok, start.error);
-  const params = Object.fromEntries(Buffer.from(start.data.url.split("/").pop(), "base64").toString().split(";").map((kv) => kv.split(/=(.*)/s).slice(0, 2)));
+  // base64 ichida "/" bo'lishi mumkin — butun yo'lni olamiz.
+  const params = Object.fromEntries(Buffer.from(new URL(start.data.url).pathname.slice(1), "base64").toString().split(";").map((kv) => kv.split(/=(.*)/s).slice(0, 2)));
   assert.equal(params.m, "test-merchant-1");
   assert.equal(Number(params.a), o.data.total * 100);
   const invoice = params["ac.order_id"];

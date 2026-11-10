@@ -19,18 +19,25 @@ import "./User";
 /**
  * Production'da Mongoose `autoIndex` o'chiq: aks holda har yangi serverless instance
  * barcha modellar uchun ~20 ta createIndex buyrug'ini yuborardi (sovuq startni sekinlashtirardi).
- * O'rniga indekslar har deployda bir marta yaratiladi: birinchi instance belgi qo'yadi
- * va fonda createIndexes ishlatadi; qolganlari bitta tekshiruv bilan o'tib ketadi.
+ *
+ * Muhim: unique indekslar (takroriy buyurtma, to'lov tranzaksiyasi) to'g'rilik uchun kerak —
+ * shuning uchun instance indekslar borligiga ishonch hosil qilmaguncha so'rov qabul qilmaydi:
+ * - belgi (deploymarkers) faqat indekslar MUVAFFAQIYATLI yaratilgandan KEYIN qo'yiladi;
+ * - belgi bo'lsa — bitta tez tekshiruv; bo'lmasa — instance indekslarni o'zi yaratadi (parallel).
+ * Oldingi versiyada belgi oldin qo'yilib, indekslar fonda qurilardi — yangi bazada birinchi
+ * parallel buyurtmalar unique indekssiz o'tib ketishi mumkin edi (CI integratsiya testi ushladi).
  */
 export async function ensureIndexesOncePerDeploy(): Promise<void> {
   const deploy = process.env.VERCEL_DEPLOYMENT_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
-  const marker = await mongoose.connection.collection<{ _id: string }>("deploymarkers").updateOne({ _id: `indexes:${deploy}` }, { $setOnInsert: { at: new Date() } }, { upsert: true });
-  if (!marker.upsertedCount) return;
-  for (const name of mongoose.modelNames()) {
-    try {
-      await mongoose.model(name).createIndexes();
-    } catch (error) {
-      console.error("createIndexes", name, error);
-    }
+  const markers = mongoose.connection.collection<{ _id: string; at: Date }>("deploymarkers");
+  const id = `indexes:${deploy}`;
+  if (await markers.findOne({ _id: id }, { projection: { _id: 1 } })) return;
+  const results = await Promise.allSettled(mongoose.modelNames().map((name) => mongoose.model(name).createIndexes()));
+  const failed = results.flatMap((r, i) => (r.status === "rejected" ? [`${mongoose.modelNames()[i]}: ${String(r.reason)}`] : []));
+  if (failed.length) {
+    // Belgi qo'yilmaydi — keyingi sovuq startda qayta uriniladi.
+    console.error("createIndexes failed", failed);
+    return;
   }
+  await markers.updateOne({ _id: id }, { $setOnInsert: { at: new Date() } }, { upsert: true });
 }
