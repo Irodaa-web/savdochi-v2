@@ -43,6 +43,7 @@ const ru: Dictionary = {
     demoSeller: "Демо: компания",
   },
   errors: {
+    keyRequired: "Введите ключ.",
     pickupUnavailable: "Эта компания не поддерживает самовывоз.",
     innFormat: "ИНН состоит из 9 цифр.",
     accountFormat: "Расчётный счёт состоит из 20 цифр.",
@@ -448,6 +449,7 @@ const ru: Dictionary = {
   notifications: {
     readAll: "Прочитать все",
     types: {
+      onlinePaid: "По заказу №{number} оплачено {amount} сум через {provider} ({name})",
       creditApproval: "Заказ №{number} ({name}) превышает лимит насии на {amount} сум — подтвердите или отклоните",
       debtDueSoon: "Напоминание: завтра истекает срок оплаты {amount} сум по заказу №{number} перед {name}",
       debtOverdue: "Оплата заказа №{number} просрочена на {days} дн.: долг перед {name} — {amount} сум",
@@ -490,6 +492,7 @@ const ru: Dictionary = {
     emptyHint: "Нажмите на сердечко на странице товара.",
   },
   debts: {
+    sourceOnline: "Онлайн-оплата",
     title: "Долги",
     leadSeller: "Неоплаченные заказы магазинов-партнёров. Регистрируйте полученную оплату здесь — сумма распределяется начиная с самого старого заказа.",
     leadBuyer: "Ваши неоплаченные заказы перед компаниями и сроки оплаты.",
@@ -605,6 +608,28 @@ const ru: Dictionary = {
     telegram: "Уведомления о новых заказах и оплатах приходят и в Telegram.",
     ctaTitle: "Начните сегодня",
     ctaText: "Регистрация бесплатна. Компании работают по ежемесячной подписке.",
+  },
+  onlinePay: {
+    title: "Онлайн-оплата (Payme, Click)",
+    lead: "Магазины оплачивают заказ напрямую на ваш счёт Payme или Click — деньги поступают вам, оплата автоматически записывается в книгу долгов.",
+    payme: "Payme",
+    click: "Click",
+    merchantId: "Merchant ID (ID кассы)",
+    key: "Ключ (key)",
+    serviceId: "Service ID",
+    clickMerchantId: "Merchant ID",
+    secret: "Secret key",
+    keySaved: "Сохранён — чтобы изменить, введите новый",
+    endpoint: "Адрес для кабинета",
+    prepareUrl: "Prepare URL",
+    completeUrl: "Complete URL",
+    enabled: "Подключено",
+    disable: "Отключить",
+    save: "Сохранить",
+    saved: "Сохранено.",
+    payWith: "Оплатить через {provider}",
+    left: "К оплате: {sum} сум",
+    checking: "Статус обновится автоматически после поступления оплаты. Обновите страницу через несколько секунд.",
   },
   dashboard: {
     overdueAlert: "У {n} партнёров просрочен долг на {sum} сум.",

@@ -3,7 +3,7 @@
 //
 //   SAVDOCHI_TEST_URL=http://localhost:3000 npm run test:integration
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 const BASE = (process.env.SAVDOCHI_TEST_URL ?? "").replace(/\/$/, "");
 if (!BASE) {
@@ -170,6 +170,95 @@ test("buyurtmalar qidiruvi: raqam va hamkor nomi", async () => {
   assert.deepEqual((await call(seller, `/orders?q=${first.number}`)).data.map((o) => o.id), [first.id]);
   assert.ok((await call(seller, `/orders?q=${encodeURIComponent(first.buyer.name.slice(0, 5))}`)).data.length > 0);
   assert.equal((await call(seller, `/orders?q=${encodeURIComponent("(.*")}`)).data.length, 0);
+});
+
+test("onlayn to'lov: Payme Merchant API (auth, summa, tranzaksiya holatlari, qaytarish)", async () => {
+  assert.ok((await call(seller, "/profile/payments", "PUT", { payme: { merchantId: "test-merchant-1", key: "payme-test-key" } })).ok);
+  await fillCart();
+  const o = await checkout({ requestId: randomUUID() });
+  assert.ok(o.ok, o.error);
+  const start = await call(buyer, `/orders/${o.data.id}/pay`, "POST", { provider: "payme" });
+  assert.ok(start.ok, start.error);
+  const params = Object.fromEntries(Buffer.from(start.data.url.split("/").pop(), "base64").toString().split(";").map((kv) => kv.split(/=(.*)/s).slice(0, 2)));
+  assert.equal(params.m, "test-merchant-1");
+  assert.equal(Number(params.a), o.data.total * 100);
+  const invoice = params["ac.order_id"];
+
+  const rpc = async (method, p, key = "payme-test-key") => {
+    const res = await fetch(`${BASE}/api/v1/pay/payme/${sellerId}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Basic " + Buffer.from(`Paycom:${key}`).toString("base64") },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: p }),
+    });
+    return res.json();
+  };
+  const account = { order_id: invoice };
+  const amount = o.data.total * 100;
+  assert.equal((await rpc("CheckPerformTransaction", { amount, account }, "wrong")).error.code, -32504);
+  assert.equal((await rpc("CheckPerformTransaction", { amount: amount + 100, account })).error.code, -31001);
+  assert.equal((await rpc("CheckPerformTransaction", { amount, account: { order_id: "000000000000000000000000" } })).error.code, -31050);
+  assert.deepEqual((await rpc("CheckPerformTransaction", { amount, account })).result, { allow: true });
+
+  const tx = "pm-" + randomUUID().slice(0, 12);
+  const c1 = await rpc("CreateTransaction", { id: tx, time: Date.now(), amount, account });
+  assert.equal(c1.result.state, 1);
+  assert.equal(c1.result.transaction, invoice);
+  assert.equal((await rpc("CreateTransaction", { id: tx, time: Date.now(), amount, account })).result.state, 1, "takror — o'sha tranzaksiya");
+  assert.equal((await rpc("CreateTransaction", { id: tx + "x", time: Date.now(), amount, account })).error.code, -31051, "hisob band");
+
+  const [p1, p2] = await Promise.all([rpc("PerformTransaction", { id: tx }), rpc("PerformTransaction", { id: tx })]);
+  assert.equal(p1.result.state, 2);
+  assert.equal(p2.result.state, 2);
+  const paid = (await call(buyer, `/orders/${o.data.id}`)).data;
+  assert.equal(paid.paymentStatus, "paid");
+  assert.equal(paid.paidAmount, o.data.total, "parallel Perform — summa bir marta qo'shilishi kerak");
+  assert.equal((await rpc("CheckTransaction", { id: tx })).result.state, 2);
+  assert.equal((await rpc("PerformTransaction", { id: "yoq" })).error.code, -31003);
+
+  const stmt = await rpc("GetStatement", { from: Date.now() - 60_000, to: Date.now() + 60_000 });
+  assert.ok(stmt.result.transactions.some((t) => t.id === tx && t.state === 2));
+
+  // Qaytarish: holat -2, buyurtma yana to'lanmagan, daftarda manfiy yozuv.
+  const cancel = await rpc("CancelTransaction", { id: tx, reason: 5 });
+  assert.equal(cancel.result.state, -2);
+  const back = (await call(buyer, `/orders/${o.data.id}`)).data;
+  assert.equal(back.paidAmount, 0);
+  const ledger = (await call(seller, `/debts/${buyerId}`)).data;
+  assert.ok(ledger.payments.some((x) => x.source === "online" && x.amount === -o.data.total));
+});
+
+test("onlayn to'lov: Click SHOP API (imzo, prepare/complete, takror to'lov)", async () => {
+  assert.ok((await call(seller, "/profile/payments", "PUT", { click: { serviceId: "11111", merchantId: "22222", secret: "click-test-secret" } })).ok);
+  const settings = (await call(seller, "/profile/payments")).data;
+  assert.equal(settings.click.hasSecret, true);
+  assert.equal(JSON.stringify(settings).includes("click-test-secret"), false, "kalit API'da qaytmasligi kerak");
+  await fillCart();
+  const o = await checkout({ requestId: randomUUID() });
+  const start = await call(buyer, `/orders/${o.data.id}/pay`, "POST", { provider: "click" });
+  const url = new URL(start.data.url);
+  assert.equal(url.host, "my.click.uz");
+  const invoice = url.searchParams.get("transaction_param");
+
+  const send = async (step, f) => {
+    const res = await fetch(`${BASE}/api/v1/pay/click/${sellerId}/${step}`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(f) });
+    return res.json();
+  };
+  const sign = (f, secret = "click-test-secret") =>
+    createHash("md5").update(`${f.click_trans_id}${f.service_id}${secret}${f.merchant_trans_id}${f.action === "1" ? f.merchant_prepare_id : ""}${f.amount}${f.action}${f.sign_time}`).digest("hex");
+  const base = { click_trans_id: String(Date.now()), service_id: "11111", click_paydoc_id: "1", merchant_trans_id: invoice, amount: String(o.data.total), action: "0", error: "0", error_note: "Success", sign_time: "2026-11-11 10:00:00" };
+
+  assert.equal((await send("prepare", { ...base, sign_string: sign(base, "boshqa") })).error, -1);
+  assert.equal((await send("prepare", { ...base, amount: "1", sign_string: sign({ ...base, amount: "1" }) })).error, -2);
+  const prep = await send("prepare", { ...base, sign_string: sign(base) });
+  assert.equal(prep.error, 0, prep.error_note);
+  assert.ok(prep.merchant_prepare_id);
+
+  const done = { ...base, action: "1", merchant_prepare_id: String(prep.merchant_prepare_id) };
+  const comp = await send("complete", { ...done, sign_string: sign(done) });
+  assert.equal(comp.error, 0, comp.error_note);
+  assert.equal((await call(buyer, `/orders/${o.data.id}`)).data.paymentStatus, "paid");
+  assert.equal((await send("complete", { ...done, sign_string: sign(done) })).error, -4, "takror — allaqachon to'langan");
+  assert.ok((await call(seller, "/profile/payments", "PUT", { payme: null, click: null })).ok);
 });
 
 // --- ishga tushirish --------------------------------------------------------

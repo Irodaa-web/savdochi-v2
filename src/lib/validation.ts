@@ -188,3 +188,13 @@ export const adminUserSchema = z.object({
   /** Obunani shuncha oyga uzaytirish (0 — o'zgarmaydi, -1 — to'xtatish). */
   extendMonths: z.coerce.number().int().min(-1).max(24).optional(),
 });
+
+const merchantId = z.string().trim().min(3, "numberInvalid").max(64, "numberInvalid");
+const secretKey = z.string().trim().max(200).optional();
+/** Kompaniyaning onlayn to'lov hisoblari. Kalit bo'sh — eskisi qoladi; null — o'chirish. */
+export const onlinePaySchema = z.object({
+  payme: z.union([z.object({ merchantId, key: secretKey }), z.null()]).optional(),
+  click: z.union([z.object({ serviceId: merchantId, merchantId, secret: secretKey }), z.null()]).optional(),
+});
+
+export const startPaySchema = z.object({ provider: z.enum(["payme", "click"]) });

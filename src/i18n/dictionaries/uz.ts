@@ -41,6 +41,7 @@ const uz = {
     demoSeller: "Demo: kompaniya",
   },
   errors: {
+    keyRequired: "Kalitni kiriting.",
     pickupUnavailable: "Bu kompaniya olib ketish usulini qo‘llamaydi.",
     innFormat: "STIR 9 ta raqamdan iborat.",
     accountFormat: "Hisob raqami 20 ta raqamdan iborat.",
@@ -446,6 +447,7 @@ const uz = {
   notifications: {
     readAll: "Barchasini o‘qilgan qilish",
     types: {
+      onlinePaid: "№{number} buyurtma uchun {provider} orqali {amount} so‘m to‘landi ({name})",
       creditApproval: "№{number} buyurtma ({name}) nasiya limitidan {amount} so‘m oshdi — tasdiqlang yoki rad eting",
       debtDueSoon: "Eslatma: {name} oldidagi №{number} buyurtma bo‘yicha {amount} so‘m to‘lov muddati ertaga tugaydi",
       debtOverdue: "№{number} buyurtma to‘lovi {days} kun kechikdi: {name} oldida {amount} so‘m qarz",
@@ -488,6 +490,7 @@ const uz = {
     emptyHint: "Mahsulot sahifasidagi yurakcha tugmasini bosing.",
   },
   debts: {
+    sourceOnline: "Onlayn to‘lov",
     title: "Qarzlar",
     leadSeller: "Hamkor do‘konlarning to‘lanmagan buyurtmalari. To‘lov olganingizda shu yerda qayd eting — summa eng eski buyurtmadan boshlab taqsimlanadi.",
     leadBuyer: "Kompaniyalar oldidagi to‘lanmagan buyurtmalaringiz va to‘lov muddatlari.",
@@ -603,6 +606,28 @@ const uz = {
     telegram: "Yangi buyurtma va to‘lovlar haqida xabar Telegram'ga ham keladi.",
     ctaTitle: "Bugun boshlang",
     ctaText: "Ro‘yxatdan o‘tish bepul. Kompaniyalar oylik obuna bilan ishlaydi.",
+  },
+  onlinePay: {
+    title: "Onlayn to‘lov (Payme, Click)",
+    lead: "Do‘konlar buyurtmani to‘g‘ridan-to‘g‘ri sizning Payme yoki Click hisobingizga to‘laydi — pul sizga tushadi, to‘lov qarz daftariga avtomatik yoziladi.",
+    payme: "Payme",
+    click: "Click",
+    merchantId: "Merchant ID (kassa ID)",
+    key: "Kalit (key)",
+    serviceId: "Service ID",
+    clickMerchantId: "Merchant ID",
+    secret: "Secret key",
+    keySaved: "Saqlangan — o‘zgartirish uchun yangisini kiriting",
+    endpoint: "Kabinetga kiritiladigan manzil",
+    prepareUrl: "Prepare URL",
+    completeUrl: "Complete URL",
+    enabled: "Ulangan",
+    disable: "O‘chirish",
+    save: "Saqlash",
+    saved: "Saqlandi.",
+    payWith: "{provider} orqali to‘lash",
+    left: "To‘lanishi kerak: {sum} so‘m",
+    checking: "To‘lov qabul qilinishi bilan holat avtomatik yangilanadi. Bir necha soniyadan keyin sahifani yangilang.",
   },
   dashboard: {
     overdueAlert: "{n} ta hamkorning {sum} so‘m qarzi muddati o‘tgan.",

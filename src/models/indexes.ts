@@ -6,6 +6,7 @@ import "./Cart";
 import "./Chat";
 import "./Counter";
 import "./Notification";
+import "./OnlinePayment";
 import "./Order";
 import "./Partnership";
 import "./Payment";

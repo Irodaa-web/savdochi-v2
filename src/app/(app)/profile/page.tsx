@@ -8,6 +8,8 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatPhone } from "@/lib/phone";
 import { getProfile, subscriptionActive } from "@/server/profile";
+import { getOnlinePaySettings } from "@/server/onlinePay";
+import { OnlinePayForm } from "./OnlinePayForm";
 import { ProfileForm } from "./ProfileForm";
 
 export const metadata = { title: "Profil" };
@@ -16,7 +18,7 @@ export default async function ProfilePage() {
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDictionary(locale);
-  const profile = await getProfile(user.id);
+  const [profile, onlinePay] = await Promise.all([getProfile(user.id), user.role === "seller" ? getOnlinePaySettings(user.id) : null]);
   if (!profile) notFound();
   const active = subscriptionActive(profile.subscriptionUntil);
 
@@ -59,6 +61,7 @@ export default async function ProfilePage() {
         </div>
       )}
       <ProfileForm profile={profile} />
+      {onlinePay && <OnlinePayForm sellerId={user.id} initial={onlinePay} />}
     </section>
   );
 }

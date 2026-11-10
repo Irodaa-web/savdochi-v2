@@ -73,6 +73,10 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 | POST | `/api/v1/debts/:partnerId/payments` | kompaniya: to'lov `{ amount, note? }` (eng eski buyurtmadan taqsimlanadi) |
 | GET/POST/DELETE | `/api/v1/telegram/link` | Telegram holati / ulash havolasi / uzish |
 | POST | `/api/v1/telegram/webhook` | Telegram bot webhook (secret sarlavha bilan) |
+| GET/PUT | `/api/v1/profile/payments` | kompaniya: Payme/Click merchant hisoblari (kalitlar shifrlangan, qaytarilmaydi) |
+| POST | `/api/v1/orders/:id/pay` | do'kon: `{ provider: "payme" \| "click" }` → to'lov sahifasi `{ url }` |
+| POST | `/api/v1/pay/payme/:sellerId` | Payme Merchant API (JSON-RPC, Basic auth) |
+| POST | `/api/v1/pay/click/:sellerId/prepare`, `/complete` | Click SHOP API (md5 imzo) |
 | GET | `/api/v1/cron/reminders` | kunlik qarz eslatmalari (Vercel Cron, `Authorization: Bearer CRON_SECRET`) |
 | GET | `/api/v1/health` | server regioni va bazagacha ping (ms) |
 | POST | `/api/v1/admin/telegram` | admin: webhook'ni o'rnatish |
@@ -130,6 +134,19 @@ Vercel → Settings → Functions → Region ni Atlas klasteri joylashgan region
 4. Storage → Blob → loyihaga ulang (rasmlar uchun `BLOB_READ_WRITE_TOKEN` avtomatik qo'shiladi).
 5. Deploy.
 6. Telegram ulangan bo'lsa: Admin sahifasida "Telegram webhook'ni o'rnatish" tugmasini bir marta bosing.
+
+## Onlayn to'lov (Payme, Click)
+
+Pul to'g'ridan-to'g'ri kompaniyaning o'z merchant hisobiga tushadi — platforma pul ushlamaydi.
+
+1. Kompaniya Payme Business / Click merchant kabinetida kassa ochadi.
+2. Savdochi → Profil → "Onlayn to'lov": Merchant ID va kalitni kiritadi (kalit shifrlab saqlanadi).
+3. Shu blokda ko'rsatilgan manzil(lar)ni kabinetga kiritadi:
+   Payme — `/api/v1/pay/payme/<kompaniya ID>`, Click — `.../prepare` va `.../complete`.
+4. Do'kon buyurtma sahifasida "Payme/Click orqali to'lash"ni bosadi; to'lov tasdiqlangach
+   buyurtma va qarz daftari avtomatik yangilanadi, ikkala tomonga bildirishnoma boradi.
+
+Sinov: `PAYME_TEST=1` — Payme test kassasi (test.paycom.uz).
 
 ## Hujjatlar (chop etish)
 

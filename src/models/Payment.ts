@@ -11,7 +11,7 @@ export interface PaymentDoc {
   amount: number;
   note: string;
   /** "ledger" — qarz daftaridan umumiy to'lov; "order" — buyurtma sahifasida to'lov holatini o'zgartirish. */
-  source: "ledger" | "order";
+  source: "ledger" | "order" | "online";
   allocations: { order: Types.ObjectId; number: number; amount: number }[];
   createdAt: Date;
 }
@@ -22,7 +22,7 @@ const schema = new Schema<PaymentDoc>(
     buyer: { type: Schema.Types.ObjectId, ref: "User", required: true },
     amount: { type: Number, required: true },
     note: { type: String, default: "", maxlength: 300 },
-    source: { type: String, enum: ["ledger", "order"], required: true },
+    source: { type: String, enum: ["ledger", "order", "online"], required: true },
     allocations: { type: [{ order: { type: Schema.Types.ObjectId, ref: "Order" }, number: Number, amount: Number, _id: false }], default: [] },
   },
   { timestamps: { createdAt: true, updatedAt: false } },

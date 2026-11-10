@@ -42,6 +42,11 @@ export interface UserDoc {
   locale: "uz" | "ru" | "en";
   /** Telegram bildirishnomalari: ulangan chat va bir martalik ulash kodi. */
   telegram: { chatId: number | null; linkCode: string | null; linkExpires: Date | null };
+  /** Kompaniyaning onlayn to'lov hisoblari. Kalitlar shifrlangan (lib/secretBox). Profil API'sida qaytarilmaydi. */
+  onlinePay?: {
+    payme?: { merchantId: string; keySealed: string } | null;
+    click?: { serviceId: string; merchantId: string; secretSealed: string } | null;
+  };
   profile: Profile;
   /** Do'kon saqlagan mahsulotlar. */
   favorites: Types.ObjectId[];
@@ -84,6 +89,10 @@ const userSchema = new Schema<UserDoc>(
     blocked: { type: Boolean, default: false },
     authVersion: { type: Number, default: 0 },
     locale: { type: String, enum: ["uz", "ru", "en"], default: "uz" },
+    onlinePay: {
+      payme: { type: new Schema({ merchantId: String, keySealed: String }, { _id: false }), default: null },
+      click: { type: new Schema({ serviceId: String, merchantId: String, secretSealed: String }, { _id: false }), default: null },
+    },
     telegram: {
       chatId: { type: Number, default: null },
       linkCode: { type: String, default: null },

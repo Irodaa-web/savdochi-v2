@@ -43,6 +43,7 @@ const en: Dictionary = {
     demoSeller: "Demo: company",
   },
   errors: {
+    keyRequired: "Enter the key.",
     pickupUnavailable: "This company does not offer pickup.",
     innFormat: "Tax ID (INN) must be 9 digits.",
     accountFormat: "Bank account must be 20 digits.",
@@ -448,6 +449,7 @@ const en: Dictionary = {
   notifications: {
     readAll: "Mark all as read",
     types: {
+      onlinePaid: "{amount} UZS paid via {provider} for order #{number} ({name})",
       creditApproval: "Order #{number} ({name}) exceeds the credit limit by {amount} UZS — approve or reject",
       debtDueSoon: "Reminder: payment of {amount} UZS for order #{number} to {name} is due tomorrow",
       debtOverdue: "Payment for order #{number} is {days} days overdue: {amount} UZS owed to {name}",
@@ -490,6 +492,7 @@ const en: Dictionary = {
     emptyHint: "Tap the heart on a product page.",
   },
   debts: {
+    sourceOnline: "Online payment",
     title: "Debts",
     leadSeller: "Unpaid orders of partner stores. Record payments here — the amount is applied starting from the oldest order.",
     leadBuyer: "Your unpaid orders to companies and their due dates.",
@@ -605,6 +608,28 @@ const en: Dictionary = {
     telegram: "New order and payment notifications also arrive in Telegram.",
     ctaTitle: "Start today",
     ctaText: "Signing up is free. Companies use a monthly subscription.",
+  },
+  onlinePay: {
+    title: "Online payment (Payme, Click)",
+    lead: "Stores pay orders directly to your Payme or Click account — the money goes to you and the payment is recorded in the debt ledger automatically.",
+    payme: "Payme",
+    click: "Click",
+    merchantId: "Merchant ID (cashbox ID)",
+    key: "Key",
+    serviceId: "Service ID",
+    clickMerchantId: "Merchant ID",
+    secret: "Secret key",
+    keySaved: "Saved — enter a new one to change it",
+    endpoint: "Endpoint for the merchant cabinet",
+    prepareUrl: "Prepare URL",
+    completeUrl: "Complete URL",
+    enabled: "Connected",
+    disable: "Disconnect",
+    save: "Save",
+    saved: "Saved.",
+    payWith: "Pay with {provider}",
+    left: "Amount due: {sum} UZS",
+    checking: "The status updates automatically once the payment arrives. Refresh the page in a few seconds.",
   },
   dashboard: {
     overdueAlert: "{n} partners have {sum} UZS of overdue debt.",

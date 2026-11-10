@@ -11,15 +11,21 @@ import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
 import { formatPhone } from "@/lib/phone";
 import { getOrder } from "@/server/orders";
+import { sellerOnlineMethods } from "@/server/onlinePay";
 import { OrderActions } from "./OrderActions";
+import { PayOnline } from "./PayOnline";
 
-export default async function OrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ placed?: string }> }) {
+export default async function OrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ placed?: string; paid?: string }> }) {
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDictionary(locale);
   const o = await getOrder(user, (await params).id);
   if (!o) notFound();
-  const placed = (await searchParams).placed === "1";
+  const sp = await searchParams;
+  const placed = sp.placed === "1";
+  const left = o.total - o.paidAmount;
+  // Do'kon uchun: kompaniya Payme/Click ulagan bo'lsa — qolgan summani onlayn to'lash.
+  const payMethods = user.role === "buyer" && o.status !== "cancelled" && left > 0 && o.creditApproval !== "pending" ? await sellerOnlineMethods(o.seller.id) : [];
   const isSeller = user.role === "seller";
   const partner = isSeller ? o.buyer : o.seller;
   const units = t.units as Record<string, string>;
@@ -32,6 +38,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         {t.nav.orders}
       </Link>
       {placed && <Alert tone="success">{t.orders.placed}</Alert>}
+      {sp.paid === "1" && o.paymentStatus !== "paid" && <Alert tone="info">{t.onlinePay.checking}</Alert>}
       {o.creditApproval === "pending" && o.status === "new" && (
         <Alert tone="info">{fmt(isSeller ? t.orders.creditPendingSeller : t.orders.creditPendingBuyer, { over: formatAmount(o.creditOver) })}</Alert>
       )}
@@ -118,6 +125,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
         <aside className="flex flex-col gap-4">
           <Card className="flex flex-col gap-3">
+            {payMethods.length > 0 && <PayOnline orderId={o.id} left={left} methods={payMethods} />}
             <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
           </Card>
 

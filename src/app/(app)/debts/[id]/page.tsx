@@ -107,7 +107,7 @@ export default async function LedgerPage({ params }: { params: Promise<{ id: str
                       </b>
                       <span className="text-muted">
                         {" "}
-                        · {p.source === "ledger" ? t.debts.sourceLedger : t.debts.sourceOrder}
+                        · {p.source === "ledger" ? t.debts.sourceLedger : p.source === "online" ? `${t.debts.sourceOnline}${p.note ? ` (${p.note.split(":")[0]})` : ""}` : t.debts.sourceOrder}
                         {p.orders.length > 0 && ` · ${p.orders.map((n) => `№${n}`).join(", ")}`}
                       </span>
                       {p.note && <span className="block text-[13px] text-muted">{p.note}</span>}
