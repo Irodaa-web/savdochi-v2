@@ -73,6 +73,7 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 | POST | `/api/v1/debts/:partnerId/payments` | kompaniya: to'lov `{ amount, note? }` (eng eski buyurtmadan taqsimlanadi) |
 | GET/POST/DELETE | `/api/v1/telegram/link` | Telegram holati / ulash havolasi / uzish |
 | POST | `/api/v1/telegram/webhook` | Telegram bot webhook (secret sarlavha bilan) |
+| GET | `/api/v1/cron/reminders` | kunlik qarz eslatmalari (Vercel Cron, `Authorization: Bearer CRON_SECRET`) |
 | GET | `/api/v1/health` | server regioni va bazagacha ping (ms) |
 | POST | `/api/v1/admin/telegram` | admin: webhook'ni o'rnatish |
 | POST | `/api/v1/uploads` | mahsulot rasmi (Vercel Blob) |
@@ -124,6 +125,7 @@ Vercel → Settings → Functions → Region ni Atlas klasteri joylashgan region
 1. MongoDB Atlas'da bepul klaster oching, `MONGODB_URI` ni oling (Network Access: `0.0.0.0/0`).
 2. Vercel'da reponi import qiling.
 3. Environment Variables: `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_PHONES`, `APP_URL`, `DEMO_MODE` (ixtiyoriy).
+   Qarz eslatmalari uchun: `CRON_SECRET` (tasodifiy uzun satr).
    Telegram uchun (ixtiyoriy): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`.
 4. Storage → Blob → loyihaga ulang (rasmlar uchun `BLOB_READ_WRITE_TOKEN` avtomatik qo'shiladi).
 5. Deploy.

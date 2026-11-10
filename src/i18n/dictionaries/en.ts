@@ -441,6 +441,9 @@ const en: Dictionary = {
   notifications: {
     readAll: "Mark all as read",
     types: {
+      debtDueSoon: "Reminder: payment of {amount} UZS for order #{number} to {name} is due tomorrow",
+      debtOverdue: "Payment for order #{number} is {days} days overdue: {amount} UZS owed to {name}",
+      debtOverdueSeller: "{n} order payments are overdue — {amount} UZS in total. Open Debts",
       paymentReceived: "{name}: payment of {amount} UZS recorded",
       partnerRequest: "{name} sent a partnership request",
       partnerAccepted: "{name} accepted the partnership",

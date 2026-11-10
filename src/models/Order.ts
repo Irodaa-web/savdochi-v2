@@ -40,6 +40,8 @@ export interface OrderDoc {
   requestId?: string;
   /** To'lov muddati (nasiya buyurtmalarida). */
   dueDate: Date | null;
+  /** Oxirgi qarz eslatmasi yuborilgan kun (Toshkent, YYYY-MM-DD) — kuniga bir martadan ko'p emas. */
+  lastReminder: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -86,12 +88,14 @@ const schema = new Schema<OrderDoc>(
     history: { type: [eventSchema], default: [] },
     requestId: { type: String, maxlength: 64 },
     dueDate: { type: Date, default: null },
+    lastReminder: { type: String, default: null },
   },
   { timestamps: true },
 );
 schema.index({ seller: 1, createdAt: -1 });
 schema.index({ buyer: 1, createdAt: -1 });
 schema.index({ seller: 1, buyer: 1, paymentStatus: 1 });
+schema.index({ paymentStatus: 1, dueDate: 1 });
 schema.index({ buyer: 1, requestId: 1 }, { unique: true, partialFilterExpression: { requestId: { $type: "string" } } });
 
 export const Order: Model<OrderDoc> = (mongoose.models.Order as Model<OrderDoc>) ?? mongoose.model<OrderDoc>("Order", schema);

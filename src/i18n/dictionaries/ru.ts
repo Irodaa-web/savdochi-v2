@@ -441,6 +441,9 @@ const ru: Dictionary = {
   notifications: {
     readAll: "Прочитать все",
     types: {
+      debtDueSoon: "Напоминание: завтра истекает срок оплаты {amount} сум по заказу №{number} перед {name}",
+      debtOverdue: "Оплата заказа №{number} просрочена на {days} дн.: долг перед {name} — {amount} сум",
+      debtOverdueSeller: "Просрочена оплата {n} заказов — всего {amount} сум. Откройте раздел «Долги»",
       paymentReceived: "{name}: зарегистрирована оплата {amount} сум",
       partnerRequest: "{name} отправил(а) запрос на партнёрство",
       partnerAccepted: "{name} принял(а) партнёрство",

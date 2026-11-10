@@ -439,6 +439,9 @@ const uz = {
   notifications: {
     readAll: "Barchasini o‘qilgan qilish",
     types: {
+      debtDueSoon: "Eslatma: {name} oldidagi №{number} buyurtma bo‘yicha {amount} so‘m to‘lov muddati ertaga tugaydi",
+      debtOverdue: "№{number} buyurtma to‘lovi {days} kun kechikdi: {name} oldida {amount} so‘m qarz",
+      debtOverdueSeller: "{n} ta buyurtma to‘lovi kechikmoqda — jami {amount} so‘m. Qarzlar bo‘limini ko‘ring",
       paymentReceived: "{name}: {amount} so‘m to‘lov qayd etildi",
       partnerRequest: "{name} hamkorlik so‘rovi yubordi",
       partnerAccepted: "{name} hamkorlikni qabul qildi",
