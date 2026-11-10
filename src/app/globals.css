@@ -121,3 +121,176 @@ body {
     max-width: none !important;
   }
 }
+
+/* ---------------------------------------------------------------- */
+/* Landing animatsiyalari (/welcome). Harakatni kamaytirish so'ralsa — o'chadi. */
+/* ---------------------------------------------------------------- */
+@keyframes land-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes land-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(30px, -24px) scale(1.08);
+  }
+}
+@keyframes land-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes land-dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@keyframes land-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+/* Uchta xabar navbat bilan chiqadi: har biri 9 s siklning o'z uchdan birida ko'rinadi. */
+@keyframes land-toast {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  4%,
+  30% {
+    opacity: 1;
+    transform: none;
+  }
+  34%,
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+/* Buyurtma kompaniyaga boradi (chapga), to'lov/xabar do'konga (o'ngga) — ikki nuqta qarama-qarshi. */
+@keyframes land-travel {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 12px);
+    opacity: 0;
+  }
+}
+@keyframes land-travel-back {
+  0% {
+    left: calc(100% - 8px);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: 0;
+    opacity: 0;
+  }
+}
+@keyframes land-shine {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.land-in {
+  animation: land-fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.land-blob {
+  animation: land-drift 14s ease-in-out infinite;
+}
+.land-float {
+  animation: land-float 6s ease-in-out infinite;
+}
+.land-dash {
+  stroke-dasharray: 6 6;
+  animation: land-dash 1.2s linear infinite;
+}
+.land-ping {
+  animation: land-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.land-toast {
+  opacity: 0;
+  animation: land-toast 9s ease-in-out infinite;
+}
+.land-travel {
+  animation: land-travel 2.4s ease-in-out infinite;
+}
+.land-travel-back {
+  animation: land-travel-back 2.4s ease-in-out 1.2s infinite;
+  opacity: 0;
+}
+.land-shine {
+  background-image: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.18) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: land-shine 4s linear infinite;
+}
+
+/* Sahifa aylantirilganda paydo bo'lish: JS ishlasa (html.reveal-on) yashirin boshlanadi. */
+.reveal-on [data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal-on [data-reveal][data-shown] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .land-in,
+  .land-blob,
+  .land-float,
+  .land-dash,
+  .land-ping,
+  .land-shine,
+  .land-travel,
+  .land-travel-back {
+    animation: none !important;
+  }
+  .land-toast {
+    animation: none !important;
+    opacity: 0;
+  }
+  .land-toast:first-child {
+    opacity: 1;
+  }
+  .reveal-on [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
