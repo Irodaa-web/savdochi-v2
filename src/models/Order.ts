@@ -1,5 +1,5 @@
 import mongoose, { Schema, type Model, type Types } from "mongoose";
-import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
+import { DELIVERY_METHODS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, type DeliveryMethod, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 
 /** Buyurtma qatori — narx va nom buyurtma paytidagi holatda saqlanadi. */
@@ -33,9 +33,19 @@ export interface OrderDoc {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   paidAmount: number;
-  delivery: { phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: Date | null };
+  delivery: { method: DeliveryMethod; phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: Date | null };
   comment: string;
   history: OrderEvent[];
+  /** Mijoz yuborgan so'rov kaliti: bir xil kalit bilan qayta yuborilsa, yangi buyurtma yaratilmaydi. */
+  requestId?: string;
+  /** To'lov muddati (nasiya buyurtmalarida). */
+  dueDate: Date | null;
+  /** Oxirgi qarz eslatmasi yuborilgan kun (Toshkent, YYYY-MM-DD) — kuniga bir martadan ko'p emas. */
+  lastReminder: string | null;
+  /** Nasiya limitidan oshgan buyurtma: kompaniya tasdig'i. null — oshmagan. */
+  creditApproval: "pending" | "approved" | "rejected" | null;
+  /** Limitdan qancha oshgani (so'm). */
+  creditOver: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,19 +80,28 @@ const schema = new Schema<OrderDoc>(
     paymentStatus: { type: String, enum: PAYMENT_STATUSES, default: "unpaid" },
     paidAmount: { type: Number, default: 0, min: 0 },
     delivery: {
+      method: { type: String, enum: DELIVERY_METHODS, default: "delivery" },
       phone: { type: String, required: true },
       region: { type: String, enum: REGION_CODES, required: true },
-      address: { type: String, required: true, maxlength: 300 },
+      address: { type: String, default: "", maxlength: 300 },
       lat: { type: Number, default: null },
       lng: { type: Number, default: null },
       date: { type: Date, default: null },
     },
     comment: { type: String, default: "", maxlength: 1000 },
     history: { type: [eventSchema], default: [] },
+    requestId: { type: String, maxlength: 64 },
+    dueDate: { type: Date, default: null },
+    lastReminder: { type: String, default: null },
+    creditApproval: { type: String, enum: ["pending", "approved", "rejected", null], default: null },
+    creditOver: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
 schema.index({ seller: 1, createdAt: -1 });
 schema.index({ buyer: 1, createdAt: -1 });
+schema.index({ seller: 1, buyer: 1, paymentStatus: 1 });
+schema.index({ paymentStatus: 1, dueDate: 1 });
+schema.index({ buyer: 1, requestId: 1 }, { unique: true, partialFilterExpression: { requestId: { $type: "string" } } });
 
 export const Order: Model<OrderDoc> = (mongoose.models.Order as Model<OrderDoc>) ?? mongoose.model<OrderDoc>("Order", schema);

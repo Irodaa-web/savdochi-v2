@@ -1,5 +1,5 @@
 import mongoose, { Schema, type Model, type Types } from "mongoose";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
+import { PROFILE_PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 
 export type Verification = "unverified" | "pending" | "verified" | "rejected";
@@ -19,6 +19,13 @@ export interface Profile {
   deliveryFee: number;
   minOrderTotal: number;
   paymentMethods: PaymentMethod[];
+  /** Do'kon buyurtmani kompaniya omboridan o'zi olib keta oladimi. */
+  pickup: boolean;
+  /** Rekvizitlar (hisob-faktura va akt sverka uchun). */
+  inn: string;
+  bankName: string;
+  bankAccount: string;
+  mfo: string;
 }
 
 export interface UserDoc {
@@ -33,6 +40,13 @@ export interface UserDoc {
   /** Parol o'zgarsa oshiriladi — eski sessiyalar bekor bo'ladi. */
   authVersion: number;
   locale: "uz" | "ru" | "en";
+  /** Telegram bildirishnomalari: ulangan chat va bir martalik ulash kodi. */
+  telegram: { chatId: number | null; linkCode: string | null; linkExpires: Date | null };
+  /** Kompaniyaning onlayn to'lov hisoblari. Kalitlar shifrlangan (lib/secretBox). Profil API'sida qaytarilmaydi. */
+  onlinePay?: {
+    payme?: { merchantId: string; keySealed: string } | null;
+    click?: { serviceId: string; merchantId: string; secretSealed: string } | null;
+  };
   profile: Profile;
   /** Do'kon saqlagan mahsulotlar. */
   favorites: Types.ObjectId[];
@@ -54,7 +68,12 @@ const profileSchema = new Schema<Profile>(
     leadDays: { type: Number, default: 1, min: 0, max: 60 },
     deliveryFee: { type: Number, default: 0, min: 0 },
     minOrderTotal: { type: Number, default: 0, min: 0 },
-    paymentMethods: { type: [String], enum: PAYMENT_METHODS, default: ["cash"] },
+    paymentMethods: { type: [String], enum: PROFILE_PAYMENT_METHODS, default: ["cash"] },
+    pickup: { type: Boolean, default: false },
+    inn: { type: String, default: "", maxlength: 9 },
+    bankName: { type: String, default: "", maxlength: 120 },
+    bankAccount: { type: String, default: "", maxlength: 20 },
+    mfo: { type: String, default: "", maxlength: 5 },
   },
   { _id: false },
 );
@@ -70,6 +89,15 @@ const userSchema = new Schema<UserDoc>(
     blocked: { type: Boolean, default: false },
     authVersion: { type: Number, default: 0 },
     locale: { type: String, enum: ["uz", "ru", "en"], default: "uz" },
+    onlinePay: {
+      payme: { type: new Schema({ merchantId: String, keySealed: String }, { _id: false }), default: null },
+      click: { type: new Schema({ serviceId: String, merchantId: String, secretSealed: String }, { _id: false }), default: null },
+    },
+    telegram: {
+      chatId: { type: Number, default: null },
+      linkCode: { type: String, default: null },
+      linkExpires: { type: Date, default: null },
+    },
     profile: { type: profileSchema, default: () => ({}) },
     favorites: { type: [Schema.Types.ObjectId], ref: "Product", default: [] },
     subscriptionUntil: { type: Date, default: null },
@@ -77,5 +105,7 @@ const userSchema = new Schema<UserDoc>(
   },
   { timestamps: true },
 );
+
+userSchema.index({ "telegram.linkCode": 1 }, { sparse: true });
 
 export const User: Model<UserDoc> = (mongoose.models.User as Model<UserDoc>) ?? mongoose.model<UserDoc>("User", userSchema);

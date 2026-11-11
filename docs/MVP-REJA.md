@@ -64,6 +64,13 @@ Jarayon: **Topish → Kelishish → Buyurtma → Boshqarish**.
 - [x] **5. Chat va bildirishnomalar**
 - [x] **6. Ombor, obuna, admin:** do'kon qoldig'i va hamkorga ko'rinishi, obuna, moderatsiya, murojaatlar, demo hisoblar
 - [x] **7. Hisobot va audit log** *(admin MFA va avtomatik testlar — keyingi qadam)*
+- [x] **Ishonchlilik:** buyurtma va ombor bitta tranzaksiyada; `requestId` bilan ikki marta buyurtma yaratilmaydi
+- [x] **Nasiya va qarz daftari:** limit, to'lov muddati, muddati o'tganlar, to'lovni FIFO taqsimlash
+- [x] **Hujjatlar:** hisob-faktura, akt sverka, rekvizitlar
+- [x] **Olib ketish va buyurtma qidiruvi**
+- [x] **Telegram bildirishnomalari**
+- [x] **Testlar va CI:** vitest unit, integratsiya testi, GitHub Actions
+- [x] **Ochiq landing sahifa** (/welcome)
 - [ ] **Deploy:** Vercel + MongoDB Atlas
 
 ## MVP'dan keyin

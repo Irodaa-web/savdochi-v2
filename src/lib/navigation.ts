@@ -10,12 +10,13 @@ export const mainNav: Record<Role, NavItem[]> = {
     { href: "/catalog", label: "catalog", Icon: LayoutGrid },
     { href: "/orders", label: "orders", Icon: ClipboardList },
     { href: "/stock", label: "stock", Icon: Warehouse },
+    { href: "/partners", label: "partners", Icon: Users },
   ],
   seller: [
     { href: "/dashboard", label: "dashboard", Icon: LayoutDashboard },
     { href: "/products", label: "products", Icon: Package },
     { href: "/orders", label: "orders", Icon: ClipboardList },
-    { href: "/partners", label: "partners", Icon: Users },
+    { href: "/partners", label: "clients", Icon: Users },
   ],
 };
 

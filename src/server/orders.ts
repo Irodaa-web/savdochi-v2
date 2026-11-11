@@ -1,9 +1,9 @@
 import "server-only";
-import { isValidObjectId, type FilterQuery } from "mongoose";
+import { isValidObjectId, type ClientSession, type FilterQuery } from "mongoose";
 import { AppError } from "@/lib/api";
 import type { SessionUser } from "@/lib/auth/session";
-import { connectDb } from "@/lib/db";
-import { ORDER_TRANSITIONS, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
+import { connectDb, withTransaction } from "@/lib/db";
+import { ORDER_TRANSITIONS, type DeliveryMethod, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
 import type { RegionCode } from "@/lib/regions";
 import type { CheckoutInput } from "@/lib/validation";
 import { nextSeq } from "@/models/Counter";
@@ -11,7 +11,9 @@ import { Order, type OrderDoc } from "@/models/Order";
 import { Product } from "@/models/Product";
 import { StoreStock } from "@/models/StoreStock";
 import { User } from "@/models/User";
+import { Partnership } from "@/models/Partnership";
 import { getCart, removeCartItems, setCartItem } from "./cart";
+import { logOrderPayment, outstandingBetween } from "./debts";
 import { notify } from "./notify";
 
 export type OrderView = {
@@ -29,9 +31,12 @@ export type OrderView = {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   paidAmount: number;
-  delivery: { phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: string | null };
+  delivery: { method: DeliveryMethod; phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: string | null };
   comment: string;
   history: { status: OrderStatus; by: string; at: string }[];
+  dueDate: string | null;
+  creditApproval: "pending" | "approved" | "rejected" | null;
+  creditOver: number;
   createdAt: string;
 };
 
@@ -58,18 +63,31 @@ async function toViews(docs: OrderDoc[]): Promise<OrderView[]> {
     paymentMethod: d.paymentMethod,
     paymentStatus: d.paymentStatus,
     paidAmount: d.paidAmount,
-    delivery: { ...d.delivery, date: d.delivery.date ? new Date(d.delivery.date).toISOString() : null },
+    delivery: { ...d.delivery, method: d.delivery.method ?? "delivery", date: d.delivery.date ? new Date(d.delivery.date).toISOString() : null },
     comment: d.comment,
     history: (d.history ?? []).map((h) => ({ status: h.status, by: h.by, at: new Date(h.at).toISOString() })),
+    dueDate: d.dueDate ? new Date(d.dueDate).toISOString() : null,
+    creditApproval: d.creditApproval ?? null,
+    creditOver: d.creditOver ?? 0,
     createdAt: d.createdAt.toISOString(),
   }));
 }
 
 const sideKey = (user: SessionUser) => (user.role === "seller" ? "seller" : "buyer");
 
-export async function listOrders(user: SessionUser, opts: { status?: OrderStatus | "open"; partnerId?: string; limit?: number } = {}): Promise<OrderView[]> {
+export async function listOrders(user: SessionUser, opts: { status?: OrderStatus | "open"; partnerId?: string; q?: string; limit?: number } = {}): Promise<OrderView[]> {
   await connectDb();
   const filter: FilterQuery<OrderDoc> = { [sideKey(user)]: user.id };
+  // Qidiruv: raqam bo'yicha (1012 yoki №1012) yoki hamkor nomi bo'yicha.
+  const q = opts.q?.trim().replace(/^№/, "");
+  if (q) {
+    if (/^\d+$/.test(q)) filter.number = Number(q);
+    else {
+      const escaped = q.slice(0, 60).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const partners = await User.find({ role: user.role === "seller" ? "buyer" : "seller", name: { $regex: escaped, $options: "i" } }, { _id: 1 }).limit(200).lean();
+      filter[user.role === "seller" ? "buyer" : "seller"] = { $in: partners.map((p) => p._id) };
+    }
+  }
   if (opts.status === "open") filter.status = { $in: ["new", "confirmed", "shipped"] };
   else if (opts.status) filter.status = opts.status;
   if (opts.partnerId && isValidObjectId(opts.partnerId)) filter[user.role === "seller" ? "buyer" : "seller"] = opts.partnerId;
@@ -84,26 +102,37 @@ export async function getOrder(user: SessionUser, id: string): Promise<OrderView
   return doc ? (await toViews([doc]))[0]! : null;
 }
 
-/** Omborni kamaytiradi; birortasi yetmasa — kamaytirilganlarni qaytaradi va xato tashlaydi. */
-async function reserveStock(items: { productId: string; quantity: number }[]): Promise<void> {
-  const done: typeof items = [];
+type StockLine = { productId: string; quantity: number };
+
+/** Omborni kamaytiradi; birortasi yetmasa xato tashlaydi (tranzaksiya hammasini bekor qiladi). */
+async function takeStock(items: StockLine[], session: ClientSession): Promise<void> {
   for (const item of items) {
-    const res = await Product.updateOne({ _id: item.productId, active: true, stock: { $gte: item.quantity } }, { $inc: { stock: -item.quantity } });
-    if (res.modifiedCount !== 1) {
-      await releaseStock(done);
-      throw new AppError("OUT_OF_STOCK");
-    }
-    done.push(item);
+    const res = await Product.updateOne({ _id: item.productId, active: true, stock: { $gte: item.quantity } }, { $inc: { stock: -item.quantity } }, { session });
+    if (res.modifiedCount !== 1) throw new AppError("OUT_OF_STOCK");
   }
 }
 
-async function releaseStock(items: { productId: string; quantity: number }[]): Promise<void> {
-  for (const item of items) await Product.updateOne({ _id: item.productId }, { $inc: { stock: item.quantity } });
+async function returnStock(items: StockLine[], session: ClientSession): Promise<void> {
+  for (const item of items) await Product.updateOne({ _id: item.productId }, { $inc: { stock: item.quantity } }, { session });
 }
 
-/** Savatdagi bitta sotuvchi guruhidan buyurtma yaratadi. */
+const isDuplicateKey = (error: unknown) => (error as { code?: number } | null)?.code === 11000;
+
+async function findByRequestId(user: SessionUser, requestId: string | undefined): Promise<OrderView | null> {
+  if (!requestId) return null;
+  const doc = await Order.findOne({ buyer: user.id, requestId }).lean<OrderDoc>();
+  return doc ? (await toViews([doc]))[0]! : null;
+}
+
+/**
+ * Savatdagi bitta sotuvchi guruhidan buyurtma yaratadi.
+ * Ombor, buyurtma va savat bitta tranzaksiyada o'zgaradi; `requestId` qayta kelsa — o'sha buyurtma qaytadi.
+ */
 export async function checkout(user: SessionUser, input: CheckoutInput): Promise<OrderView> {
   await connectDb();
+  const existing = await findByRequestId(user, input.requestId);
+  if (existing) return existing;
+
   const cart = await getCart(user.id);
   const group = cart.groups.find((g) => g.seller.id === input.sellerId);
   if (!group || !group.lines.length) throw new AppError("CART_EMPTY");
@@ -111,35 +140,74 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
   if (group.lines.some((l) => l.problem === "outOfStock")) throw new AppError("OUT_OF_STOCK");
   if (group.lines.some((l) => l.problem === "belowMin") || group.belowMinTotal) throw new AppError("BELOW_MIN_ORDER");
   if (!group.terms.paymentMethods.includes(input.paymentMethod)) throw new AppError("INVALID_INPUT", { paymentMethod: "paymentRequired" });
+  const pickup = input.method === "pickup";
+  if (pickup && !group.terms.pickup) throw new AppError("INVALID_INPUT", { method: "pickupUnavailable" });
+  // Olib ketishda yetkazish narxi olinmaydi.
+  const deliveryFee = pickup ? 0 : group.deliveryFee;
+  const total = group.subtotal - group.discount + deliveryFee;
 
   const items = group.lines.map((l) => ({ productId: l.productId, quantity: l.quantity }));
-  await reserveStock(items);
+  // Raqam tranzaksiyadan tashqarida olinadi: hisoblagich hujjati ziddiyat nuqtasiga aylanmasin (bo'shliq bo'lishi mumkin).
+  const number = await nextSeq("order");
+  let order: OrderDoc;
   try {
-    const now = new Date();
-    const order = await Order.create({
-      number: await nextSeq("order"),
-      buyer: user.id,
-      seller: input.sellerId,
-      items: group.lines.map((l) => ({ product: l.productId, name: l.name, unit: l.unit, quantity: l.quantity, unitPrice: l.unitPrice, total: l.total })),
-      subtotal: group.subtotal,
-      discountPercent: group.discountPercent,
-      discount: group.discount,
-      deliveryFee: group.deliveryFee,
-      total: group.total,
-      paymentMethod: input.paymentMethod,
-      delivery: { phone: input.phone, region: input.region, address: input.address, lat: input.lat, lng: input.lng, date: null },
-      comment: input.comment,
-      history: [{ status: "new", by: "buyer", at: now }],
+    order = await withTransaction(async (session) => {
+      let dueDate: Date | null = null;
+      let creditOver = 0;
+      if (input.paymentMethod === "credit") {
+        // Hamkorlik yozuviga yozish: bir do'konning parallel nasiya buyurtmalari navbatma-navbat tekshiriladi.
+        const p = await Partnership.findOneAndUpdate({ seller: input.sellerId, buyer: user.id, status: "active", creditLimit: { $gt: 0 } }, { $set: { updatedAt: new Date() } }, { session, new: true });
+        if (!p) throw new AppError("CREDIT_LIMIT");
+        const used = await outstandingBetween(input.sellerId, user.id, session);
+        // Limitdan oshsa — rad etilmaydi: buyurtma kompaniya tasdig'iga boradi.
+        creditOver = Math.max(0, used + total - p.creditLimit);
+        dueDate = new Date(Date.now() + (p.paymentDays ?? 14) * 24 * 60 * 60 * 1000);
+      }
+      await takeStock(items, session);
+      const [created] = await Order.create(
+        [
+          {
+            number,
+            buyer: user.id,
+            seller: input.sellerId,
+            items: group.lines.map((l) => ({ product: l.productId, name: l.name, unit: l.unit, quantity: l.quantity, unitPrice: l.unitPrice, total: l.total })),
+            subtotal: group.subtotal,
+            discountPercent: group.discountPercent,
+            discount: group.discount,
+            deliveryFee,
+            total,
+            paymentMethod: input.paymentMethod,
+            delivery: pickup
+              ? { method: "pickup", phone: input.phone, region: input.region, address: "", lat: null, lng: null, date: null }
+              : { method: "delivery", phone: input.phone, region: input.region, address: input.address, lat: input.lat, lng: input.lng, date: null },
+            comment: input.comment,
+            history: [{ status: "new", by: "buyer", at: new Date() }],
+            ...(input.requestId ? { requestId: input.requestId } : {}),
+            dueDate,
+            creditApproval: creditOver > 0 ? "pending" : null,
+            creditOver,
+          },
+        ],
+        { session },
+      );
+      await removeCartItems(user.id, items.map((i) => i.productId), session);
+      return created!.toObject() as OrderDoc;
     });
-    await removeCartItems(user.id, items.map((i) => i.productId));
-    // Do'kon manzilini keyingi safar uchun eslab qoladi.
-    await User.updateOne({ _id: user.id }, { $set: { "profile.address": input.address, ...(input.lat !== null ? { "profile.lat": input.lat, "profile.lng": input.lng } : {}) } });
-    await notify(input.sellerId, "orderNew", { number: order.number, name: user.name }, `/orders/${order._id}`);
-    return (await toViews([order.toObject() as OrderDoc]))[0]!;
   } catch (error) {
-    await releaseStock(items);
+    // Bir xil requestId bilan parallel so'rov: birinchisi yutdi — o'shani qaytaramiz.
+    if (isDuplicateKey(error)) {
+      const winner = await findByRequestId(user, input.requestId);
+      if (winner) return winner;
+    }
     throw error;
   }
+
+  // Do'kon manzilini keyingi safar uchun eslab qoladi.
+  if (!pickup) await User.updateOne({ _id: user.id }, { $set: { "profile.address": input.address, ...(input.lat !== null ? { "profile.lat": input.lat, "profile.lng": input.lng } : {}) } });
+  if (order.creditApproval === "pending")
+    await notify(input.sellerId, "creditApproval", { number: order.number, name: user.name, amount: order.creditOver.toLocaleString("ru-RU") }, `/orders/${order._id}`);
+  else await notify(input.sellerId, "orderNew", { number: order.number, name: user.name }, `/orders/${order._id}`);
+  return (await toViews([order]))[0]!;
 }
 
 /** Holat, to'lov va yetkazish sanasini o'zgartirish (har bir tomon o'z huquqi doirasida). */
@@ -160,12 +228,19 @@ export async function updateOrder(
     const allowed = ORDER_TRANSITIONS[side][order.status] ?? [];
     if (!allowed.includes(input.status)) throw new AppError("INVALID_STATE");
     const from = order.status;
-    // Shartli yangilash: ikki tomon bir vaqtda o'zgartirsa, faqat bittasi o'tadi.
-    const res = await Order.updateOne({ _id: order._id, status: from }, { $set: { status: input.status }, $push: { history: { status: input.status, by: side, at: new Date() } } });
-    if (res.modifiedCount !== 1) throw new AppError("INVALID_STATE");
-    order.status = input.status;
-    if (input.status === "cancelled") await releaseStock(order.items.map((i) => ({ productId: String(i.product), quantity: i.quantity })));
-    if (input.status === "delivered") await addToStoreStock(order.toObject() as OrderDoc);
+    const to = input.status;
+    const snapshot = order.toObject() as OrderDoc;
+    // Holat va ombor bitta tranzaksiyada: ombor faqat bir marta qaytariladi/qo'shiladi.
+    await withTransaction(async (session) => {
+      // Shartli yangilash: ikki tomon bir vaqtda o'zgartirsa, faqat bittasi o'tadi.
+      // Limitdan oshgan nasiya: kompaniya tasdiqlasa — oshiq summa ham ma'qullandi; bekor qilinsa — rad etildi.
+      const approval = snapshot.creditApproval === "pending" ? (to === "confirmed" ? { creditApproval: "approved" } : to === "cancelled" ? { creditApproval: "rejected" } : {}) : {};
+      const res = await Order.updateOne({ _id: order._id, status: from }, { $set: { status: to, ...approval }, $push: { history: { status: to, by: side, at: new Date() } } }, { session });
+      if (res.modifiedCount !== 1) throw new AppError("INVALID_STATE");
+      if (to === "cancelled") await returnStock(snapshot.items.map((i) => ({ productId: String(i.product), quantity: i.quantity })), session);
+      if (to === "delivered") await addToStoreStock(snapshot, session);
+    });
+    order.status = to;
     await notify(other, "orderStatus", { number: order.number, status: input.status }, link);
   }
 
@@ -182,7 +257,9 @@ export async function updateOrder(
       paymentChanged = true;
     }
     if (input.deliveryDate !== undefined) order.delivery.date = input.deliveryDate ? new Date(input.deliveryDate) : null;
+    const paidBefore = (await Order.findById(order._id, { paidAmount: 1 }).lean())?.paidAmount ?? 0;
     await Order.updateOne({ _id: order._id }, { $set: { paymentStatus: order.paymentStatus, paidAmount: order.paidAmount, "delivery.date": order.delivery.date } });
+    if (order.paidAmount !== paidBefore) await logOrderPayment(order, order.paidAmount - paidBefore);
     if (paymentChanged) await notify(other, "orderPayment", { number: order.number, status: order.paymentStatus }, link);
   }
 
@@ -190,12 +267,12 @@ export async function updateOrder(
 }
 
 /** Yetkazilgan mahsulotlar do'kon omboriga qo'shiladi. */
-async function addToStoreStock(order: OrderDoc): Promise<void> {
+async function addToStoreStock(order: OrderDoc, session: ClientSession): Promise<void> {
   for (const item of order.items) {
     await StoreStock.updateOne(
       { buyer: order.buyer, product: item.product },
       { $inc: { quantity: item.quantity }, $setOnInsert: { seller: order.seller, name: item.name, unit: item.unit, minLevel: 0 } },
-      { upsert: true },
+      { upsert: true, session },
     );
   }
 }

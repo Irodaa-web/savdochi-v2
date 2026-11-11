@@ -1,4 +1,4 @@
-import { ArrowLeft, MapPin, Phone } from "lucide-react";
+import { ArrowLeft, FileText, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StartChatButton } from "@/components/chat/StartChatButton";
@@ -11,15 +11,21 @@ import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
 import { formatPhone } from "@/lib/phone";
 import { getOrder } from "@/server/orders";
+import { sellerOnlineMethods } from "@/server/onlinePay";
 import { OrderActions } from "./OrderActions";
+import { PayOnline } from "./PayOnline";
 
-export default async function OrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ placed?: string }> }) {
+export default async function OrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ placed?: string; paid?: string }> }) {
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDictionary(locale);
   const o = await getOrder(user, (await params).id);
   if (!o) notFound();
-  const placed = (await searchParams).placed === "1";
+  const sp = await searchParams;
+  const placed = sp.placed === "1";
+  const left = o.total - o.paidAmount;
+  // Do'kon uchun: kompaniya Payme/Click ulagan bo'lsa — qolgan summani onlayn to'lash.
+  const payMethods = user.role === "buyer" && o.status !== "cancelled" && left > 0 && o.creditApproval !== "pending" ? await sellerOnlineMethods(o.seller.id) : [];
   const isSeller = user.role === "seller";
   const partner = isSeller ? o.buyer : o.seller;
   const units = t.units as Record<string, string>;
@@ -32,11 +38,21 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         {t.nav.orders}
       </Link>
       {placed && <Alert tone="success">{t.orders.placed}</Alert>}
+      {sp.paid === "1" && o.paymentStatus !== "paid" && <Alert tone="info">{t.onlinePay.checking}</Alert>}
+      {o.creditApproval === "pending" && o.status === "new" && (
+        <Alert tone="info">{fmt(isSeller ? t.orders.creditPendingSeller : t.orders.creditPendingBuyer, { over: formatAmount(o.creditOver) })}</Alert>
+      )}
+      {o.creditApproval === "approved" && <Alert tone="success">{fmt(t.orders.creditApproved, { over: formatAmount(o.creditOver) })}</Alert>}
+      {o.creditApproval === "rejected" && <Alert>{t.orders.creditRejected}</Alert>}
 
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold tracking-tight">{fmt(t.orders.title, { n: o.number })}</h1>
         <StatusPill status={o.status} t={t} />
         <PaymentPill status={o.paymentStatus} t={t} />
+        <Link href={`/print/invoice/${o.id}`} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[14px] font-semibold hover:bg-surface-2">
+          <FileText size={16} aria-hidden />
+          {t.docs.invoice}
+        </Link>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -109,7 +125,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
         <aside className="flex flex-col gap-4">
           <Card className="flex flex-col gap-3">
-            <OrderActions id={o.id} role={user.role} status={o.status} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
+            {payMethods.length > 0 && <PayOnline orderId={o.id} left={left} methods={payMethods} />}
+            <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
           </Card>
 
           <Card className="flex flex-col gap-2 text-[14px]">
@@ -124,6 +141,9 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <span className="text-[12px] font-semibold tracking-wider text-muted uppercase">{t.orders.delivery}</span>
             <span className="flex items-start gap-2">
               <MapPin size={16} className="mt-0.5 shrink-0 text-muted" aria-hidden />
+              {d.method === "pickup" ? (
+                <b>{t.orders.pickup}</b>
+              ) : (
               <span>
                 {d.address}, {t.regions[d.region]}
                 {d.lat != null && d.lng != null && (
@@ -135,6 +155,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   </>
                 )}
               </span>
+              )}
             </span>
             <a href={`tel:${d.phone}`} className="flex items-center gap-2 hover:text-accent">
               <Phone size={16} className="text-muted" aria-hidden />
@@ -143,6 +164,12 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <span className="text-muted">
               {t.checkout.payment}: {t.payment[o.paymentMethod]}
             </span>
+            {o.dueDate && o.paymentStatus !== "paid" && o.status !== "cancelled" && (
+              <span className="text-muted">
+                {t.orders.dueDate}: <b className={new Date(o.dueDate).getTime() < Date.now() ? "text-danger" : "text-text"}>{formatDateTime(o.dueDate, locale, false)}</b>
+                {new Date(o.dueDate).getTime() < Date.now() && <> · <Link href={`/debts/${partner.id}`} className="font-semibold text-danger hover:underline">{t.orders.overdue}</Link></>}
+              </span>
+            )}
             {d.date && (
               <span className="text-muted">
                 {t.orders.deliveryDate}: <b className="text-text">{formatDateTime(d.date, locale, false)}</b>

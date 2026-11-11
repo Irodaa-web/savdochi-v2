@@ -29,9 +29,16 @@ export type ProductView = {
 type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification: string };
 
 /** Katalogda ko'rinmaydigan sotuvchilar: bloklangan yoki obunasi tugagan. */
+/**
+ * Katalogdan yashiriladigan sotuvchilar (bloklangan yoki obunasi tugagan).
+ * Har katalog so'rovida bazaga bormaslik uchun server xotirasida 60 soniya saqlanadi.
+ */
+let hiddenCache: { at: number; ids: unknown[] } | null = null;
 async function hiddenSellers(): Promise<unknown[]> {
+  if (hiddenCache && Date.now() - hiddenCache.at < 60_000) return hiddenCache.ids;
   const rows = await User.find({ role: "seller", $or: [{ blocked: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean();
-  return rows.map((r) => r._id);
+  hiddenCache = { at: Date.now(), ids: rows.map((r) => r._id) };
+  return hiddenCache.ids;
 }
 
 function toView(p: ProductDoc, seller: SellerInfo | undefined): ProductView {
@@ -198,48 +205,38 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
 
 export type RankedProduct = { product: ProductView; value: number };
 
-/** Ro'yxatdagi id tartibida faol mahsulotlarni qaytaradi (bloklangan sotuvchilarsiz). */
-async function rankedViews(rows: { _id: unknown; value: number }[]): Promise<RankedProduct[]> {
-  if (!rows.length) return [];
-  const { items } = await listCatalog({ ids: rows.map((r) => String(r._id)), page: 1 });
-  const byId = new Map(items.map((p) => [p.id, p]));
-  return rows.flatMap((r) => {
-    const product = byId.get(String(r._id));
-    return product ? [{ product, value: r.value }] : [];
-  });
-}
-
 /**
  * Kompaniyaning eng yaxshi mahsulotlari:
  * - bestSelling — bekor qilinmagan buyurtmalardagi jami sotilgan miqdor bo'yicha;
  * - popular — nechta do'kon tanlagan: buyurtma qilgan yoki saqlagan (sevimlilar) do'konlar soni bo'yicha.
+ * Bazaga 2 bosqichda: uchta agregatsiya parallel, keyin ikkala ro'yxat uchun bitta katalog so'rovi
+ * (u faqat faol mahsulotlarni qaytaradi — arxivlanganlar shu yerda tushib qoladi).
  */
 export async function getSellerHighlights(sellerId: string, limit = 4): Promise<{ bestSelling: RankedProduct[]; popular: RankedProduct[] }> {
   if (!isValidObjectId(sellerId)) return { bestSelling: [], popular: [] };
   await connectDb();
   const seller = new Types.ObjectId(sellerId);
-  const activeIds = (await Product.find({ seller, active: true }, { _id: 1 }).lean()).map((p) => p._id);
-  if (!activeIds.length) return { bestSelling: [], popular: [] };
+  // Arxivlangan mahsulotlar keyin chiqarib tashlanadi — zaxira bilan olinadi.
+  const take = limit * 3;
 
   const [sold, buyers, saved] = await Promise.all([
     Order.aggregate<{ _id: Types.ObjectId; value: number }>([
       { $match: { seller, status: { $ne: "cancelled" } } },
       { $unwind: "$items" },
-      { $match: { "items.product": { $in: activeIds } } },
       { $group: { _id: "$items.product", value: { $sum: "$items.quantity" } } },
       { $sort: { value: -1 } },
-      { $limit: limit },
+      { $limit: take },
     ]),
     Order.aggregate<{ _id: { product: Types.ObjectId; buyer: Types.ObjectId } }>([
       { $match: { seller, status: { $ne: "cancelled" } } },
       { $unwind: "$items" },
-      { $match: { "items.product": { $in: activeIds } } },
       { $group: { _id: { product: "$items.product", buyer: "$buyer" } } },
     ]),
     User.aggregate<{ _id: { product: Types.ObjectId; buyer: Types.ObjectId } }>([
-      { $match: { favorites: { $in: activeIds } } },
+      { $match: { role: "buyer", "favorites.0": { $exists: true } } },
       { $unwind: "$favorites" },
-      { $match: { favorites: { $in: activeIds } } },
+      { $lookup: { from: Product.collection.name, localField: "favorites", foreignField: "_id", pipeline: [{ $match: { seller } }, { $project: { _id: 1 } }], as: "p" } },
+      { $match: { "p.0": { $exists: true } } },
       { $group: { _id: { product: "$favorites", buyer: "$_id" } } },
     ]),
   ]);
@@ -252,12 +249,21 @@ export async function getSellerHighlights(sellerId: string, limit = 4): Promise<
     shops.get(key)!.add(String(_id.buyer));
   }
   const popularRows = [...shops.entries()]
-    .map(([id, set]) => ({ _id: id, value: set.size }))
+    .map(([id, set]) => ({ id, value: set.size }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, limit);
+    .slice(0, take);
+  const soldRows = sold.map((r) => ({ id: String(r._id), value: r.value }));
 
-  const [bestSelling, popular] = await Promise.all([rankedViews(sold), rankedViews(popularRows)]);
-  return { bestSelling, popular };
+  const ids = [...new Set([...soldRows, ...popularRows].map((r) => r.id))];
+  if (!ids.length) return { bestSelling: [], popular: [] };
+  const { items } = await listCatalog({ ids, seller: sellerId, page: 1 });
+  const byId = new Map(items.map((p) => [p.id, p]));
+  const rank = (rows: { id: string; value: number }[]) =>
+    rows.flatMap((r) => {
+      const product = byId.get(r.id);
+      return product ? [{ product, value: r.value }] : [];
+    }).slice(0, limit);
+  return { bestSelling: rank(soldRows), popular: rank(popularRows) };
 }
 
 export type CartStat = { shops: number; quantity: number };
@@ -271,9 +277,10 @@ export async function cartStatsForSeller(sellerId: string): Promise<{ byProduct:
   const empty = { byProduct: new Map<string, CartStat>(), shops: 0 };
   if (!isValidObjectId(sellerId)) return empty;
   await connectDb();
-  const productIds = (await Product.find({ seller: sellerId, active: true }, { _id: 1 }).lean()).map((p) => p._id);
+  const [products, blockedUsers] = await Promise.all([Product.find({ seller: sellerId, active: true }, { _id: 1 }).lean(), User.find({ role: "buyer", blocked: true }, { _id: 1 }).lean()]);
+  const productIds = products.map((p) => p._id);
   if (!productIds.length) return empty;
-  const blocked = (await User.find({ role: "buyer", blocked: true }, { _id: 1 }).lean()).map((u) => u._id);
+  const blocked = blockedUsers.map((u) => u._id);
   const match = { "items.product": { $in: productIds }, ...(blocked.length ? { buyer: { $nin: blocked } } : {}) };
   const [rows, buyers] = await Promise.all([
     Cart.aggregate<{ _id: Types.ObjectId; shops: number; quantity: number }>([

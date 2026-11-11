@@ -15,6 +15,10 @@ export interface PartnershipDoc {
   terms: string;
   /** Do'kon o'z ombor qoldig'ini shu kompaniyaga ko'rsatadimi. */
   shareStock: boolean;
+  /** Nasiya limiti, so'm: hamkorning to'lanmagan qarzi shundan oshmasligi kerak. 0 — nasiya berilmaydi. */
+  creditLimit: number;
+  /** Nasiya buyurtmasini to'lash muddati, kun. */
+  paymentDays: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +32,8 @@ const schema = new Schema<PartnershipDoc>(
     discount: { type: Number, default: 0, min: 0, max: 50 },
     terms: { type: String, default: "", maxlength: 1000 },
     shareStock: { type: Boolean, default: true },
+    creditLimit: { type: Number, default: 0, min: 0 },
+    paymentDays: { type: Number, default: 14, min: 1, max: 180 },
   },
   { timestamps: true },
 );

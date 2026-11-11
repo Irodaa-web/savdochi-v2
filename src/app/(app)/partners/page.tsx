@@ -27,7 +27,7 @@ export default async function PartnersPage() {
 
   return (
     <section className="flex flex-col gap-5">
-      <PageTitle action={!isSeller && <LinkButton href="/catalog" variant="secondary">{t.partners.find}</LinkButton>}>{t.header.myPartners}</PageTitle>
+      <PageTitle action={!isSeller && <LinkButton href="/catalog" variant="secondary">{t.partners.find}</LinkButton>}>{isSeller ? t.header.myClients : t.header.myPartners}</PageTitle>
       <p className="max-w-2xl text-muted">{isSeller ? t.partners.leadSeller : t.partners.leadBuyer}</p>
 
       {incoming.length > 0 && (
@@ -81,13 +81,14 @@ export default async function PartnersPage() {
                     </span>
                   )}
                 </div>
-                {p.status === "active" && (p.discount > 0 || p.terms) && (
+                {p.status === "active" && (p.discount > 0 || p.terms || p.creditLimit > 0) && (
                   <p className="rounded-lg bg-surface-2 px-3 py-2 text-[13px]">
                     {p.discount > 0 && <b>{fmt(t.partners.discountNote, { n: p.discount })}. </b>}
+                    {p.creditLimit > 0 && <b>{fmt(t.partners.creditNote, { limit: formatAmount(p.creditLimit), days: p.paymentDays })}. </b>}
                     {p.terms}
                   </p>
                 )}
-                {p.status === "active" && isSeller && <PartnerTerms id={p.id} discount={p.discount} terms={p.terms} />}
+                {p.status === "active" && isSeller && <PartnerTerms id={p.id} discount={p.discount} terms={p.terms} creditLimit={p.creditLimit} paymentDays={p.paymentDays} />}
                 {p.status === "active" && !isSeller && (
                   <ActionButton path={`/api/v1/partnerships/${p.id}`} method="PATCH" body={{ action: "update", shareStock: !p.shareStock }} variant="ghost" className="w-fit px-2">
                     {p.shareStock ? t.partners.stopSharing : t.partners.startSharing}

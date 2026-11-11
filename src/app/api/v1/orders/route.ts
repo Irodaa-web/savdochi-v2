@@ -4,12 +4,12 @@ import { checkoutSchema } from "@/lib/validation";
 import { parseBody, withUser } from "@/server/handler";
 import { checkout, listOrders } from "@/server/orders";
 
-/** ?status=new|confirmed|…|open&partner= */
+/** ?status=new|confirmed|…|open&partner=&q= (raqam yoki hamkor nomi) */
 export const GET = withUser(null, async (user, request) => {
   const params = new URL(request.url).searchParams;
   const raw = params.get("status") ?? "";
   const status = raw === "open" || (ORDER_STATUSES as readonly string[]).includes(raw) ? (raw as OrderStatus | "open") : undefined;
-  return ok(await listOrders(user, { status, partnerId: params.get("partner") ?? undefined }));
+  return ok(await listOrders(user, { status, partnerId: params.get("partner") ?? undefined, q: params.get("q") ?? undefined }));
 });
 
 /** Savatdagi bitta kompaniya mahsulotlaridan buyurtma. */

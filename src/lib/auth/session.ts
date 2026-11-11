@@ -41,9 +41,31 @@ async function readToken(): Promise<string | undefined> {
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const payload = await verifyToken(await readToken());
   if (!payload) return null;
+  // Har sahifa bazaga alohida bormasligi uchun: qisqa muddatli xotira (bloklash/parol almashtirish ≤20 s da kuchga kiradi).
+  const key = `${payload.sub}:${payload.v}`;
+  const hit = sessionCache.get(key);
+  if (hit && hit.until > Date.now()) return hit.user;
   await connectDb();
   const user = await User.findById(payload.sub).lean();
-  if (!user || user.blocked || user.authVersion !== payload.v) return null;
+  if (!user || user.blocked || user.authVersion !== payload.v) {
+    sessionCache.delete(key);
+    return null;
+  }
+  const view = toSessionUser(user);
+  if (sessionCache.size > 1000) sessionCache.clear();
+  sessionCache.set(key, { user: view, until: Date.now() + SESSION_CACHE_MS });
+  return view;
+});
+
+const SESSION_CACHE_MS = 20_000;
+const sessionCache = new Map<string, { user: SessionUser; until: number }>();
+
+/** Profil yoki obuna o'zgarganda keshdagi eski ma'lumotni o'chirish. */
+export function forgetSessionUser(userId: string): void {
+  for (const key of sessionCache.keys()) if (key.startsWith(`${userId}:`)) sessionCache.delete(key);
+}
+
+function toSessionUser(user: { _id: unknown; role: Role; name: string; phone: string; region: RegionCode; verification: Verification; demo?: boolean; subscriptionUntil?: Date | null }): SessionUser {
   return {
     id: String(user._id),
     role: user.role,
@@ -55,7 +77,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     demo: Boolean(user.demo),
     subscriptionUntil: user.subscriptionUntil ? new Date(user.subscriptionUntil).toISOString() : null,
   };
-});
+}
 
 export async function startSession(user: { id: string; role: Role; authVersion: number }): Promise<string> {
   const token = await signToken({ sub: user.id, role: user.role, v: user.authVersion });

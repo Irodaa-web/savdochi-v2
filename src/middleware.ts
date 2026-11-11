@@ -2,17 +2,20 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifyToken } from "@/lib/auth/token";
 
 /**
- * Ilova kabi: kirmagan foydalanuvchi faqat kirish/ro'yxatdan o'tish sahifalarini ko'radi.
+ * Ilova kabi: kirmagan foydalanuvchi faqat landing (/welcome), kirish va ro'yxatdan o'tish sahifalarini ko'radi.
  * Bu yerda faqat token imzosi tekshiriladi; bloklangan hisob va hokazo
  * sahifa ichida getSessionUser() orqali tekshiriladi.
  */
 const AUTH_PAGES = ["/login", "/register"];
+/** Kirmaganlar uchun ochiq sahifa (landing). */
+const PUBLIC_PAGES = ["/welcome"];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const session = await verifyToken(request.cookies.get(SESSION_COOKIE)?.value);
-  const isAuthPage = AUTH_PAGES.includes(pathname);
+  const isAuthPage = AUTH_PAGES.includes(pathname) || PUBLIC_PAGES.includes(pathname);
 
+  if (!session && pathname === "/") return NextResponse.redirect(new URL("/welcome", request.url));
   if (!session && !isAuthPage) {
     const url = new URL("/login", request.url);
     if (pathname !== "/") url.searchParams.set("next", pathname + search);

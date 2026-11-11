@@ -2,7 +2,7 @@ import { z } from "zod";
 import { normalizePhone } from "./phone";
 import { REGION_CODES } from "./regions";
 import { CATEGORY_CODES, UNIT_CODES } from "./catalog";
-import { ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES } from "./orders";
+import { DELIVERY_METHODS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, PROFILE_PAYMENT_METHODS } from "./orders";
 import { TICKET_STATUSES } from "./tickets";
 
 /**
@@ -101,7 +101,12 @@ export const profileSchema = z.object({
   leadDays: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(60, "numberInvalid").default(1),
   deliveryFee: money.default(0),
   minOrderTotal: money.default(0),
-  paymentMethods: z.array(z.enum(PAYMENT_METHODS)).max(3).default(["cash"]),
+  paymentMethods: z.array(z.enum(PROFILE_PAYMENT_METHODS)).max(3).default(["cash"]),
+  pickup: z.boolean().default(false),
+  inn: z.string().trim().regex(/^(\d{9})?$/, "innFormat").default(""),
+  bankName: z.string().trim().max(120).default(""),
+  bankAccount: z.string().trim().regex(/^(\d{20})?$/, "accountFormat").default(""),
+  mfo: z.string().trim().regex(/^(\d{5})?$/, "mfoFormat").default(""),
 });
 export type ProfileInput = z.infer<typeof profileSchema>;
 
@@ -112,6 +117,15 @@ export const partnershipUpdateSchema = z.object({
   discount: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(50, "numberInvalid").optional(),
   terms: z.string().trim().max(1000).optional(),
   shareStock: z.boolean().optional(),
+  /** Nasiya limiti, so'm (0 — nasiya yo'q). */
+  creditLimit: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000_000, "numberInvalid").optional(),
+  /** Nasiya to'lov muddati, kun. */
+  paymentDays: z.coerce.number().int("numberInvalid").min(1, "numberInvalid").max(180, "numberInvalid").optional(),
+});
+
+export const debtPaymentSchema = z.object({
+  amount: z.coerce.number().int("numberInvalid").min(1, "numberInvalid").max(10_000_000_000, "numberInvalid"),
+  note: z.string().trim().max(300).default(""),
 });
 
 export const cartSetSchema = z.object({
@@ -125,11 +139,17 @@ export const checkoutSchema = z.object({
   sellerId: z.string().min(1),
   phone,
   region: z.enum(REGION_CODES, { message: "regionRequired" }),
-  address: z.string().trim().min(3, "addressRequired").max(300, "addressRequired"),
+  /** "pickup" — do'kon o'zi olib ketadi: manzil shart emas, yetkazish narxi olinmaydi. */
+  method: z.enum(DELIVERY_METHODS).default("delivery"),
+  address: z.string().trim().max(300, "addressRequired").default(""),
   lat: coord(90),
   lng: coord(180),
   paymentMethod: z.enum(PAYMENT_METHODS, { message: "paymentRequired" }),
   comment: z.string().trim().max(1000).default(""),
+  /** Ikki marta bosish yoki tarmoq uzilib qayta yuborishdan himoya (ixtiyoriy). */
+  requestId: z.string().trim().regex(/^[A-Za-z0-9_-]{8,64}$/).optional(),
+}).superRefine((v, ctx) => {
+  if (v.method === "delivery" && v.address.length < 3) ctx.addIssue({ code: "custom", path: ["address"], message: "addressRequired" });
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
@@ -168,3 +188,13 @@ export const adminUserSchema = z.object({
   /** Obunani shuncha oyga uzaytirish (0 — o'zgarmaydi, -1 — to'xtatish). */
   extendMonths: z.coerce.number().int().min(-1).max(24).optional(),
 });
+
+const merchantId = z.string().trim().min(3, "numberInvalid").max(64, "numberInvalid");
+const secretKey = z.string().trim().max(200).optional();
+/** Kompaniyaning onlayn to'lov hisoblari. Kalit bo'sh — eskisi qoladi; null — o'chirish. */
+export const onlinePaySchema = z.object({
+  payme: z.union([z.object({ merchantId, key: secretKey }), z.null()]).optional(),
+  click: z.union([z.object({ serviceId: merchantId, merchantId, secret: secretKey }), z.null()]).optional(),
+});
+
+export const startPaySchema = z.object({ provider: z.enum(["payme", "click"]) });

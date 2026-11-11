@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
+import { PROFILE_PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import type { ProfileView } from "@/server/profile";
 
@@ -51,10 +51,15 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
     leadDays: String(p.leadDays),
     deliveryFee: String(p.deliveryFee),
     minOrderTotal: String(p.minOrderTotal),
+    inn: p.inn,
+    bankName: p.bankName,
+    bankAccount: p.bankAccount,
+    mfo: p.mfo,
   });
   const [regions, setRegions] = useState<RegionCode[]>(p.deliveryRegions);
   const [days, setDays] = useState<number[]>(p.deliveryDays);
   const [methods, setMethods] = useState<PaymentMethod[]>(p.paymentMethods);
+  const [pickup, setPickup] = useState(p.pickup);
   const [point, setPoint] = useState<Point>(p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -67,7 +72,7 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
     setFields({});
     const res = await api("/api/v1/profile", {
       method: "PUT",
-      body: { ...form, deliveryRegions: regions, deliveryDays: days.sort(), paymentMethods: methods.length ? methods : ["cash"], lat: point?.lat ?? null, lng: point?.lng ?? null },
+      body: { ...form, pickup, deliveryRegions: regions, deliveryDays: days.sort(), paymentMethods: methods.length ? methods : ["cash"], lat: point?.lat ?? null, lng: point?.lng ?? null },
     });
     if (!res.ok) {
       if (res.fields) setFields(res.fields);
@@ -107,9 +112,25 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
             <TextField label={t.profile.deliveryFee} type="number" min={0} value={form.deliveryFee} onChange={set("deliveryFee")} error={fe("deliveryFee")} />
             <TextField label={t.profile.minOrderTotal} type="number" min={0} value={form.minOrderTotal} onChange={set("minOrderTotal")} error={fe("minOrderTotal")} />
           </div>
-          <Chips label={t.profile.paymentMethods} options={PAYMENT_METHODS.map((m) => ({ value: m, label: t.payment[m] }))} value={methods} onChange={setMethods} />
+          <Chips label={t.profile.paymentMethods} options={PROFILE_PAYMENT_METHODS.map((m) => ({ value: m, label: t.payment[m] }))} value={methods} onChange={setMethods} />
+          <label className="flex cursor-pointer items-start gap-2.5 text-[14px]">
+            <input type="checkbox" checked={pickup} onChange={(e) => setPickup(e.target.checked)} className="mt-0.5 size-4 accent-[var(--color-accent)]" />
+            <span>
+              <span className="font-medium">{t.profile.pickup}</span>
+              <span className="block text-[13px] text-muted">{t.profile.pickupHint}</span>
+            </span>
+          </label>
         </section>
       )}
+
+      <section className="grid gap-4 rounded-xl border border-line bg-surface p-5 sm:grid-cols-2">
+        <h2 className="font-semibold sm:col-span-2">{t.profile.requisites}</h2>
+        <p className="-mt-2 text-[13px] text-muted sm:col-span-2">{t.profile.requisitesHint}</p>
+        <TextField label={t.profile.inn} value={form.inn} onChange={set("inn")} error={fe("inn")} inputMode="numeric" maxLength={9} />
+        <TextField label={t.profile.mfo} value={form.mfo} onChange={set("mfo")} error={fe("mfo")} inputMode="numeric" maxLength={5} />
+        <TextField label={t.profile.bankName} value={form.bankName} onChange={set("bankName")} maxLength={120} />
+        <TextField label={t.profile.bankAccount} value={form.bankAccount} onChange={set("bankAccount")} error={fe("bankAccount")} inputMode="numeric" maxLength={20} />
+      </section>
 
       {status === "error" && <Alert>{errors.INVALID_INPUT}</Alert>}
       {status === "saved" && <Alert tone="success">{t.products.saved}</Alert>}

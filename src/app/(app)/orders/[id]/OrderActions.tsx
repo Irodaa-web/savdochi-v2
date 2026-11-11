@@ -14,6 +14,7 @@ export function OrderActions({
   id,
   role,
   status,
+  creditPending = false,
   paymentStatus,
   paidAmount,
   total,
@@ -22,6 +23,7 @@ export function OrderActions({
   id: string;
   role: "buyer" | "seller";
   status: OrderStatus;
+  creditPending?: boolean;
   paymentStatus: PaymentStatus;
   paidAmount: number;
   total: number;
@@ -43,7 +45,7 @@ export function OrderActions({
               variant={s === "cancelled" ? "secondary" : "primary"}
               confirm={s === "cancelled" ? t.orders.cancelConfirm : undefined}
             >
-              {t.orders.actions[s]}
+              {s === "confirmed" && creditPending ? t.orders.approveCredit : t.orders.actions[s]}
             </ActionButton>
           ))}
         </div>

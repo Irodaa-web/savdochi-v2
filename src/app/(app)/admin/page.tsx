@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/auth/guard";
 import { formatPhone } from "@/lib/phone";
 import { adminStats, listAudit, listUsers } from "@/server/admin";
 import { subscriptionActive } from "@/server/profile";
+import { telegramConfig } from "@/server/telegram";
 import { listAllTickets } from "@/server/tickets";
 import { TicketReply } from "./TicketReply";
 
@@ -26,7 +27,17 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   return (
     <section className="flex flex-col gap-5">
-      <PageTitle>{t.admin.title}</PageTitle>
+      <PageTitle
+        action={
+          telegramConfig().enabled && (
+            <ActionButton path="/api/v1/admin/telegram" variant="secondary">
+              {t.admin.setWebhook}
+            </ActionButton>
+          )
+        }
+      >
+        {t.admin.title}
+      </PageTitle>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <Stat label={t.admin.sellers} value={stats.sellers} />
         <Stat label={t.admin.buyers} value={stats.buyers} />

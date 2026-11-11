@@ -1,9 +1,10 @@
 "use client";
 
+import clsx from "clsx";
 import { AlertTriangle, BadgeCheck, Minus, Package, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LocationField, type Point } from "@/components/orders/LocationField";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -91,18 +92,26 @@ function CartRow({ line, unit }: { line: CartLine; unit: string }) {
   const router = useRouter();
   const [qty, setQty] = useState(line.quantity);
   const [busy, setBusy] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Server yangi miqdorni qaytarganda (masalan, boshqa oynadan) — ko'rinishni moslash.
+  useEffect(() => setQty(line.quantity), [line.quantity]);
+  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
 
   async function save(next: number) {
+    if (timer.current) clearTimeout(timer.current);
     setBusy(true);
     await api("/api/v1/cart", { method: "PUT", body: { productId: line.productId, quantity: next } });
     setBusy(false);
     router.refresh();
     refreshBadges();
   }
-  const commit = (n: number) => {
+  /** Raqam darhol o'zgaradi; server ketma-ket bosishlar tugagach (0,5 s) bir marta yangilanadi. */
+  const commit = (n: number, delay = 500) => {
     const next = Math.max(0, Math.floor(n));
     setQty(next || line.quantity);
-    if (next !== line.quantity) void save(next);
+    if (timer.current) clearTimeout(timer.current);
+    if (next === line.quantity || next === 0) return;
+    timer.current = setTimeout(() => void save(next), delay);
   };
 
   const problem = line.problem && (t.cart.problems as Record<string, string>)[line.problem];
@@ -123,7 +132,7 @@ function CartRow({ line, unit }: { line: CartLine; unit: string }) {
         {problem && <div className="text-[13px] font-medium text-danger">{fmt(problem, { n: line.stock, unit })}</div>}
       </div>
       <div className="flex items-center gap-1" aria-busy={busy}>
-        <button type="button" aria-label={t.cart.less} disabled={busy} onClick={() => commit(qty - 1)} className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-line hover:bg-surface-2">
+        <button type="button" aria-label={t.cart.less} onClick={() => commit(qty - 1)} className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-line hover:bg-surface-2">
           <Minus size={14} aria-hidden />
         </button>
         <input
@@ -132,15 +141,15 @@ function CartRow({ line, unit }: { line: CartLine; unit: string }) {
           aria-label={t.cart.quantity}
           value={qty}
           onChange={(e) => setQty(Number(e.target.value) || 0)}
-          onBlur={() => commit(qty)}
-          onKeyDown={(e) => e.key === "Enter" && commit(qty)}
+          onBlur={() => commit(qty, 0)}
+          onKeyDown={(e) => e.key === "Enter" && commit(qty, 0)}
           className="h-8 w-16 rounded-md border border-line bg-surface text-center tabular-nums outline-none focus:border-accent"
         />
-        <button type="button" aria-label={t.cart.more} disabled={busy} onClick={() => commit(qty + 1)} className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-line hover:bg-surface-2">
+        <button type="button" aria-label={t.cart.more} onClick={() => commit(qty + 1)} className="flex size-8 cursor-pointer items-center justify-center rounded-md border border-line hover:bg-surface-2">
           <Plus size={14} aria-hidden />
         </button>
       </div>
-      <div className="w-28 text-right font-semibold tabular-nums">
+      <div className={`w-28 text-right font-semibold tabular-nums ${busy || qty !== line.quantity ? "opacity-50" : ""}`}>
         {formatAmount(line.total)}
       </div>
       <button type="button" aria-label={t.cart.remove} title={t.cart.remove} disabled={busy} onClick={() => save(0)} className="flex size-8 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-danger-soft hover:text-danger">
@@ -150,15 +159,25 @@ function CartRow({ line, unit }: { line: CartLine; unit: string }) {
   );
 }
 
+function newRequestId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defaults: Defaults; onCancel: () => void }) {
   const { t } = useI18n();
   const router = useRouter();
   const errors = t.errors as Record<string, string>;
   const [form, setForm] = useState({ phone: defaults.phone, region: defaults.region as string, address: defaults.address, paymentMethod: g.terms.paymentMethods[0] ?? "cash", comment: "" });
   const [point, setPoint] = useState<Point>(defaults.point);
+  const [method, setMethod] = useState<"delivery" | "pickup">("delivery");
+  const pickup = method === "pickup";
+  const total = pickup ? g.total - g.deliveryFee : g.total;
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Forma ochiq turganda bitta kalit: qayta bosish yoki tarmoq xatosidan keyin qayta yuborish ikkinchi buyurtma yaratmaydi.
+  const [requestId] = useState(newRequestId);
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const outsideArea = g.terms.deliveryRegions.length > 0 && !g.terms.deliveryRegions.includes(form.region as RegionCode);
 
@@ -167,7 +186,7 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
     setBusy(true);
     setError(null);
     setFields({});
-    const res = await api<{ id: string }>("/api/v1/orders", { body: { ...form, sellerId: g.seller.id, lat: point?.lat ?? null, lng: point?.lng ?? null } });
+    const res = await api<{ id: string }>("/api/v1/orders", { body: { ...form, method, requestId, sellerId: g.seller.id, lat: point?.lat ?? null, lng: point?.lng ?? null } });
     if (res.ok) {
       router.push(`/orders/${res.data.id}?placed=1`);
       router.refresh();
@@ -188,9 +207,38 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
         <TextField label={t.auth.phone} value={form.phone} onChange={set("phone")} error={fe("phone")} inputMode="tel" autoComplete="tel" required />
         <SelectField label={t.auth.region} value={form.region} onChange={set("region")} error={fe("region")} options={REGION_CODES.map((r) => ({ value: r, label: t.regions[r] }))} />
       </div>
-      {outsideArea && <Alert tone="info">{t.checkout.outsideArea}</Alert>}
-      <TextField label={t.checkout.address} value={form.address} onChange={set("address")} error={fe("address")} placeholder={t.checkout.addressPlaceholder} required />
-      <LocationField value={point} onChange={setPoint} />
+      {g.terms.pickup && (
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1.5 text-[13px] font-medium">{t.checkout.method}</legend>
+          <div className="flex flex-wrap gap-1.5">
+            {(["delivery", "pickup"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={method === m}
+                onClick={() => setMethod(m)}
+                className={clsx("cursor-pointer rounded-full border px-3.5 py-1.5 text-[13px] font-medium", method === m ? "border-accent bg-accent text-accent-fg" : "border-line bg-surface hover:bg-surface-2")}
+              >
+                {m === "pickup" ? t.checkout.methodPickup : t.checkout.methodDelivery}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {pickup && <Alert tone="info">{g.terms.address ? fmt(t.checkout.pickupFrom, { address: g.terms.address }) : t.checkout.pickupFromUnknown}</Alert>}
+      {!pickup && outsideArea && <Alert tone="info">{t.checkout.outsideArea}</Alert>}
+      {form.paymentMethod === "credit" && g.credit && (
+        <Alert tone="info">
+          {fmt(t.checkout.creditAvailable, { available: formatAmount(g.credit.available), limit: formatAmount(g.credit.limit), days: g.credit.days })}
+          {g.credit.available < total && <span className="mt-1 block font-semibold">{fmt(t.checkout.creditOver, { over: formatAmount(total - g.credit.available) })}</span>}
+        </Alert>
+      )}
+      {!pickup && (
+        <>
+          <TextField label={t.checkout.address} value={form.address} onChange={set("address")} error={fe("address")} placeholder={t.checkout.addressPlaceholder} required />
+          <LocationField value={point} onChange={setPoint} />
+        </>
+      )}
       <SelectField
         label={t.checkout.payment}
         value={form.paymentMethod}
@@ -202,7 +250,7 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
       <p className="text-[13px] text-muted">{fmt(t.checkout.leadDays, { n: g.terms.leadDays })}</p>
       <div className="flex flex-wrap gap-2">
         <Button type="submit" loading={busy}>
-          {fmt(t.checkout.submit, { sum: formatAmount(g.total) })}
+          {fmt(t.checkout.submit, { sum: formatAmount(total) })}
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel}>
           {t.products.cancel}

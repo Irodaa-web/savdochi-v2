@@ -1,4 +1,5 @@
 import "server-only";
+import type { ClientSession } from "mongoose";
 import { isValidObjectId } from "mongoose";
 import { AppError } from "@/lib/api";
 import { unitPriceFor } from "@/lib/catalog";
@@ -8,6 +9,7 @@ import { Cart, type CartDoc } from "@/models/Cart";
 import { Partnership } from "@/models/Partnership";
 import { Product, type ProductDoc } from "@/models/Product";
 import { User, type Profile } from "@/models/User";
+import { creditInfo } from "./debts";
 import { profileOf, subscriptionActive } from "./profile";
 
 export type CartLine = {
@@ -26,7 +28,7 @@ export type CartLine = {
 
 export type CartGroup = {
   seller: { id: string; name: string; verified: boolean };
-  terms: Pick<Profile, "deliveryFee" | "minOrderTotal" | "paymentMethods" | "deliveryRegions" | "leadDays">;
+  terms: Pick<Profile, "deliveryFee" | "minOrderTotal" | "paymentMethods" | "deliveryRegions" | "leadDays" | "pickup"> & { address: string };
   lines: CartLine[];
   subtotal: number;
   discountPercent: number;
@@ -35,6 +37,8 @@ export type CartGroup = {
   total: number;
   belowMinTotal: boolean;
   canOrder: boolean;
+  /** Nasiya: hamkorlik limiti va bo'sh qismi (nasiya berilmagan bo'lsa null). */
+  credit: { limit: number; used: number; available: number; days: number } | null;
 };
 
 export type CartView = { groups: CartGroup[]; count: number };
@@ -74,6 +78,8 @@ export async function getCart(buyerId: string): Promise<CartView> {
           paymentMethods: profile.paymentMethods.length ? profile.paymentMethods : (["cash"] as PaymentMethod[]),
           deliveryRegions: profile.deliveryRegions,
           leadDays: profile.leadDays,
+          pickup: profile.pickup,
+          address: profile.address,
         },
         lines: [],
         subtotal: 0,
@@ -83,6 +89,7 @@ export async function getCart(buyerId: string): Promise<CartView> {
         total: 0,
         belowMinTotal: false,
         canOrder: true,
+        credit: null,
       };
       groups.set(sellerId, group);
     }
@@ -111,6 +118,13 @@ export async function getCart(buyerId: string): Promise<CartView> {
     g.belowMinTotal = g.subtotal < g.terms.minOrderTotal;
     g.canOrder = g.subtotal > 0 && !g.belowMinTotal && g.lines.every((l) => !l.problem);
   }
+  // Nasiya faqat limit berilgan faol hamkorga, to'lov usuli sifatida qo'shiladi.
+  await Promise.all(
+    [...groups.values()].map(async (g) => {
+      g.credit = await creditInfo(g.seller.id, buyerId);
+      if (g.credit) g.terms.paymentMethods = [...g.terms.paymentMethods, "credit"];
+    }),
+  );
   return { groups: [...groups.values()], count: items.length };
 }
 
@@ -142,6 +156,6 @@ export async function setCartItem(buyerId: string, productId: string, quantity: 
   return cart.items.length;
 }
 
-export async function removeCartItems(buyerId: string, productIds: string[]): Promise<void> {
-  await Cart.updateOne({ buyer: buyerId }, { $pull: { items: { product: { $in: productIds } } } });
+export async function removeCartItems(buyerId: string, productIds: string[], session?: ClientSession): Promise<void> {
+  await Cart.updateOne({ buyer: buyerId }, { $pull: { items: { product: { $in: productIds } } } }, { session });
 }

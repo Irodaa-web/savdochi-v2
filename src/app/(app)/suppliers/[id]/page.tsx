@@ -1,4 +1,4 @@
-import { BadgeCheck, CalendarDays, Clock, Flame, MapPin, Package, Star, Truck, Wallet, type LucideIcon } from "lucide-react";
+import { BadgeCheck, CalendarDays, Clock, Flame, MapPin, Package, Star, Store, Truck, Wallet, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -18,13 +18,11 @@ import type { Dictionary } from "@/i18n/dictionaries/uz";
 export default async function SupplierPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const t = getDictionary(await getLocale());
-  const s = await getSellerPublic((await params).id);
+  const id = (await params).id;
+  // Uchala so'rov parallel — bazaga bir "aylanish".
+  const [s, partnership, highlights] = await Promise.all([getSellerPublic(id), user.role === "buyer" ? findPartnership(id, user.id) : null, getSellerHighlights(id)]);
   if (!s) notFound();
   const p = s.profile;
-  const [partnership, highlights] = await Promise.all([
-    user.role === "buyer" ? findPartnership(s.id, user.id) : null,
-    getSellerHighlights(s.id),
-  ]);
   const hasStats = highlights.bestSelling.length > 0 || highlights.popular.length > 0;
 
   const rows: [typeof Truck, string, string][] = [
@@ -34,6 +32,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
     [Truck, t.profile.deliveryFee, p.deliveryFee ? `${formatAmount(p.deliveryFee)} ${t.common.sum}` : t.supplierPage.free],
     [Package, t.profile.minOrderTotal, p.minOrderTotal ? `${formatAmount(p.minOrderTotal)} ${t.common.sum}` : "—"],
     [Wallet, t.profile.paymentMethods, p.paymentMethods.map((m) => t.payment[m]).join(", ")],
+    ...(p.pickup ? ([[Store, t.supplierPage.pickup, t.supplierPage.pickupYes]] as [typeof Truck, string, string][]) : []),
   ];
 
   return (
