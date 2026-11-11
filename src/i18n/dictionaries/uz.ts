@@ -632,6 +632,11 @@ const uz = {
     ctaText: "Ro‘yxatdan o‘tish bepul. Kompaniyalar oylik obuna bilan ishlaydi.",
   },
   onlinePay: {
+    notConnected: "Bu kompaniya onlayn to‘lovni (Payme, Click) hali ulamagan. Naqd yoki bank o‘tkazmasi bilan to‘lang — kompaniya to‘lovni qayd etadi.",
+    payNow: "To‘lash",
+    debtsHint: "To‘lash uchun buyurtma yonidagi “To‘lash” tugmasini bosing.",
+    connectHint: "Do‘konlar sizga Payme yoki Click orqali to‘lashi uchun onlayn to‘lovni ulang — pul to‘g‘ridan-to‘g‘ri hisobingizga tushadi.",
+    connectLink: "Ulash",
     title: "Onlayn to‘lov (Payme, Click)",
     lead: "Do‘konlar buyurtmani to‘g‘ridan-to‘g‘ri sizning Payme yoki Click hisobingizga to‘laydi — pul sizga tushadi, to‘lov qarz daftariga avtomatik yoziladi.",
     payme: "Payme",

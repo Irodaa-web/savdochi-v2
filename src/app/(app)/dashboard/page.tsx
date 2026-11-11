@@ -11,6 +11,7 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
 import { listDebts } from "@/server/debts";
+import { sellerOnlineMethods } from "@/server/onlinePay";
 import { listOrders } from "@/server/orders";
 import { listSellerProducts } from "@/server/products";
 import { subscriptionActive } from "@/server/profile";
@@ -33,6 +34,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     lowStockAcrossPartners(user.id),
     listDebts(user),
   ]);
+  const onlineMethods = await sellerOnlineMethods(user.id);
   const lowOwn = products.filter((p) => p.stock < p.minOrder);
   const maxDaily = Math.max(1, ...report.daily.map((d) => d.value));
 
@@ -40,6 +42,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <div className="flex flex-col gap-5">
       <Welcome user={user} />
       {!subscriptionActive(user.subscriptionUntil) && <Alert>{t.subscription.expiredNote}</Alert>}
+      {onlineMethods.length === 0 && (
+        <Alert tone="info">
+          {t.onlinePay.connectHint}{" "}
+          <Link href="/profile#online-pay" className="font-semibold underline">
+            {t.onlinePay.connectLink}
+          </Link>
+        </Alert>
+      )}
       {debts.totalOverdue > 0 && (
         <Alert>
           <Link href="/debts" className="hover:underline">

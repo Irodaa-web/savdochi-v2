@@ -10,7 +10,10 @@ import { formatAmount } from "@/lib/catalog";
 
 const NAMES = { payme: "Payme", click: "Click" } as const;
 
-/** Do'kon: buyurtmaning qolgan summasini Payme yoki Click orqali to'lash. */
+/**
+ * Do'kon: buyurtmaning qolgan summasini Payme yoki Click orqali to'lash.
+ * Kompaniya onlayn to'lovni ulamagan bo'lsa ham blok ko'rinadi — qanday to'lash mumkinligi yoziladi.
+ */
 export function PayOnline({ orderId, left, methods }: { orderId: string; left: number; methods: ("payme" | "click")[] }) {
   const { t } = useI18n();
   const errors = t.errors as Record<string, string>;
@@ -36,6 +39,7 @@ export function PayOnline({ orderId, left, methods }: { orderId: string; left: n
         {fmt(t.onlinePay.left, { sum: formatAmount(left) })}
       </span>
       {error && <Alert>{error}</Alert>}
+      {methods.length === 0 && <p className="text-[13px] text-muted">{t.onlinePay.notConnected}</p>}
       <div className="flex flex-wrap gap-2">
         {methods.map((m) => (
           <Button key={m} type="button" onClick={() => pay(m)} loading={busy === m} disabled={busy !== null}>
