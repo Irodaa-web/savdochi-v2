@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   const session = await verifyToken(request.cookies.get(SESSION_COOKIE)?.value);
   const isAuthPage = AUTH_PAGES.includes(pathname) || PUBLIC_PAGES.includes(pathname);
 
-  if (!session && pathname === "/") return NextResponse.redirect(new URL("/welcome", request.url));
+  if (!session && pathname === "/") return NextResponse.rewrite(new URL("/welcome", request.url));
   if (!session && !isAuthPage) {
     const url = new URL("/login", request.url);
     if (pathname !== "/") url.searchParams.set("next", pathname + search);
