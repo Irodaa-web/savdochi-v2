@@ -48,7 +48,7 @@ export function OnlinePayForm({ sellerId, initial }: { sellerId: string; initial
   );
 
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-5">
+    <section id="online-pay" className="flex scroll-mt-6 flex-col gap-4 rounded-xl border border-line bg-surface p-5">
       <h2 className="font-semibold">{t.onlinePay.title}</h2>
       <p className="-mt-2 text-[13px] text-muted">{t.onlinePay.lead}</p>
       {message && <Alert tone={message.tone}>{message.text}</Alert>}

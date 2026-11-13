@@ -56,6 +56,7 @@ export default async function LedgerPage({ params }: { params: Promise<{ id: str
         <div className="flex flex-col gap-5">
           <Card className="overflow-x-auto p-0">
             <h2 className="px-5 pt-4 pb-2 font-semibold">{t.debts.unpaidOrders}</h2>
+            {!isSeller && ledger.orders.length > 0 && <p className="px-5 pb-2 text-[13px] text-muted">{t.onlinePay.debtsHint}</p>}
             {ledger.orders.length === 0 ? (
               <p className="px-5 pb-5 text-[14px] text-muted">{t.debts.emptyHint}</p>
             ) : (
@@ -68,6 +69,7 @@ export default async function LedgerPage({ params }: { params: Promise<{ id: str
                     <th className="px-3 py-2 text-right font-medium">{t.orders.paid}</th>
                     <th className="px-3 py-2 text-right font-medium">{t.debts.left}</th>
                     <th className="px-5 py-2 text-right font-medium">{t.orders.dueDate}</th>
+                    {!isSeller && <th className="py-2 pr-5" />}
                   </tr>
                 </thead>
                 <tbody>
@@ -85,6 +87,13 @@ export default async function LedgerPage({ params }: { params: Promise<{ id: str
                       <td className="px-5 py-2.5 text-right">
                         {o.dueDate ? o.overdue ? <Pill tone="danger">{formatDateTime(o.dueDate, locale, false)}</Pill> : formatDateTime(o.dueDate, locale, false) : "—"}
                       </td>
+                      {!isSeller && (
+                        <td className="py-2.5 pr-5 text-right">
+                          <Link href={`/orders/${o.id}`} className="inline-flex h-8 items-center rounded-lg bg-accent px-3 text-[13px] font-semibold text-accent-fg hover:bg-accent-hover">
+                            {t.onlinePay.payNow}
+                          </Link>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
