@@ -1,4 +1,5 @@
 import "server-only";
+import { timingSafeEqual } from "node:crypto";
 import { hashPassword } from "@/lib/auth/password";
 import { connectDb } from "@/lib/db";
 import { Conversation, Message } from "@/models/Chat";
@@ -17,6 +18,30 @@ const DEMO = {
   seller2: { phone: "+998900000002", name: "Demo Ichimliklar Zavodi", region: "tashkent" },
   buyer: { phone: "+998900000011", name: "Demo Baraka Do‘koni", region: "tashkent_city" },
 } as const;
+
+/**
+ * Demo hisoblarning umumiy paroli. Demo hisoblar baribir hammaga ochiq ("Demo" tugmalari),
+ * shuning uchun parol sir emas. Boshqasini xohlasangiz — DEMO_PASSWORD muhit o'zgaruvchisi.
+ */
+export const DEMO_DEFAULT_PASSWORD = "Demo12345";
+
+/**
+ * Demo hisobga telefon + parol bilan kirish (faqat DEMO_MODE=1 da):
+ * demo telefonlar (+998900000001 — kompaniya, +998900000011 — do'kon) demo parol bilan ochiladi.
+ * Parol bazada saqlanmaydi; hisob hali yaratilmagan bo'lsa yaratiladi.
+ * Mos kelmasa null (oddiy kirish tekshiruvi davom etadi).
+ */
+export async function demoPasswordLogin(phone: string, password: string) {
+  const expected = process.env.DEMO_PASSWORD || DEMO_DEFAULT_PASSWORD;
+  if (!demoEnabled() || expected.length < 8) return null;
+  const role = phone === DEMO.seller.phone ? "seller" : phone === DEMO.buyer.phone ? "buyer" : null;
+  if (!role) return null;
+  const a = Buffer.from(password);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  const user = await ensureDemo(role);
+  return user.blocked ? null : user;
+}
 
 /** Demo hisoblar va namuna ma'lumotlarni yaratadi (bir marta). Demo foydalanuvchini qaytaradi. */
 export async function ensureDemo(role: "buyer" | "seller") {
