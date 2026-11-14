@@ -634,6 +634,11 @@ const en: Dictionary = {
     ctaText: "Signing up is free. Companies use a monthly subscription.",
   },
   onlinePay: {
+    notConnected: "This company hasn't connected online payment (Payme, Click) yet. Pay in cash or by bank transfer — the company will record the payment.",
+    payNow: "Pay",
+    debtsHint: "To pay, press “Pay” next to an order.",
+    connectHint: "Connect online payment so stores can pay you via Payme or Click — the money goes straight to your account.",
+    connectLink: "Connect",
     title: "Online payment (Payme, Click)",
     lead: "Stores pay orders directly to your Payme or Click account — the money goes to you and the payment is recorded in the debt ledger automatically.",
     payme: "Payme",
