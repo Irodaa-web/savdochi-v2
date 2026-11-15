@@ -41,8 +41,10 @@ Xato kodlari tarjima qilinadi (`errors.*`), shuning uchun mobil ilova ham o'z ti
 
 | Metod | Yo'l | Tavsif |
 |---|---|---|
-| POST | `/api/v1/auth/register` | `{ role, name, phone, region, password }` |
+| POST | `/api/v1/auth/register` | `{ role, name, phone, region, password, code? }` — SMS yoqilgan bo'lsa `code` majburiy |
 | POST | `/api/v1/auth/login` | `{ phone, password }` → cookie + `token` (mobil uchun) |
+| POST | `/api/v1/auth/code` | SMS kod so'rash `{ phone, purpose: "register" \| "reset" }` (Eskiz.uz sozlangan bo'lsa) |
+| POST | `/api/v1/auth/password-reset` | parolni SMS kod bilan tiklash `{ phone, code, password }` |
 | POST | `/api/v1/auth/logout` | sessiyani yopadi |
 | GET  | `/api/v1/auth/me` | joriy foydalanuvchi (cookie yoki `Authorization: Bearer`) |
 | GET  | `/api/v1/products?q=&category=&seller=&page=` | katalog |
@@ -130,6 +132,7 @@ Vercel → Settings → Functions → Region ni Atlas klasteri joylashgan region
 2. Vercel'da reponi import qiling.
 3. Environment Variables: `MONGODB_URI`, `AUTH_SECRET`, `ADMIN_PHONES`, `APP_URL`, `DEMO_MODE` (ixtiyoriy).
    Qarz eslatmalari uchun: `CRON_SECRET` (tasodifiy uzun satr).
+   SMS tasdiqlash uchun: `ESKIZ_EMAIL`, `ESKIZ_PASSWORD` (my.eskiz.uz).
    Telegram uchun (ixtiyoriy): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`.
 4. Storage → Blob → loyihaga ulang (rasmlar uchun `BLOB_READ_WRITE_TOKEN` avtomatik qo'shiladi).
 5. Deploy.

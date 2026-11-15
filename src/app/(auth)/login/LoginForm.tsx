@@ -10,7 +10,7 @@ import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { errorText, safeNext } from "../authHelpers";
 
-export function LoginForm({ demo = false }: { demo?: boolean }) {
+export function LoginForm({ demo = false, sms = false }: { demo?: boolean; sms?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
   const next = safeNext(useSearchParams().get("next"));
@@ -81,6 +81,12 @@ export function LoginForm({ demo = false }: { demo?: boolean }) {
         hideLabel={t.auth.hidePassword}
         required
       />
+
+      {sms && (
+        <Link href="/forgot" className="-mt-2 w-fit text-[14px] font-semibold text-accent hover:underline">
+          {t.auth.forgot}
+        </Link>
+      )}
 
       <Button type="submit" size="lg" block loading={loading}>
         {t.auth.loginButton}

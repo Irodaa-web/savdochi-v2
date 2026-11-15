@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/db";
 import { hit } from "@/lib/rateLimit";
 import { fieldErrors, registerSchema } from "@/lib/validation";
 import { User } from "@/models/User";
+import { smsEnabled, verifyCode } from "@/server/sms";
 
 const TRIAL_DAYS = 30;
 
@@ -16,6 +17,13 @@ export async function POST(request: Request) {
   try {
     await connectDb();
     if (!(await hit(`register:${clientIp(request)}`, 10, 60 * 60 * 1000))) return fail("TOO_MANY_ATTEMPTS");
+
+    // SMS yoqilgan bo'lsa — telefon egasi ekanini kod bilan tasdiqlash shart.
+    if (smsEnabled()) {
+      if (!input.code) return fail("INVALID_INPUT", { code: "codeRequired" });
+      if (await User.exists({ phone: input.phone })) return fail("PHONE_TAKEN", { phone: "PHONE_TAKEN" });
+      if (!(await verifyCode(input.phone, "register", input.code))) return fail("CODE_INVALID", { code: "CODE_INVALID" });
+    }
 
     const user = await User.create({
       role: input.role,

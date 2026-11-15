@@ -6,7 +6,7 @@ import { SESSION_COOKIE, verifyToken } from "@/lib/auth/token";
  * Bu yerda faqat token imzosi tekshiriladi; bloklangan hisob va hokazo
  * sahifa ichida getSessionUser() orqali tekshiriladi.
  */
-const AUTH_PAGES = ["/login", "/register"];
+const AUTH_PAGES = ["/login", "/register", "/forgot"];
 /** Kirmaganlar uchun ochiq sahifa (landing). */
 const PUBLIC_PAGES = ["/welcome"];
 
