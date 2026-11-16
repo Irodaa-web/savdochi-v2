@@ -75,6 +75,9 @@ export function RegisterForm({ sms = false }: { sms?: boolean }) {
     } else setError(errorText(t, res.error));
   }
 
+  // "… {terms} va {privacy} …" matnini havolalar atrofidagi uch bo'lakka ajratadi.
+  const consent = t.landing.consent.split(/\{terms\}|\{privacy\}/);
+
   const roles: { value: Role; title: string; hint: string; Icon: typeof Store }[] = [
     { value: "buyer", title: t.auth.roleBuyer, hint: t.auth.roleBuyerHint, Icon: Store },
     { value: "seller", title: t.auth.roleSeller, hint: t.auth.roleSellerHint, Icon: Truck },
@@ -190,6 +193,18 @@ export function RegisterForm({ sms = false }: { sms?: boolean }) {
         {sms ? t.auth.getCode : t.auth.registerButton}
       </Button>
       </div>
+
+      <p className="text-center text-[13px] leading-relaxed text-muted">
+        {consent[0]}
+        <Link href="/terms" target="_blank" className="font-semibold text-text hover:underline">
+          {t.landing.consentTerms}
+        </Link>
+        {consent[1]}
+        <Link href="/privacy" target="_blank" className="font-semibold text-text hover:underline">
+          {t.landing.consentPrivacy}
+        </Link>
+        {consent[2]}
+      </p>
 
       <p className="text-center text-muted">
         {t.auth.haveAccount}{" "}

@@ -9,9 +9,12 @@ import { SESSION_COOKIE, verifyToken } from "@/lib/auth/token";
 const AUTH_PAGES = ["/login", "/register", "/forgot"];
 /** Kirmaganlar uchun ochiq sahifa (landing). */
 const PUBLIC_PAGES = ["/welcome"];
+/** Hamma uchun ochiq (kirgan va kirmagan): ommaviy oferta va maxfiylik siyosati. */
+const OPEN_PAGES = ["/terms", "/privacy"];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  if (OPEN_PAGES.includes(pathname)) return NextResponse.next();
   const session = await verifyToken(request.cookies.get(SESSION_COOKIE)?.value);
   const isAuthPage = AUTH_PAGES.includes(pathname) || PUBLIC_PAGES.includes(pathname);
 
