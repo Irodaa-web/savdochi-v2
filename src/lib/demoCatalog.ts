@@ -104,8 +104,13 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     stock: 900,
     packSize: 6,
     priceTiers: [{ min: 100, price: 33000 }],
-    description: "1,5 litrli gazlangan suv. Bir blokda 6 ta shisha. Sovutib iste’mol qiling.",
-    images: [],
+    description: "1,5 litrli gazlangan suv. Bir blokda 6 ta shisha. Sovutib iste’mol qiling. Rasm manbalari (Wikimedia Commons): «Bottled sparkling water» (CC0), «San Pellegrino bottle for sparkling water » (CC BY-SA 4.0), «Sparkling-bottled-water» (CC BY-SA 2.0), «Acquissima Passion natural sparkling mineral water» (CC BY-SA 4.0).",
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Bottled_sparkling_water.jpg/960px-Bottled_sparkling_water.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/San_Pellegrino_bottle_for_sparkling_water_.jpg/960px-San_Pellegrino_bottle_for_sparkling_water_.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Sparkling-bottled-water.jpg/960px-Sparkling-bottled-water.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Acquissima_Passion_natural_sparkling_mineral_water.jpg/960px-Acquissima_Passion_natural_sparkling_mineral_water.jpg",
+    ],
   },
   {
     seller: "seller2",
@@ -117,7 +122,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     stock: 300,
     packSize: 12,
     priceTiers: [],
-    description: "1 litrli meva sharbati. Bir blokda 12 ta idish. Sovutib iste’mol qiling.",
-    images: [],
+    description: "1 litrli meva sharbati. Bir blokda 12 ta idish. Sovutib iste’mol qiling. Rasm manbalari (Wikimedia Commons): «Fruit juices in bottles» (CC BY-SA 4.0), «2021-04-20 19 08 19 A bottle of Ocean Spray Cranberry Juice in the Franklin Farm section of Oak Hill, Fairfax County, Virginia» (CC BY-SA 4.0), «2021-04-20 19 09 13 A bottle of Abound Unsweetened Organic Apple Juice in the Franklin Farm section of Oak Hill, Fairfax County, Virginia» (CC BY-SA 4.0), «Fruit juices 2» (CC BY-SA 4.0).",
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Fruit_juices_in_bottles.jpg/960px-Fruit_juices_in_bottles.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/2021-04-20_19_08_19_A_bottle_of_Ocean_Spray_Cranberry_Juice_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg/960px-2021-04-20_19_08_19_A_bottle_of_Ocean_Spray_Cranberry_Juice_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/2021-04-20_19_09_13_A_bottle_of_Abound_Unsweetened_Organic_Apple_Juice_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg/960px-2021-04-20_19_09_13_A_bottle_of_Abound_Unsweetened_Organic_Apple_Juice_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Fruit_juices_2.jpg/960px-Fruit_juices_2.jpg",
+    ],
   },
 ];
