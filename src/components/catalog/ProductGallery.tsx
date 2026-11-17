@@ -1,13 +1,13 @@
 "use client";
 
 import clsx from "clsx";
-import { Package } from "lucide-react";
 import { useState } from "react";
+import { ProductImage } from "@/components/catalog/ProductImage";
 import { useI18n } from "@/i18n/client";
 import { PRODUCT_ANGLES } from "@/lib/catalog";
 
 /** Mahsulot rasmlari: katta rasm va 4 tomondan kichik rasmlar (bosilganda almashadi). */
-export function ProductGallery({ images, name }: { images: string[]; name: string }) {
+export function ProductGallery({ images, name, category = "other" }: { images: string[]; name: string; category?: string }) {
   const { t } = useI18n();
   const [active, setActive] = useState(0);
   const angleLabel = (i: number) => {
@@ -16,19 +16,22 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
   };
 
   if (!images.length) {
-    return (
-      <div className="flex aspect-[16/9] items-center justify-center rounded-xl border border-line bg-surface-2 text-muted/50">
-        <Package size={56} strokeWidth={1.2} aria-hidden />
-      </div>
-    );
+    return <ProductImage src={null} name={name} category={category} className="aspect-[16/9] w-full rounded-xl border border-line" />;
   }
 
   const current = images[Math.min(active, images.length - 1)]!;
   return (
     <div className="flex flex-col gap-2">
       <div className="relative">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={current} alt={`${name} — ${angleLabel(active)}`} className="aspect-[4/3] w-full rounded-xl border border-line bg-surface-2 object-contain sm:aspect-[16/10]" />
+        <ProductImage
+          key={current}
+          src={current}
+          name={name}
+          category={category}
+          alt={`${name} — ${angleLabel(active)}`}
+          fit="contain"
+          className="aspect-[4/3] w-full rounded-xl border border-line bg-surface-2 sm:aspect-[16/10]"
+        />
         <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-[12px] font-medium text-white">{angleLabel(active)}</span>
       </div>
       {images.length > 1 && (
@@ -45,8 +48,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
                 i === active ? "border-accent" : "border-transparent hover:border-line",
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" loading="lazy" className="aspect-square w-full rounded-md object-cover" />
+              <ProductImage src={src} name={name} category={category} className="aspect-square w-full rounded-md" />
               <span className="truncate px-0.5 text-[11px] text-muted">{angleLabel(i)}</span>
             </button>
           ))}

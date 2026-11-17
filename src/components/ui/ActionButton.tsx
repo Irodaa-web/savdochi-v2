@@ -5,10 +5,11 @@ import { useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { Button, type ButtonProps } from "./Button";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 /**
  * Bitta API amalini bajaradigan tugma: so'rov → sahifani yangilash.
- * Xato bo'lsa tugma yonida tarjima qilingan matn chiqadi.
+ * confirm berilsa, avval tasdiqlash oynasi chiqadi. Xato bo'lsa tugma yonida tarjima qilingan matn chiqadi.
  */
 export function ActionButton({
   path,
@@ -29,10 +30,10 @@ export function ActionButton({
   const { t } = useI18n();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function run() {
-    if (confirm && !window.confirm(confirm)) return;
+  async function execute() {
     setBusy(true);
     setError(null);
     const res = await api(path, { method, body: body ?? {} });
@@ -48,9 +49,20 @@ export function ActionButton({
 
   return (
     <span className="inline-flex flex-col gap-1">
-      <Button type="button" onClick={run} loading={busy} {...rest}>
+      <Button type="button" onClick={() => (confirm ? setAsking(true) : execute())} loading={busy} {...rest}>
         {children}
       </Button>
+      {confirm && (
+        <ConfirmDialog
+          open={asking}
+          message={confirm}
+          onCancel={() => setAsking(false)}
+          onConfirm={() => {
+            setAsking(false);
+            void execute();
+          }}
+        />
+      )}
       {error && (
         <span role="alert" className="text-[12px] text-danger">
           {error}

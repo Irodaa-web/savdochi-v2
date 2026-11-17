@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -29,8 +30,10 @@ export function StockRowEditor({ row }: { row: StockRow }) {
     router.refresh();
   }
 
+  const [asking, setAsking] = useState(false);
+
   async function remove() {
-    if (!window.confirm(t.stock.removeConfirm)) return;
+    setAsking(false);
     await api(`/api/v1/stock/${row.id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -62,9 +65,10 @@ export function StockRowEditor({ row }: { row: StockRow }) {
               {t.stock.order}
             </Link>
           )}
-          <button type="button" onClick={remove} aria-label={t.cart.remove} title={t.cart.remove} className="flex size-9 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-danger-soft hover:text-danger">
+          <button type="button" onClick={() => setAsking(true)} aria-label={t.cart.remove} title={t.cart.remove} className="flex size-9 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-danger-soft hover:text-danger">
             <Trash2 size={16} aria-hidden />
           </button>
+          <ConfirmDialog open={asking} message={t.stock.removeConfirm} danger onCancel={() => setAsking(false)} onConfirm={remove} />
         </div>
       </td>
     </tr>

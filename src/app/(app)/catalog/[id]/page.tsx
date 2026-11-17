@@ -26,7 +26,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex flex-col gap-5">
-          <ProductGallery images={p.images} name={p.name} />
+          <ProductGallery images={p.images} name={p.name} category={p.category} />
           {p.description && <p className="leading-relaxed whitespace-pre-line">{p.description}</p>}
         </div>
 

@@ -2,6 +2,9 @@ import type { Dictionary } from "./uz";
 
 const en: Dictionary = {
   common: {
+    cancel: "Cancel",
+    confirm: "Confirm",
+    close: "Close",
     appName: "Savdochi",
     tagline: "Wholesale platform for companies and stores",
     loading: "Loading…",
@@ -423,6 +426,8 @@ const en: Dictionary = {
     submit: "Send order · {sum} UZS",
   },
   orders: {
+    reorderPartial: "{added} of {total} items added to cart. The rest are out of stock or archived.",
+    toCart: "Go to cart",
     creditPill: "Awaiting approval",
     creditPendingSeller: "This order exceeds the credit limit by {over} UZS. “Approve exceeding the limit” accepts the order; “Cancel” rejects it.",
     creditPendingBuyer: "This order exceeds the credit limit by {over} UZS — waiting for the company to approve.",

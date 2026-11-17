@@ -1,5 +1,8 @@
 const uz = {
   common: {
+    cancel: "Bekor qilish",
+    confirm: "Tasdiqlash",
+    close: "Yopish",
     appName: "Savdochi",
     tagline: "Kompaniya va do‘konlar uchun ulgurji savdo platformasi",
     loading: "Yuklanmoqda…",
@@ -421,6 +424,8 @@ const uz = {
     submit: "Buyurtma yuborish · {sum} so‘m",
   },
   orders: {
+    reorderPartial: "{added} ta / {total} ta mahsulot savatga qo‘shildi. Qolganlari qoldiq yoki arxiv sababli qo‘shilmadi.",
+    toCart: "Savatga o‘tish",
     creditPill: "Tasdiq kutilmoqda",
     creditPendingSeller: "Bu buyurtma nasiya limitidan {over} so‘m oshgan. “Limitdan oshishni tasdiqlash” bossangiz — buyurtma qabul qilinadi; “Bekor qilish” — rad etiladi.",
     creditPendingBuyer: "Buyurtma nasiya limitidan {over} so‘m oshgan — kompaniya tasdig‘i kutilmoqda.",
