@@ -2,6 +2,7 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { hashPassword } from "@/lib/auth/password";
 import { connectDb } from "@/lib/db";
+import { DEMO_PRODUCTS } from "@/lib/demoCatalog";
 import { Conversation, Message } from "@/models/Chat";
 import { nextSeq } from "@/models/Counter";
 import { Order } from "@/models/Order";
@@ -43,11 +44,29 @@ export async function demoPasswordLogin(phone: string, password: string) {
   return user.blocked ? null : user;
 }
 
+/**
+ * Mavjud demo kompaniyalarga yangi rasm va tavsifni qo'shadi — faqat bo'sh joylarga,
+ * kompaniya o'zi kiritgan ma'lumotga tegmaydi. Eski demo baza uchun ham ishlaydi.
+ */
+async function syncDemoCatalog() {
+  const sellers = await User.find({ phone: { $in: [DEMO.seller.phone, DEMO.seller2.phone] }, demo: true }).select("_id phone").lean();
+  const idByPhone = new Map(sellers.map((s) => [s.phone, s._id] as const));
+  for (const d of DEMO_PRODUCTS) {
+    const seller = idByPhone.get(DEMO[d.seller].phone);
+    if (!seller) continue;
+    await Product.updateOne({ seller, name: d.name, images: { $size: 0 } }, { $set: { images: d.images } });
+    await Product.updateOne({ seller, name: d.name, description: "" }, { $set: { description: d.description } });
+  }
+}
+
 /** Demo hisoblar va namuna ma'lumotlarni yaratadi (bir marta). Demo foydalanuvchini qaytaradi. */
 export async function ensureDemo(role: "buyer" | "seller") {
   await connectDb();
   const existing = await User.findOne({ phone: role === "seller" ? DEMO.seller.phone : DEMO.buyer.phone });
-  if (existing) return existing;
+  if (existing) {
+    await syncDemoCatalog();
+    return existing;
+  }
 
   const passwordHash = await hashPassword(crypto.randomUUID());
   const profile = {
@@ -66,14 +85,8 @@ export async function ensureDemo(role: "buyer" | "seller") {
     { ...DEMO.buyer, role: "buyer", passwordHash, verification: "verified", demo: true, profile: { address: "Toshkent, Yunusobod 4-kvartal, 12-uy", lat: 41.3651, lng: 69.2847 } },
   ]);
 
-  const products = await Product.create([
-    { seller: seller!._id, name: "Paxta yog‘i, 5 l", category: "food", unit: "piece", price: 98000, minOrder: 10, stock: 400, packSize: 1, priceTiers: [{ min: 50, price: 94000 }, { min: 100, price: 91000 }], description: "Tozalangan paxta yog‘i." },
-    { seller: seller!._id, name: "Un, oliy nav, 50 kg", category: "food", unit: "bag", price: 310000, minOrder: 5, stock: 120, packSize: 1, priceTiers: [{ min: 20, price: 299000 }] },
-    { seller: seller!._id, name: "Shakar, 50 kg", category: "food", unit: "bag", price: 420000, minOrder: 2, stock: 80, packSize: 1 },
-    { seller: seller!._id, name: "Guruch Lazer, 25 kg", category: "food", unit: "bag", price: 375000, minOrder: 4, stock: 60, packSize: 1 },
-    { seller: seller2!._id, name: "Gazlangan suv, 1.5 l", category: "drinks", unit: "block", price: 36000, minOrder: 20, stock: 900, packSize: 6, priceTiers: [{ min: 100, price: 33000 }] },
-    { seller: seller2!._id, name: "Sharbat, 1 l", category: "drinks", unit: "block", price: 72000, minOrder: 10, stock: 300, packSize: 12 },
-  ]);
+  const sellerRef = { seller: seller!._id, seller2: seller2!._id };
+  const products = await Product.create(DEMO_PRODUCTS.map(({ seller: key, ...p }) => ({ ...p, seller: sellerRef[key] })));
 
   await Partnership.create([
     { seller: seller!._id, buyer: buyer!._id, status: "active", requestedBy: "buyer", discount: 3, terms: "Har dushanba yetkazib berish. To‘lov 7 kun ichida.", shareStock: true },
