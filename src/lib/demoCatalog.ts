@@ -34,8 +34,13 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
       { min: 50, price: 94000 },
       { min: 100, price: 91000 },
     ],
-    description: "5 litrli idishdagi tozalangan paxta yog‘i. Kundalik ovqat tayyorlash uchun. Muhrlangan idishni quruq, salqin joyda saqlang.",
-    images: [],
+    description: "5 litrli idishdagi tozalangan paxta yog‘i. Kundalik ovqat tayyorlash uchun. Muhrlangan idishni quruq, salqin joyda saqlang. Rasm manbalari (Wikimedia Commons): «Bottle 1 liter Sunflower refined oil» (CC BY-SA 4.0), «2022-05-30 21 06 43 A bottle of Wesson vegetable oil in the Mountainville section of Ewing Township, Mercer County, New Jersey» (CC BY-SA 4.0), «Bottles of palm oil» (CC BY-SA 4.0), «Pflanzenoelflaschen Preise 2022» (CC BY-SA 4.0).",
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Bottle_1_liter_Sunflower_refined_oil.jpg/960px-Bottle_1_liter_Sunflower_refined_oil.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/2022-05-30_21_06_43_A_bottle_of_Wesson_vegetable_oil_in_the_Mountainville_section_of_Ewing_Township%2C_Mercer_County%2C_New_Jersey.jpg/960px-2022-05-30_21_06_43_A_bottle_of_Wesson_vegetable_oil_in_the_Mountainville_section_of_Ewing_Township%2C_Mercer_County%2C_New_Jersey.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Bottles_of_palm_oil.jpg/960px-Bottles_of_palm_oil.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Pflanzenoelflaschen_Preise_2022.jpg/960px-Pflanzenoelflaschen_Preise_2022.jpg",
+    ],
   },
   {
     seller: "seller",
