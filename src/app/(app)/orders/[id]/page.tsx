@@ -25,7 +25,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const placed = sp.placed === "1";
   const left = o.total - o.paidAmount;
   // Do'kon uchun: kompaniya Payme/Click ulagan bo'lsa — qolgan summani onlayn to'lash.
-  const payMethods = user.role === "buyer" && o.status !== "cancelled" && left > 0 && o.creditApproval !== "pending" ? await sellerOnlineMethods(o.seller.id) : [];
+  const canPay = user.role === "buyer" && o.status !== "cancelled" && left > 0 && o.creditApproval !== "pending";
+  const payMethods = canPay ? await sellerOnlineMethods(o.seller.id) : [];
   const isSeller = user.role === "seller";
   const partner = isSeller ? o.buyer : o.seller;
   const units = t.units as Record<string, string>;
@@ -125,7 +126,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
         <aside className="flex flex-col gap-4">
           <Card className="flex flex-col gap-3">
-            {payMethods.length > 0 && <PayOnline orderId={o.id} left={left} methods={payMethods} />}
+            {canPay && <PayOnline orderId={o.id} left={left} methods={payMethods} />}
             <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
           </Card>
 

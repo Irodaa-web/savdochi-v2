@@ -202,6 +202,14 @@ export default async function WelcomePage() {
       <footer className="border-t border-line py-8 text-center text-[13px] text-muted">
         <Logo className="mb-2 justify-center" />
         <p>{t.common.tagline}</p>
+        <p className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1">
+          <Link href="/terms" className="hover:text-text hover:underline">
+            {l.terms}
+          </Link>
+          <Link href="/privacy" className="hover:text-text hover:underline">
+            {l.privacy}
+          </Link>
+        </p>
       </footer>
     </div>
   );

@@ -27,13 +27,20 @@ export const loginSchema = z.object({
   password: z.string().min(1, "passwordShort").max(128),
 });
 
+const smsCode = z.string().trim().regex(/^\d{6}$/, "codeFormat");
+
 export const registerSchema = z.object({
   role: z.enum(["buyer", "seller"]),
   name: z.string().trim().min(2, "nameShort").max(120, "nameShort"),
   phone,
   region: z.enum(REGION_CODES, { message: "regionRequired" }),
   password,
+  /** SMS kod — SMS yoqilgan bo'lsa majburiy (server tekshiradi). */
+  code: smsCode.optional(),
 });
+
+export const smsRequestSchema = z.object({ phone, purpose: z.enum(["register", "reset"]) });
+export const passwordResetSchema = z.object({ phone, code: smsCode, password });
 
 const positiveInt = (max: number) => z.coerce.number().int("numberInvalid").min(1, "numberInvalid").max(max, "numberInvalid");
 

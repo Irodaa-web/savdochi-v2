@@ -12,6 +12,7 @@ import "./Partnership";
 import "./Payment";
 import "./Product";
 import "./RateLimit";
+import "./SmsCode";
 import "./StoreStock";
 import "./Ticket";
 import "./User";

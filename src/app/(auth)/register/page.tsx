@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getDictionary, getLocale } from "@/i18n/server";
+import { smsEnabled } from "@/server/sms";
 import { RegisterForm } from "./RegisterForm";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function RegisterPage() {
   return (
     <Suspense>
-      <RegisterForm />
+      <RegisterForm sms={smsEnabled()} />
     </Suspense>
   );
 }

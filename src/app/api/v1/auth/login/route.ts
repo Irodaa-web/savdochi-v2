@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/db";
 import { hit, reset } from "@/lib/rateLimit";
 import { fieldErrors, loginSchema } from "@/lib/validation";
 import { User } from "@/models/User";
+import { demoPasswordLogin } from "@/server/demo";
 
 const WINDOW = 15 * 60 * 1000;
 
@@ -19,6 +20,14 @@ export async function POST(request: Request) {
     const ipKey = `login:ip:${clientIp(request)}`;
     const [phoneOk, ipOk] = await Promise.all([hit(phoneKey, 8, WINDOW), hit(ipKey, 40, WINDOW)]);
     if (!phoneOk || !ipOk) return fail("TOO_MANY_ATTEMPTS");
+
+    // Demo hisoblar: DEMO_PASSWORD sozlangan bo'lsa, shu parol bilan ham kiriladi.
+    const demo = await demoPasswordLogin(phone, password);
+    if (demo) {
+      await reset(phoneKey);
+      const token = await startSession({ id: String(demo._id), role: demo.role, authVersion: demo.authVersion });
+      return ok({ token, user: { id: String(demo._id), role: demo.role, name: demo.name } });
+    }
 
     const user = await User.findOne({ phone }).select("+passwordHash");
     if (!user) {
