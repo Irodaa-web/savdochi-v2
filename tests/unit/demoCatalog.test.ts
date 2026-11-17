@@ -3,8 +3,13 @@ import { CATEGORY_CODES, UNIT_CODES } from "@/lib/catalog";
 import { DEMO_PRODUCTS } from "@/lib/demoCatalog";
 
 describe("demo katalog", () => {
-  it("har bir mahsulotda tavsif bor", () => {
+  it("rasmlar https va 4 tadan oshmaydi, tavsif bor", () => {
     for (const p of DEMO_PRODUCTS) {
+      expect(p.images.length, p.name).toBeLessThanOrEqual(4);
+      for (const img of p.images) {
+        expect(img.length, p.name).toBeLessThanOrEqual(500);
+        expect(new URL(img).protocol, p.name).toBe("https:");
+      }
       expect(p.description.length, p.name).toBeGreaterThan(20);
     }
   });
