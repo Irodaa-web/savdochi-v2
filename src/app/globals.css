@@ -22,6 +22,9 @@
   --c-accent-hover: #843d1c;
   --c-accent-fg: #ffffff;
   --c-accent-soft: #f7ebe3;
+  /* Diagramma ustunlari va o'q chizig'i (kontrast tekshirilgan). */
+  --c-chart: #9c4a24;
+  --c-chart-axis: #cfc8ba;
   --c-danger: #b42318;
   --c-danger-soft: #fdecea;
   --c-success: #15803d;
@@ -29,6 +32,7 @@
   --c-focus: #c4683c;
   --c-shadow: 0 1px 2px rgb(28 26 22 / 0.05), 0 6px 18px -12px rgb(28 26 22 / 0.14);
   --c-shadow-lg: 0 24px 48px -20px rgb(28 26 22 / 0.38);
+  --c-shadow-tip: 0 1px 2px rgb(28 26 22 / 0.06), 0 8px 22px -10px rgb(28 26 22 / 0.24);
   color-scheme: light;
 }
 
@@ -49,6 +53,8 @@
   --c-accent-hover: #ea9670;
   --c-accent-fg: #1b1510;
   --c-accent-soft: #3a2519;
+  --c-chart: #cf774a;
+  --c-chart-axis: #4d463b;
   --c-danger: #ff8a7a;
   --c-danger-soft: #3d1f1c;
   --c-success: #86e0b4;
@@ -56,6 +62,7 @@
   --c-focus: #ea9670;
   --c-shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 26px -14px rgb(0 0 0 / 0.65);
   --c-shadow-lg: 0 26px 52px -18px rgb(0 0 0 / 0.8);
+  --c-shadow-tip: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 24px -10px rgb(0 0 0 / 0.7);
     color-scheme: dark;
   }
 }
@@ -76,6 +83,8 @@
   --c-accent-hover: #ea9670;
   --c-accent-fg: #1b1510;
   --c-accent-soft: #3a2519;
+  --c-chart: #cf774a;
+  --c-chart-axis: #4d463b;
   --c-danger: #ff8a7a;
   --c-danger-soft: #3d1f1c;
   --c-success: #86e0b4;
@@ -83,6 +92,7 @@
   --c-focus: #ea9670;
   --c-shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 26px -14px rgb(0 0 0 / 0.65);
   --c-shadow-lg: 0 26px 52px -18px rgb(0 0 0 / 0.8);
+  --c-shadow-tip: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 24px -10px rgb(0 0 0 / 0.7);
   color-scheme: dark;
 }
 
@@ -102,6 +112,8 @@
   --color-accent-hover: var(--c-accent-hover);
   --color-accent-fg: var(--c-accent-fg);
   --color-accent-soft: var(--c-accent-soft);
+  --color-chart: var(--c-chart);
+  --color-chart-axis: var(--c-chart-axis);
   --color-danger: var(--c-danger);
   --color-danger-soft: var(--c-danger-soft);
   --color-success: var(--c-success);
@@ -305,6 +317,13 @@ body {
   background-image: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.18) 50%, transparent 70%);
   background-size: 200% 100%;
   animation: land-shine 4s linear infinite;
+}
+
+/* Diagramma ustunlari yuklanganda pastdan o'sib chiqadi (motion-safe: harakat kamaytirilsa — yo'q). */
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
+  }
 }
 
 /* Sahifa aylantirilganda paydo bo'lish: JS ishlasa (html.reveal-on) yashirin boshlanadi. */

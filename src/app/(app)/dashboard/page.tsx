@@ -1,12 +1,13 @@
 import clsx from "clsx";
 import { AlertTriangle, Plus, Warehouse } from "lucide-react";
 import Link from "next/link";
+import { DailySalesChart } from "@/components/dashboard/DailySalesChart";
 import { PaymentPill, StatusPill } from "@/components/orders/StatusPill";
 import { Welcome } from "@/components/Welcome";
 import { Alert } from "@/components/ui/Alert";
 import { Card, Stat } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/LinkButton";
-import { fmt, formatDateTime } from "@/i18n/format";
+import { fmt, formatDateTime, formatDay } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
@@ -36,7 +37,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   ]);
   const onlineMethods = await sellerOnlineMethods(user.id);
   const lowOwn = products.filter((p) => p.stock < p.minOrder);
-  const maxDaily = Math.max(1, ...report.daily.map((d) => d.value));
+  // Sana matnlari serverda: brauzer bilan bir xil chiqadi (hydration mos keladi).
+  const chartDays = report.daily.map((d) => ({ ...d, label: formatDay(d.day, locale, "short"), full: formatDay(d.day, locale, "long") }));
+  const topMax = Math.max(1, ...report.topProducts.map((p) => p.value));
 
   return (
     <div className="flex flex-col gap-5">
@@ -77,12 +80,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {report.totalOrders > 0 && (
         <Card>
-          <h3 className="mb-3 text-[14px] font-semibold">{t.dashboard.daily}</h3>
-          <div className="flex h-32 items-end gap-1" role="img" aria-label={t.dashboard.daily}>
-            {report.daily.map((d) => (
-              <div key={d.day} title={`${d.day}: ${formatAmount(d.value)}`} className={clsx("min-w-0.5 flex-1 rounded-t", d.value ? "bg-accent" : "bg-surface-2")} style={{ height: `${d.value ? Math.max(4, (d.value / maxDaily) * 100) : 2}%` }} />
-            ))}
-          </div>
+          <DailySalesChart key={days} days={chartDays} />
         </Card>
       )}
 
@@ -125,17 +123,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           )}
         </Card>
 
-        <Card className="flex flex-col gap-2">
+        <Card className="flex flex-col gap-3">
           <h3 className="font-semibold">{t.dashboard.top}</h3>
           {report.topProducts.length === 0 ? (
             <p className="text-[14px] text-muted">—</p>
           ) : (
-            report.topProducts.map((p) => (
-              <div key={p.name} className="flex justify-between gap-2 text-[14px]">
-                <span className="truncate">{p.name}</span>
-                <b className="tabular-nums">{formatAmount(p.value)}</b>
-              </div>
-            ))
+            <ol className="flex flex-col gap-3.5">
+              {report.topProducts.map((p) => (
+                <li key={p.name}>
+                  <div className="flex items-baseline justify-between gap-3 text-[14px]">
+                    <span className="min-w-0 truncate">{p.name}</span>
+                    <b className="shrink-0 tabular-nums">{formatAmount(p.value)}</b>
+                  </div>
+                  <div className="text-[12px] text-muted">{fmt(t.dashboard.topQuantity, { n: formatAmount(p.quantity), unit: t.units[p.unit as keyof typeof t.units] ?? p.unit })}</div>
+                  {/* Eng ko'p sotilganga nisbatan ulush: qiymat yonida yozilgan, ustun faqat taqqoslash uchun. */}
+                  <div aria-hidden className="mt-1.5 h-1.5 rounded-r-[4px] bg-chart" style={{ width: `${Math.max(2, (p.value / topMax) * 100)}%` }} />
+                </li>
+              ))}
+            </ol>
           )}
           <p className="mt-1 text-[13px] text-muted">{fmt(t.dashboard.repeat, { n: report.repeatPartners })}</p>
         </Card>
