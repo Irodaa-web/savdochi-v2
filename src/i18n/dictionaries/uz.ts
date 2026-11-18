@@ -120,6 +120,7 @@ const uz = {
     stock: "Ombor",
   },
   header: {
+    payments: "To‘lovlar",
     debts: "Qarzlar",
     search: "Kompaniya nomini qidiring",
     searchProducts: "Mahsulot nomini qidiring",

@@ -122,6 +122,7 @@ const ru: Dictionary = {
     stock: "Склад",
   },
   header: {
+    payments: "Платежи",
     debts: "Долги",
     search: "Поиск компании по названию",
     searchProducts: "Поиск товара по названию",

@@ -122,6 +122,7 @@ const en: Dictionary = {
     stock: "Inventory",
   },
   header: {
+    payments: "Payments",
     debts: "Debts",
     search: "Search companies by name",
     searchProducts: "Search products by name",
