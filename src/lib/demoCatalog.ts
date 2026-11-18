@@ -52,12 +52,11 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     stock: 120,
     packSize: 1,
     priceTiers: [{ min: 20, price: 299000 }],
-    description: "50 kg li qopdagi oliy nav bug‘doy uni. Non, xamir va konditer mahsulotlari uchun. Quruq joyda saqlang. Rasm manbalari (Wikimedia Commons): «A man carring wheat flour sacks for sale» (CC BY-SA 4.0), «Weizenmehl Type 405» (CC BY-SA 3.0), «Uskladněná mouka» (CC BY 3.0), «Men loading wheat sacks at Flour Mill Port Adelaide» (CC0).",
+    description: "50 kg li qopdagi oliy nav bug‘doy uni. Non, xamir va konditer mahsulotlari uchun. Quruq joyda saqlang. Rasm manbalari (Wikimedia Commons): «A man carring wheat flour sacks for sale» (CC BY-SA 4.0), «Weizenmehl Type 405» (CC BY-SA 3.0), «Uskladněná mouka» (CC BY 3.0).",
     images: [
       "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/A_man_carring_wheat_flour_sacks_for_sale.jpg/960px-A_man_carring_wheat_flour_sacks_for_sale.jpg",
       "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Weizenmehl_Type_405.jpg/960px-Weizenmehl_Type_405.jpg",
       "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Uskladn%C4%9Bn%C3%A1_mouka.JPG/960px-Uskladn%C4%9Bn%C3%A1_mouka.JPG",
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Men_loading_wheat_sacks_at_Flour_Mill_Port_Adelaide%28GN02259%29.jpg/960px-Men_loading_wheat_sacks_at_Flour_Mill_Port_Adelaide%28GN02259%29.jpg",
     ],
   },
   {
@@ -70,12 +69,10 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     stock: 80,
     packSize: 1,
     priceTiers: [],
-    description: "50 kg li qopdagi oq donador shakar. Choy, sharbat va konditer mahsulotlari uchun. Quruq joyda saqlang. Rasm manbalari (Wikimedia Commons): «Kenana sugar Kosti» (CC BY 3.0), «Sacks of raw sugar in the Philippines» (CC BY-SA 3.0), «Filling sugar sacks, Hawaii» (ommaviy mulk), «Filling, weighing and sewing 25 lb sacks of sugar» (ommaviy mulk).",
+    description: "50 kg li qopdagi oq donador shakar. Choy, sharbat va konditer mahsulotlari uchun. Quruq joyda saqlang. Rasm manbalari (Wikimedia Commons): «Kenana sugar Kosti» (CC BY 3.0), «Sacks of raw sugar in the Philippines» (CC BY-SA 3.0).",
     images: [
       "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Kenana_sugar_Kosti.jpg/960px-Kenana_sugar_Kosti.jpg",
       "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Sacks_of_raw_sugar_in_the_Philippines.jpg/960px-Sacks_of_raw_sugar_in_the_Philippines.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Filling_sugar_sacks%2C_Hawaii.jpg/960px-Filling_sugar_sacks%2C_Hawaii.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Filling%2C_weighing_and_sewing_25_lb_sacks_of_sugar_LCCN2016824512.jpg/960px-Filling%2C_weighing_and_sewing_25_lb_sacks_of_sugar_LCCN2016824512.jpg",
     ],
   },
   {
@@ -104,9 +101,8 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     stock: 900,
     packSize: 6,
     priceTiers: [{ min: 100, price: 33000 }],
-    description: "1,5 litrli gazlangan suv. Bir blokda 6 ta shisha. Sovutib iste’mol qiling. Rasm manbalari (Wikimedia Commons): «Bottled sparkling water» (CC0), «San Pellegrino bottle for sparkling water » (CC BY-SA 4.0), «Sparkling-bottled-water» (CC BY-SA 2.0), «Acquissima Passion natural sparkling mineral water» (CC BY-SA 4.0).",
+    description: "1,5 litrli gazlangan suv. Bir blokda 6 ta shisha. Sovutib iste’mol qiling. Rasm manbalari (Wikimedia Commons): «San Pellegrino bottle for sparkling water » (CC BY-SA 4.0), «Sparkling-bottled-water» (CC BY-SA 2.0), «Acquissima Passion natural sparkling mineral water» (CC BY-SA 4.0).",
     images: [
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Bottled_sparkling_water.jpg/960px-Bottled_sparkling_water.jpg",
       "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/San_Pellegrino_bottle_for_sparkling_water_.jpg/960px-San_Pellegrino_bottle_for_sparkling_water_.jpg",
       "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Sparkling-bottled-water.jpg/960px-Sparkling-bottled-water.jpg",
       "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Acquissima_Passion_natural_sparkling_mineral_water.jpg/960px-Acquissima_Passion_natural_sparkling_mineral_water.jpg",
