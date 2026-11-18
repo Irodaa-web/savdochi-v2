@@ -1,55 +1,88 @@
 @import "tailwindcss";
 
 /*
- * Savdochi dizayn tokenlari — "Ko'mir va terrakota" (Variant D).
- * Barcha ranglar shu yerda. Komponentlar faqat tokenlardan foydalanadi:
- * bg-surface, text-muted, border-line, bg-accent va hokazo.
+ * Savdochi dizayn tokenlari — "Ko'mir va terrakota". Yorug' va qorong'i mavzu.
+ * Standart: qurilma sozlamasi (tizim mavzusi). Foydalanuvchi tugma bilan tanlasa, cookie "theme" saqlanadi.
+ * Komponentlar faqat tokenlardan foydalanadi: bg-surface, text-muted, border-line, bg-accent va hokazo.
  */
-:root {
-  --c-bg: #f6f4ef;
+:root,
+[data-theme="light"] {
+  --c-bg: #f5f3ee;
   --c-surface: #ffffff;
-  --c-surface-2: #f1eee7;
-  --c-line: #e6e1d6;
-  --c-text: #1f1c17;
-  --c-muted: #5f5a50;
-  --c-header: #22201c;
-  --c-header-2: #2e2b26;
-  --c-header-line: #47423a;
+  --c-surface-2: #f3f0e9;
+  --c-line: #e4dfd4;
+  --c-text: #1c1a16;
+  --c-muted: #6a645a;
+  --c-header: #1f1d19;
+  --c-header-2: #2b2823;
+  --c-header-line: #413c34;
   --c-header-text: #ffffff;
-  --c-header-muted: #cfc8ba;
+  --c-header-muted: #cbc4b5;
   --c-accent: #9c4a24;
-  --c-accent-hover: #85401f;
+  --c-accent-hover: #843d1c;
   --c-accent-fg: #ffffff;
-  --c-accent-soft: #f6e7de;
+  --c-accent-soft: #f7ebe3;
   --c-danger: #b42318;
-  --c-danger-soft: #fce8e6;
-  --c-success: #166534;
-  --c-success-soft: #e3f3ec;
+  --c-danger-soft: #fdecea;
+  --c-success: #15803d;
+  --c-success-soft: #e5f4ea;
   --c-focus: #c4683c;
+  --c-shadow: 0 1px 2px rgb(28 26 22 / 0.05), 0 6px 18px -12px rgb(28 26 22 / 0.14);
+  --c-shadow-lg: 0 24px 48px -20px rgb(28 26 22 / 0.38);
   color-scheme: light;
 }
 
-:root[data-theme="dark"] {
-  --c-bg: #171512;
-  --c-surface: #211e1a;
-  --c-surface-2: #2a2621;
-  --c-line: #36312a;
-  --c-text: #f1ede6;
-  --c-muted: #b3ab9c;
-  --c-header: #110f0d;
-  --c-header-2: #1d1a16;
-  --c-header-line: #36312a;
-  --c-header-text: #f1ede6;
-  --c-header-muted: #b3ab9c;
-  --c-accent: #d9774a;
-  --c-accent-hover: #e48a60;
-  --c-accent-fg: #1f1c17;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --c-bg: #13110f;
+  --c-surface: #1c1915;
+  --c-surface-2: #252019;
+  --c-line: #3a342b;
+  --c-text: #f3eee6;
+  --c-muted: #aca396;
+  --c-header: #0e0c0a;
+  --c-header-2: #1f1b17;
+  --c-header-line: #3a342b;
+  --c-header-text: #f3eee6;
+  --c-header-muted: #aca396;
+  --c-accent: #e0875a;
+  --c-accent-hover: #ea9670;
+  --c-accent-fg: #1b1510;
   --c-accent-soft: #3a2519;
   --c-danger: #ff8a7a;
-  --c-danger-soft: #3d1e1e;
-  --c-success: #7dd3a8;
+  --c-danger-soft: #3d1f1c;
+  --c-success: #86e0b4;
   --c-success-soft: #173326;
-  --c-focus: #e48a60;
+  --c-focus: #ea9670;
+  --c-shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 26px -14px rgb(0 0 0 / 0.65);
+  --c-shadow-lg: 0 26px 52px -18px rgb(0 0 0 / 0.8);
+    color-scheme: dark;
+  }
+}
+
+[data-theme="dark"] {
+  --c-bg: #13110f;
+  --c-surface: #1c1915;
+  --c-surface-2: #252019;
+  --c-line: #3a342b;
+  --c-text: #f3eee6;
+  --c-muted: #aca396;
+  --c-header: #0e0c0a;
+  --c-header-2: #1f1b17;
+  --c-header-line: #3a342b;
+  --c-header-text: #f3eee6;
+  --c-header-muted: #aca396;
+  --c-accent: #e0875a;
+  --c-accent-hover: #ea9670;
+  --c-accent-fg: #1b1510;
+  --c-accent-soft: #3a2519;
+  --c-danger: #ff8a7a;
+  --c-danger-soft: #3d1f1c;
+  --c-success: #86e0b4;
+  --c-success-soft: #173326;
+  --c-focus: #ea9670;
+  --c-shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 26px -14px rgb(0 0 0 / 0.65);
+  --c-shadow-lg: 0 26px 52px -18px rgb(0 0 0 / 0.8);
   color-scheme: dark;
 }
 
@@ -80,6 +113,24 @@ html,
 body {
   background: var(--c-bg);
   color: var(--c-text);
+}
+
+/* Jadvallar: ilova kontentida bir xil ko'rinish. */
+main thead th {
+  background: var(--c-surface-2);
+  color: var(--c-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+main tbody tr {
+  transition: background-color 0.15s ease;
+}
+main tbody tr:hover {
+  background: var(--c-surface-2);
+}
+::selection {
+  background: var(--c-accent-soft);
 }
 
 body {

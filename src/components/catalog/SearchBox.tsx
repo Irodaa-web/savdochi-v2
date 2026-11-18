@@ -38,8 +38,8 @@ export function SearchBox({ className }: { className?: string }) {
   return (
     <form role="search" action="/catalog" className={className}>
       {mode === "products" && <input type="hidden" name="view" value="products" />}
-      <div className="flex h-10 items-center gap-2 rounded-lg border border-header-line bg-header-2 pr-3 pl-1 text-header-muted focus-within:border-accent">
-        <div role="group" aria-label={t.header.searchMode} className="flex shrink-0 rounded-md bg-header p-0.5">
+      <div className="flex h-10 items-center gap-2 rounded-lg border border-line bg-surface-2 pr-3 pl-1 text-muted focus-within:border-accent">
+        <div role="group" aria-label={t.header.searchMode} className="flex shrink-0 rounded-md bg-surface-2 p-0.5">
           {(["companies", "products"] as const).map((m) => (
             <button
               key={m}
@@ -48,7 +48,7 @@ export function SearchBox({ className }: { className?: string }) {
               aria-pressed={m === mode}
               className={clsx(
                 "h-7 cursor-pointer rounded px-2.5 text-xs font-semibold transition-colors",
-                m === mode ? "bg-header-line text-header-text" : "text-header-muted hover:text-header-text",
+                m === mode ? "bg-surface text-text shadow-sm" : "text-muted hover:text-text",
               )}
             >
               {m === "companies" ? t.header.modeCompanies : t.header.modeProducts}
@@ -62,7 +62,7 @@ export function SearchBox({ className }: { className?: string }) {
           name="q"
           aria-label={placeholder}
           placeholder={placeholder}
-          className="min-w-0 flex-1 bg-transparent text-header-text outline-none placeholder:text-header-muted"
+          className="min-w-0 flex-1 bg-transparent text-text outline-none placeholder:text-muted"
         />
       </div>
     </form>

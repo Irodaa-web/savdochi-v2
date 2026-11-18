@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { ArrowLeft, Building2, Package, PackageSearch, Search, ShieldAlert } from "lucide-react";
+import { PageTitle } from "@/components/ui/Card";
 import Link from "next/link";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { RegionFilter } from "@/components/catalog/RegionFilter";
@@ -94,13 +95,9 @@ function PageSearch({ hidden, placeholder, q, className }: { hidden: Record<stri
 
 function Header({ title, count, children }: { title: string; count: string; children?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-1 text-muted">{count}</p>
-      </div>
-      {children}
-    </div>
+    <PageTitle lead={count} action={children}>
+      {title}
+    </PageTitle>
   );
 }
 
