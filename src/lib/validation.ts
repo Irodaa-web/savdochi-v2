@@ -25,6 +25,12 @@ const password = z.string().min(8, "passwordShort").max(128, "passwordShort");
 export const loginSchema = z.object({
   phone,
   password: z.string().min(1, "passwordShort").max(128),
+  /** Nofaol hisobni qayta faollashtirish uchun SMS kod (faqat shu holatda kerak). */
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "codeFormat")
+    .optional(),
 });
 
 const smsCode = z.string().trim().regex(/^\d{6}$/, "codeFormat");

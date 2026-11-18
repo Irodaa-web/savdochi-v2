@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { cookies, headers } from "next/headers";
+import { after } from "next/server";
 import { connectDb } from "@/lib/db";
 import type { RegionCode } from "@/lib/regions";
 import { User, type Verification } from "@/models/User";
@@ -36,7 +37,7 @@ async function readToken(): Promise<string | undefined> {
 
 /**
  * Joriy foydalanuvchi. Bir so'rov ichida bir marta bazaga murojaat qiladi.
- * Bloklangan yoki paroli o'zgargan hisob tokeni rad etiladi.
+ * Bloklangan, nofaol (15 kun kirilmagan) yoki paroli o'zgargan hisob tokeni rad etiladi.
  */
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const payload = await verifyToken(await readToken());
@@ -47,10 +48,14 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   if (hit && hit.until > Date.now()) return hit.user;
   await connectDb();
   const user = await User.findById(payload.sub).lean();
-  if (!user || user.blocked || user.authVersion !== payload.v) {
+  if (!user || user.blocked || user.inactive || user.authVersion !== payload.v) {
     sessionCache.delete(key);
     return null;
   }
+  // Faollik: sessiya ishlatilsa ham hisob faol hisoblanadi (15 kunlik nofaollik — lib/inactivity).
+  // Bazaga yozish ko'pi bilan har ACTIVITY_REFRESH_MS da bir marta; o'qish allaqachon yuklangan hujjatdan.
+  const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt).getTime() : 0;
+  if (Date.now() - lastActive > ACTIVITY_REFRESH_MS) touchLater(user._id);
   const view = toSessionUser(user);
   if (sessionCache.size > 1000) sessionCache.clear();
   sessionCache.set(key, { user: view, until: Date.now() + SESSION_CACHE_MS });
@@ -58,6 +63,21 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 });
 
 const SESSION_CACHE_MS = 20_000;
+const ACTIVITY_REFRESH_MS = 6 * 3_600_000;
+
+/** Javobni kutdirmasdan faollik vaqtini yangilaydi (ogohlantirishlar ham qaytadan hisoblanadi). */
+function touchLater(userId: unknown): void {
+  const run = () =>
+    User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date(), "inactivity.warned12At": null, "inactivity.warned14At": null } }).then(
+      () => undefined,
+      (error) => console.error("activity update failed", error),
+    );
+  try {
+    after(run);
+  } catch {
+    void run();
+  }
+}
 const sessionCache = new Map<string, { user: SessionUser; until: number }>();
 
 /** Profil yoki obuna o'zgarganda keshdagi eski ma'lumotni o'chirish. */

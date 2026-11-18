@@ -12,6 +12,10 @@ const en: Dictionary = {
     sum: "UZS",
   },
   auth: {
+    inactiveNotice: "Your account was paused after 15 days without signing in. Your data is safe. Sign in with your phone number and password to reactivate it.",
+    inactiveVerify: "Your account is inactive. To confirm it's you, we sent a 6-digit code to +998 {phone}. Enter it to reactivate your account.",
+    inactiveSubmit: "Confirm and sign in",
+    inactiveResend: "Send the code again",
     code: "SMS code",
     codeSent: "A 6-digit code was sent to +998 {phone}. It is valid for 5 minutes.",
     getCode: "Get code",
@@ -60,6 +64,7 @@ const en: Dictionary = {
     demoSeller: "Demo: company",
   },
   errors: {
+    ACCOUNT_INACTIVE: "Account is inactive. Confirm it with the SMS code we sent.",
     SMS_FAILED: "Could not send the SMS. Please try again shortly.",
     SMS_DISABLED: "SMS verification is currently turned off.",
     CODE_INVALID: "The code is wrong or has expired. Request a new one.",
@@ -122,6 +127,7 @@ const en: Dictionary = {
     stock: "Inventory",
   },
   header: {
+    payments: "Payments",
     debts: "Debts",
     search: "Search companies by name",
     searchProducts: "Search products by name",
@@ -480,6 +486,8 @@ const en: Dictionary = {
   notifications: {
     readAll: "Mark all as read",
     types: {
+      inactivityWarning: "You haven't signed in for 12 days. If you don't sign in within 3 days, your account will become inactive — your data is kept.",
+      inactivityFinal: "Final notice: your account becomes inactive tomorrow. Sign in today to keep it active.",
       onlinePaid: "{amount} UZS paid via {provider} for order #{number} ({name})",
       creditApproval: "Order #{number} ({name}) exceeds the credit limit by {amount} UZS — approve or reject",
       debtDueSoon: "Reminder: payment of {amount} UZS for order #{number} to {name} is due tomorrow",

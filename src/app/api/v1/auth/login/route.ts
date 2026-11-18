@@ -1,4 +1,5 @@
-import { clientIp, fail, ok, readJson } from "@/lib/api";
+import { getLocale } from "@/i18n/server";
+import { AppError, clientIp, fail, ok, readJson } from "@/lib/api";
 import { burnTime, verifyPassword } from "@/lib/auth/password";
 import { startSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
@@ -6,13 +7,15 @@ import { hit, reset } from "@/lib/rateLimit";
 import { fieldErrors, loginSchema } from "@/lib/validation";
 import { User } from "@/models/User";
 import { demoPasswordLogin } from "@/server/demo";
+import { reactivateAccount, touchActivity } from "@/server/inactivity";
+import { sendCode, smsEnabled, verifyCode } from "@/server/sms";
 
 const WINDOW = 15 * 60 * 1000;
 
 export async function POST(request: Request) {
   const parsed = loginSchema.safeParse(await readJson(request));
   if (!parsed.success) return fail("INVALID_INPUT", fieldErrors(parsed.error));
-  const { phone, password } = parsed.data;
+  const { phone, password, code } = parsed.data;
 
   try {
     await connectDb();
@@ -34,12 +37,28 @@ export async function POST(request: Request) {
       await burnTime(password);
       return fail("INVALID_CREDENTIALS");
     }
+    // Admin bloklagan hisob kirmaydi va nofaollik mexanizmi orqali ham ochilmaydi.
     if (user.blocked || !(await verifyPassword(password, user.passwordHash))) return fail("INVALID_CREDENTIALS");
+
+    if (user.inactive) {
+      // 15 kun kirilmagan hisob: parol to'g'ri, endi shaxsni SMS kod bilan qayta tasdiqlash kerak.
+      if (!smsEnabled()) return fail("SMS_DISABLED");
+      if (!code) {
+        if (!(await hit(`sms:phone:${phone}`, 3, WINDOW))) return fail("TOO_MANY_ATTEMPTS");
+        await sendCode(phone, "reactivate", await getLocale());
+        return fail("ACCOUNT_INACTIVE");
+      }
+      if (!(await verifyCode(phone, "reactivate", code))) return fail("CODE_INVALID", { code: "CODE_INVALID" });
+      if (!(await reactivateAccount(user._id))) return fail("INVALID_CREDENTIALS");
+    } else {
+      await touchActivity(user._id);
+    }
 
     await reset(phoneKey);
     const token = await startSession({ id: String(user._id), role: user.role, authVersion: user.authVersion });
     return ok({ token, user: { id: String(user._id), role: user.role, name: user.name } });
   } catch (error) {
+    if (error instanceof AppError) return fail(error.code);
     console.error("login failed", error);
     return fail("SERVER_ERROR");
   }

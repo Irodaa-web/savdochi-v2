@@ -16,6 +16,8 @@ export const NOTIFICATION_TYPES = [
   "stockLow",
   "ticketReply",
   "verified",
+  "inactivityWarning",
+  "inactivityFinal",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

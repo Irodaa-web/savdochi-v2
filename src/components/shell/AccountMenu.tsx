@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, Heart, LogOut, Settings, ShieldCheck, UserRound, Users, Wallet, Warehouse } from "lucide-react";
+import { CircleHelp, CreditCard, Heart, LogOut, Settings, ShieldCheck, UserRound, Users, Wallet, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -70,6 +70,12 @@ export function AccountMenu({ user }: { user: SessionUser }) {
             <Wallet size={16} aria-hidden />
             {t.header.debts}
           </Link>
+          {user.role === "seller" && (
+            <Link role="menuitem" href="/profile#online-pay" onClick={close} className={itemClass}>
+              <CreditCard size={16} aria-hidden />
+              {t.header.payments}
+            </Link>
+          )}
           {user.role === "buyer" && (
             <>
               <Link role="menuitem" href="/stock" onClick={close} className={itemClass}>

@@ -47,6 +47,11 @@ async function sendSms(phone: string, text: string): Promise<void> {
   if (!res.ok) throw new Error(`eskiz send ${res.status}: ${(await res.text()).slice(0, 200)}`);
 }
 
+/** Oddiy xabar (masalan, nofaollik ogohlantirishi). SMS_DEV=1 da logga yoziladi. */
+export async function sendNotice(phone: string, text: string): Promise<void> {
+  await sendSms(phone, text);
+}
+
 function hashCode(id: string, code: string): string {
   return createHmac("sha256", process.env.AUTH_SECRET ?? "").update(`${id}:${code}`).digest("hex");
 }
