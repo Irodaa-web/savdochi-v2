@@ -2,6 +2,9 @@ import type { Dictionary } from "./uz";
 
 const ru: Dictionary = {
   common: {
+    cancel: "Отмена",
+    confirm: "Подтвердить",
+    close: "Закрыть",
     appName: "Savdochi",
     tagline: "Оптовая платформа для компаний и магазинов",
     loading: "Загрузка…",
@@ -423,6 +426,8 @@ const ru: Dictionary = {
     submit: "Отправить заказ · {sum} сум",
   },
   orders: {
+    reorderPartial: "{added} из {total} товаров добавлено в корзину. Остальные не добавлены: нет в наличии или в архиве.",
+    toCart: "Перейти в корзину",
     creditPill: "Ждёт подтверждения",
     creditPendingSeller: "Заказ превышает лимит насии на {over} сум. «Одобрить превышение лимита» — заказ будет принят; «Отменить» — отклонён.",
     creditPendingBuyer: "Заказ превышает лимит насии на {over} сум — ожидается подтверждение компании.",

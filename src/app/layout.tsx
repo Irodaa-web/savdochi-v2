@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { cookies } from "next/headers";
+import { PwaRegister } from "@/components/PwaRegister";
 import { I18nProvider } from "@/i18n/client";
 import { getDictionary, getLocale } from "@/i18n/server";
 import "./globals.css";
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
   title: { default: "Savdochi", template: "%s · Savdochi" },
   description: "Kompaniya va do‘konlar uchun ulgurji savdo platformasi",
   applicationName: "Savdochi",
+  icons: { apple: "/icon-192.png" },
 };
 
 export const viewport: Viewport = {
@@ -29,6 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <I18nProvider locale={locale} dictionary={getDictionary(locale)}>
           {children}
         </I18nProvider>
+        <PwaRegister />
       </body>
     </html>
   );

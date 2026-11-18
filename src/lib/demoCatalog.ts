@@ -34,8 +34,13 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
       { min: 50, price: 94000 },
       { min: 100, price: 91000 },
     ],
-    description: "5 litrli idishdagi tozalangan paxta yog‘i. Kundalik ovqat tayyorlash uchun. Muhrlangan idishni quruq, salqin joyda saqlang.",
-    images: [],
+    description: "5 litrli idishdagi tozalangan paxta yog‘i. Kundalik ovqat tayyorlash uchun. Muhrlangan idishni quruq, salqin joyda saqlang. Rasm manbalari (Wikimedia Commons): «Bottle 1 liter Sunflower refined oil» (CC BY-SA 4.0), «2022-05-30 21 06 43 A bottle of Wesson vegetable oil in the Mountainville section of Ewing Township, Mercer County, New Jersey» (CC BY-SA 4.0), «Bottles of palm oil» (CC BY-SA 4.0), «Pflanzenoelflaschen Preise 2022» (CC BY-SA 4.0).",
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Bottle_1_liter_Sunflower_refined_oil.jpg/960px-Bottle_1_liter_Sunflower_refined_oil.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/2022-05-30_21_06_43_A_bottle_of_Wesson_vegetable_oil_in_the_Mountainville_section_of_Ewing_Township%2C_Mercer_County%2C_New_Jersey.jpg/960px-2022-05-30_21_06_43_A_bottle_of_Wesson_vegetable_oil_in_the_Mountainville_section_of_Ewing_Township%2C_Mercer_County%2C_New_Jersey.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Bottles_of_palm_oil.jpg/960px-Bottles_of_palm_oil.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Pflanzenoelflaschen_Preise_2022.jpg/960px-Pflanzenoelflaschen_Preise_2022.jpg",
+    ],
   },
   {
     seller: "seller",
@@ -99,8 +104,13 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     stock: 900,
     packSize: 6,
     priceTiers: [{ min: 100, price: 33000 }],
-    description: "1,5 litrli gazlangan suv. Bir blokda 6 ta shisha. Sovutib iste’mol qiling.",
-    images: [],
+    description: "1,5 litrli gazlangan suv. Bir blokda 6 ta shisha. Sovutib iste’mol qiling. Rasm manbalari (Wikimedia Commons): «Bottled sparkling water» (CC0), «San Pellegrino bottle for sparkling water » (CC BY-SA 4.0), «Sparkling-bottled-water» (CC BY-SA 2.0), «Acquissima Passion natural sparkling mineral water» (CC BY-SA 4.0).",
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Bottled_sparkling_water.jpg/960px-Bottled_sparkling_water.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/San_Pellegrino_bottle_for_sparkling_water_.jpg/960px-San_Pellegrino_bottle_for_sparkling_water_.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Sparkling-bottled-water.jpg/960px-Sparkling-bottled-water.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Acquissima_Passion_natural_sparkling_mineral_water.jpg/960px-Acquissima_Passion_natural_sparkling_mineral_water.jpg",
+    ],
   },
   {
     seller: "seller2",
@@ -112,7 +122,12 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     stock: 300,
     packSize: 12,
     priceTiers: [],
-    description: "1 litrli meva sharbati. Bir blokda 12 ta idish. Sovutib iste’mol qiling.",
-    images: [],
+    description: "1 litrli meva sharbati. Bir blokda 12 ta idish. Sovutib iste’mol qiling. Rasm manbalari (Wikimedia Commons): «Fruit juices in bottles» (CC BY-SA 4.0), «2021-04-20 19 08 19 A bottle of Ocean Spray Cranberry Juice in the Franklin Farm section of Oak Hill, Fairfax County, Virginia» (CC BY-SA 4.0), «2021-04-20 19 09 13 A bottle of Abound Unsweetened Organic Apple Juice in the Franklin Farm section of Oak Hill, Fairfax County, Virginia» (CC BY-SA 4.0), «Fruit juices 2» (CC BY-SA 4.0).",
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Fruit_juices_in_bottles.jpg/960px-Fruit_juices_in_bottles.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/2021-04-20_19_08_19_A_bottle_of_Ocean_Spray_Cranberry_Juice_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg/960px-2021-04-20_19_08_19_A_bottle_of_Ocean_Spray_Cranberry_Juice_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/2021-04-20_19_09_13_A_bottle_of_Abound_Unsweetened_Organic_Apple_Juice_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg/960px-2021-04-20_19_09_13_A_bottle_of_Abound_Unsweetened_Organic_Apple_Juice_in_the_Franklin_Farm_section_of_Oak_Hill%2C_Fairfax_County%2C_Virginia.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Fruit_juices_2.jpg/960px-Fruit_juices_2.jpg",
+    ],
   },
 ];

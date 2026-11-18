@@ -1,5 +1,6 @@
-import { BadgeCheck, Package } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import Link from "next/link";
+import { ProductImage } from "@/components/catalog/ProductImage";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 import { fmt } from "@/i18n/format";
 import { formatAmount } from "@/lib/catalog";
@@ -14,13 +15,8 @@ export function ProductCard({ product: p, t, note }: { product: ProductView; t: 
       {note && (
         <span className="absolute top-2 left-2 z-10 rounded-md bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-fg">{note}</span>
       )}
-      <Link href={`/catalog/${p.id}`} className="flex h-32 items-center justify-center bg-surface-2 text-muted/60" tabIndex={-1} aria-hidden>
-        {p.images[0] ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.images[0]} alt="" loading="lazy" className="size-full object-cover" />
-        ) : (
-          <Package size={30} strokeWidth={1.4} />
-        )}
+      <Link href={`/catalog/${p.id}`} className="block h-32" tabIndex={-1} aria-hidden>
+        <ProductImage src={p.images[0]} name={p.name} category={p.category} className="h-32 w-full" />
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3.5">
         <span className="text-[12px] text-muted">{t.categories[p.category]}</span>

@@ -14,6 +14,7 @@ import { getOrder } from "@/server/orders";
 import { sellerOnlineMethods } from "@/server/onlinePay";
 import { OrderActions } from "./OrderActions";
 import { PayOnline } from "./PayOnline";
+import { ReorderButton } from "./ReorderButton";
 
 export default async function OrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ placed?: string; paid?: string }> }) {
   const user = await requireUser();
@@ -128,6 +129,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           <Card className="flex flex-col gap-3">
             {canPay && <PayOnline orderId={o.id} left={left} methods={payMethods} />}
             <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
+            {user.role === "buyer" && <ReorderButton items={o.items.map((i) => ({ productId: i.productId, quantity: i.quantity }))} />}
           </Card>
 
           <Card className="flex flex-col gap-2 text-[14px]">
