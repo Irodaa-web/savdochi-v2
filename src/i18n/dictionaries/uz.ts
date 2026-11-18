@@ -147,6 +147,13 @@ const uz = {
     admin: "Administrator",
   },
   home: {
+    quick: "Tezkor amallar",
+    openOrders: "Ochiq buyurtmalar",
+    noOpenOrders: "Ochiq buyurtmalar yo‘q.",
+    lowStock: "Kam qolgan mahsulotlar",
+    noLowStock: "Hammasi yetarli.",
+    newProducts: "Yangi mahsulotlar",
+    viewAll: "Hammasini ko‘rish",
     greeting: "Xush kelibsiz, {name}",
     buyerLead: "Katalog, yetkazib beruvchilar va buyurtmalar keyingi bosqichlarda shu yerda paydo bo‘ladi.",
     sellerLead: "Buyurtmalar, hamkor do‘konlar ombori va savdo hisoboti — barchasi shu yerda.",

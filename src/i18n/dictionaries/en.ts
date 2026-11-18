@@ -149,6 +149,13 @@ const en: Dictionary = {
     admin: "Administrator",
   },
   home: {
+    quick: "Quick actions",
+    openOrders: "Open orders",
+    noOpenOrders: "No open orders.",
+    lowStock: "Running low",
+    noLowStock: "Everything is in stock.",
+    newProducts: "New products",
+    viewAll: "View all",
     greeting: "Welcome, {name}",
     buyerLead: "Catalog, suppliers and orders will appear here in the next stages.",
     sellerLead: "Orders, partner store inventory and your sales report — all in one place.",
