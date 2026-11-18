@@ -21,10 +21,10 @@ export function AppHeader({ user }: { user: SessionUser }) {
   const [badges, refreshBadges] = useBadges();
 
   return (
-    <header className="sticky top-0 z-30 bg-header text-header-text">
+    <header className="sticky top-0 z-30 border-b border-line bg-surface/90 text-text backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-5 px-4 sm:px-6">
         <Link href={homePath[user.role]} aria-label="Savdochi">
-          <Logo tone="light" />
+          <Logo />
         </Link>
 
         <nav className="hidden items-center gap-0.5 md:flex">
@@ -37,7 +37,7 @@ export function AppHeader({ user }: { user: SessionUser }) {
                 aria-current={active ? "page" : undefined}
                 className={clsx(
                   "rounded-md px-3 py-2 font-medium transition-colors",
-                  active ? "bg-header-2 text-header-text" : "text-header-muted hover:text-header-text",
+                  active ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-2 hover:text-text",
                 )}
               >
                 {t.nav[label]}

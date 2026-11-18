@@ -11,7 +11,7 @@ export function ProductCard({ product: p, t, note }: { product: ProductView; t: 
   const unit = t.units[p.unit];
   const available = p.stock >= p.minOrder;
   return (
-    <article className="relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface">
+    <article className="relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--c-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--c-shadow-lg)]">
       {note && (
         <span className="absolute top-2 left-2 z-10 rounded-md bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-fg">{note}</span>
       )}

@@ -5,7 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 
 const control =
-  "h-11 w-full rounded-lg border bg-surface px-3 text-[15px] text-text placeholder:text-muted/70 outline-none transition-colors focus:border-accent";
+  "h-11 w-full rounded-xl border border-line bg-surface px-3.5 text-[15px] text-text placeholder:text-muted/70 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20";
 
 type FieldShellProps = { label: string; hint?: string; error?: string; id: string; children: ReactNode };
 

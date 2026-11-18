@@ -6,7 +6,7 @@ export function Alert({ tone = "danger", children }: { tone?: "danger" | "info" 
     <div
       role={tone === "danger" ? "alert" : "status"}
       className={clsx(
-        "rounded-lg px-3.5 py-3 text-[13px] leading-relaxed",
+        "rounded-xl px-4 py-3 text-[13px] leading-relaxed",
         tone === "danger" && "bg-danger-soft text-danger",
         tone === "info" && "bg-accent-soft text-text",
         tone === "success" && "bg-success-soft text-success",

@@ -56,7 +56,9 @@ export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+    const attr = document.documentElement.dataset.theme;
+    const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    setTheme(attr === "dark" || attr === "light" ? attr : system);
   }, []);
 
   function toggle() {

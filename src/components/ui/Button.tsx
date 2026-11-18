@@ -5,15 +5,15 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "md" | "lg";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-accent text-accent-fg hover:bg-accent-hover",
-  secondary: "border border-line bg-surface text-text hover:bg-surface-2",
+  primary: "bg-accent text-accent-fg shadow-sm hover:bg-accent-hover hover:shadow-md",
+  secondary: "border border-line bg-surface text-text shadow-sm hover:bg-surface-2",
   ghost: "text-text hover:bg-surface-2",
-  danger: "bg-danger text-white hover:opacity-90",
+  danger: "bg-danger text-white shadow-sm hover:opacity-90",
 };
 
 const sizes: Record<Size, string> = {
-  md: "h-10 px-4 text-sm",
-  lg: "h-12 px-5 text-[15px]",
+  md: "h-10 px-4 text-[14px]",
+  lg: "h-12 px-6 text-[15px]",
 };
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -30,7 +30,7 @@ export function Button({ variant = "primary", size = "md", loading, block, class
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={clsx(
-        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-60",
         variants[variant],
         sizes[size],
         block && "w-full",

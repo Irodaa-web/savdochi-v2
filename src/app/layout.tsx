@@ -23,10 +23,12 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
-  const theme = (await cookies()).get("theme")?.value === "dark" ? "dark" : "light";
+  const saved = (await cookies()).get("theme")?.value;
+  // Tanlov bo'lmasa — qurilmaning mavzusi (data-theme yo'q, CSS o'zi hal qiladi).
+  const theme = saved === "dark" || saved === "light" ? saved : undefined;
 
   return (
-    <html lang={locale} data-theme={theme} className={inter.variable}>
+    <html lang={locale} data-theme={theme} className={inter.variable} suppressHydrationWarning>
       <body className="min-h-dvh">
         <I18nProvider locale={locale} dictionary={getDictionary(locale)}>
           {children}
