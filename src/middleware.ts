@@ -32,5 +32,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // API, Next ichki fayllari va statik fayllardan tashqari hamma sahifalar.
-  matcher: ["/((?!api/|_next/|favicon.ico|icon|apple-icon|manifest.webmanifest|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
+  matcher: ["/((?!api/|_next/|favicon.ico|icon|apple-icon|manifest.webmanifest|sw\\.js|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
 };
