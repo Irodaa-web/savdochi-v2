@@ -37,8 +37,15 @@ export interface UserDoc {
   region: RegionCode;
   verification: Verification;
   blocked: boolean;
-  /** Parol o'zgarsa oshiriladi — eski sessiyalar bekor bo'ladi. */
+  /** Parol o'zgarsa yoki hisob nofaol bo'lsa oshiriladi — eski sessiyalar bekor bo'ladi. */
   authVersion: number;
+  /** Oxirgi muvaffaqiyatli kirish. 15 kun kirilmasa hisob avtomatik nofaol bo'ladi (lib/inactivity). */
+  lastActiveAt: Date;
+  /** Avtomatik nofaollik (admin bloklashidan farqli). Qayta kirishda SMS kod bilan tiklanadi. */
+  inactive: boolean;
+  inactiveAt: Date | null;
+  /** Nofaollik ogohlantirishlari qachon yuborilgani — takror yuborilmasligi uchun. */
+  inactivity: { warned12At: Date | null; warned14At: Date | null };
   locale: "uz" | "ru" | "en";
   /** Telegram bildirishnomalari: ulangan chat va bir martalik ulash kodi. */
   telegram: { chatId: number | null; linkCode: string | null; linkExpires: Date | null };
@@ -88,6 +95,13 @@ const userSchema = new Schema<UserDoc>(
     verification: { type: String, enum: ["unverified", "pending", "verified", "rejected"], default: "unverified" },
     blocked: { type: Boolean, default: false },
     authVersion: { type: Number, default: 0 },
+    lastActiveAt: { type: Date, default: Date.now },
+    inactive: { type: Boolean, default: false },
+    inactiveAt: { type: Date, default: null },
+    inactivity: {
+      warned12At: { type: Date, default: null },
+      warned14At: { type: Date, default: null },
+    },
     locale: { type: String, enum: ["uz", "ru", "en"], default: "uz" },
     onlinePay: {
       payme: { type: new Schema({ merchantId: String, keySealed: String }, { _id: false }), default: null },
@@ -107,5 +121,7 @@ const userSchema = new Schema<UserDoc>(
 );
 
 userSchema.index({ "telegram.linkCode": 1 }, { sparse: true });
+// Kunlik nofaollik vazifasi faqat oxirgi faollik sanasi bo'yicha qidiradi.
+userSchema.index({ lastActiveAt: 1 });
 
 export const User: Model<UserDoc> = (mongoose.models.User as Model<UserDoc>) ?? mongoose.model<UserDoc>("User", userSchema);

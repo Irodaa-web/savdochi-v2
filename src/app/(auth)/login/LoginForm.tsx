@@ -6,16 +6,22 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { PasswordField, TextField } from "@/components/ui/Field";
-import { useI18n } from "@/i18n/client";
+import { fmt, useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { errorText, safeNext } from "../authHelpers";
 
 export function LoginForm({ demo = false, sms = false }: { demo?: boolean; sms?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
+  // Sessiya nofaollik tufayli tugagan bo'lsa (/api/v1/auth/reset → ?reason=inactive).
+  const pausedNotice = params.get("reason") === "inactive";
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  // Nofaol hisob: parol to'g'ri, SMS kod bilan qayta tasdiqlash bosqichi.
+  const [inactive, setInactive] = useState(false);
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -25,15 +31,31 @@ export function LoginForm({ demo = false, sms = false }: { demo?: boolean; sms?:
     setLoading(true);
     setError(null);
     setFields({});
-    const res = await api("/api/v1/auth/login", { body: { phone, password } });
+    const res = await api("/api/v1/auth/login", { body: { phone, password, ...(inactive && code ? { code } : {}) } });
     if (res.ok) {
       router.replace(next);
       router.refresh();
       return;
     }
     setLoading(false);
+    if (res.error === "ACCOUNT_INACTIVE") {
+      // Kod yuborildi — kod kiritish bosqichi.
+      setInactive(true);
+      setCode("");
+      return;
+    }
     if (res.fields) setFields(res.fields);
     else setError(errorText(t, res.error));
+  }
+
+  /** Kodni qayta yuborish: kodsiz so'rov server tomonda yangi kod yuboradi. */
+  async function resendCode() {
+    setLoading(true);
+    setError(null);
+    setFields({});
+    const res = await api("/api/v1/auth/login", { body: { phone, password } });
+    setLoading(false);
+    if (!res.ok && res.error !== "ACCOUNT_INACTIVE") setError(errorText(t, res.error));
   }
 
   async function demoLogin(role: "buyer" | "seller") {
@@ -57,6 +79,8 @@ export function LoginForm({ demo = false, sms = false }: { demo?: boolean; sms?:
       </div>
 
       {error && <Alert>{error}</Alert>}
+      {pausedNotice && !inactive && <Alert tone="info">{t.auth.inactiveNotice}</Alert>}
+      {inactive && <Alert tone="info">{fmt(t.auth.inactiveVerify, { phone })}</Alert>}
 
       <TextField
         label={t.auth.phone}
@@ -66,7 +90,10 @@ export function LoginForm({ demo = false, sms = false }: { demo?: boolean; sms?:
         autoComplete="tel-national"
         placeholder="90 123 45 67"
         value={phone}
-        onChange={(e) => setPhone(e.target.value)}
+        onChange={(e) => {
+          setPhone(e.target.value);
+          setInactive(false);
+        }}
         error={fields.phone ? errorText(t, fields.phone) : undefined}
         required
         autoFocus
@@ -82,14 +109,34 @@ export function LoginForm({ demo = false, sms = false }: { demo?: boolean; sms?:
         required
       />
 
-      {sms && (
+      {inactive && (
+        <TextField
+          label={t.auth.code}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          placeholder="123456"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+          error={fields.code ? errorText(t, fields.code) : undefined}
+          required
+          autoFocus
+        />
+      )}
+      {inactive && (
+        <button type="button" onClick={resendCode} disabled={loading} className="-mt-2 w-fit cursor-pointer text-[14px] font-semibold text-accent hover:underline disabled:opacity-60">
+          {t.auth.inactiveResend}
+        </button>
+      )}
+
+      {sms && !inactive && (
         <Link href="/forgot" className="-mt-2 w-fit text-[14px] font-semibold text-accent hover:underline">
           {t.auth.forgot}
         </Link>
       )}
 
       <Button type="submit" size="lg" block loading={loading}>
-        {t.auth.loginButton}
+        {inactive ? t.auth.inactiveSubmit : t.auth.loginButton}
       </Button>
 
       {demo && (

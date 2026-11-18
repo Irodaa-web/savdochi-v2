@@ -10,6 +10,10 @@ const uz = {
     sum: "so‘m",
   },
   auth: {
+    inactiveNotice: "Hisobingiz 15 kun davomida faol bo‘lmagani uchun vaqtincha to‘xtatilgan. Ma’lumotlaringiz saqlangan. Qayta faollashtirish uchun telefon raqamingiz va parolingiz bilan kiring.",
+    inactiveVerify: "Hisobingiz nofaol. Shaxsingizni tasdiqlash uchun +998 {phone} raqamiga 6 xonali kod yubordik. Kodni kiriting — hisob qayta faollashadi.",
+    inactiveSubmit: "Tasdiqlash va kirish",
+    inactiveResend: "Kodni qayta yuborish",
     code: "SMS kod",
     codeSent: "+998 {phone} raqamiga 6 xonali kod yuborildi. Kod 5 daqiqa amal qiladi.",
     getCode: "Kod olish",
@@ -58,6 +62,7 @@ const uz = {
     demoSeller: "Demo: kompaniya",
   },
   errors: {
+    ACCOUNT_INACTIVE: "Hisob nofaol. Telefoningizga yuborilgan SMS kod bilan tasdiqlang.",
     SMS_FAILED: "SMS yuborilmadi. Birozdan keyin qayta urinib ko‘ring.",
     SMS_DISABLED: "SMS orqali tasdiqlash hozircha o‘chirilgan.",
     CODE_INVALID: "Kod noto‘g‘ri yoki muddati o‘tgan. Yangi kod so‘rang.",
@@ -479,6 +484,8 @@ const uz = {
   notifications: {
     readAll: "Barchasini o‘qilgan qilish",
     types: {
+      inactivityWarning: "Siz 12 kundan beri tizimga kirmadingiz. 3 kun ichida kirmasangiz, hisobingiz nofaol qilinadi — ma’lumotlaringiz saqlanadi.",
+      inactivityFinal: "Oxirgi ogohlantirish: ertaga hisobingiz nofaol qilinadi. Saqlab qolish uchun bugun tizimga kiring.",
       onlinePaid: "№{number} buyurtma uchun {provider} orqali {amount} so‘m to‘landi ({name})",
       creditApproval: "№{number} buyurtma ({name}) nasiya limitidan {amount} so‘m oshdi — tasdiqlang yoki rad eting",
       debtDueSoon: "Eslatma: {name} oldidagi №{number} buyurtma bo‘yicha {amount} so‘m to‘lov muddati ertaga tugaydi",

@@ -36,7 +36,7 @@ async function readToken(): Promise<string | undefined> {
 
 /**
  * Joriy foydalanuvchi. Bir so'rov ichida bir marta bazaga murojaat qiladi.
- * Bloklangan yoki paroli o'zgargan hisob tokeni rad etiladi.
+ * Bloklangan, nofaol (15 kun kirilmagan) yoki paroli o'zgargan hisob tokeni rad etiladi.
  */
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const payload = await verifyToken(await readToken());
@@ -47,7 +47,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   if (hit && hit.until > Date.now()) return hit.user;
   await connectDb();
   const user = await User.findById(payload.sub).lean();
-  if (!user || user.blocked || user.authVersion !== payload.v) {
+  if (!user || user.blocked || user.inactive || user.authVersion !== payload.v) {
     sessionCache.delete(key);
     return null;
   }
