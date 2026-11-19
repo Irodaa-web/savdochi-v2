@@ -68,7 +68,7 @@ export function ProductForm({ product }: { product?: ProductView }) {
     <form onSubmit={onSubmit} noValidate className="flex max-w-3xl flex-col gap-5">
       {error && <Alert>{error}</Alert>}
 
-      <section className="grid gap-4 rounded-xl border border-line bg-surface p-5 sm:grid-cols-2">
+      <section className="grid gap-4 glass-card rounded-2xl p-5 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <TextField label={t.products.name} placeholder={t.products.namePlaceholder} value={form.name} onChange={set("name")} error={errorText(errors, fields.name)} required />
         </div>
@@ -110,7 +110,7 @@ export function ProductForm({ product }: { product?: ProductView }) {
 
       <ImagesField value={images} onChange={setImages} />
 
-      <section className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
+      <section className="flex flex-col gap-3 glass-card rounded-2xl p-5">
         <div>
           <h2 className="font-semibold">{t.products.tiers}</h2>
           <p className="mt-1 text-[13px] text-muted">{t.products.tiersHint}</p>

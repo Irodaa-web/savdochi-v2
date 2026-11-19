@@ -145,7 +145,7 @@ async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; cat
               aria-current={active ? "page" : undefined}
               className={clsx(
                 "h-9 shrink-0 rounded-lg border px-3.5 text-[13px] leading-[34px] font-medium whitespace-nowrap transition-colors",
-                active ? "border-header bg-header text-header-text" : "border-line bg-surface text-text hover:bg-surface-2",
+                active ? "border-accent bg-accent text-accent-fg shadow-[var(--c-glow)]" : "border-line bg-[var(--c-glass-strong)] text-text hover:border-accent/40 hover:text-accent",
               )}
             >
               {code ? t.categories[code] : t.catalog.all}

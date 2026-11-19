@@ -102,7 +102,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ id: st
           <EmptyState Icon={Warehouse} title={t.orders.empty} />
         ) : (
           orders.map((o) => (
-            <Link key={o.id} href={`/orders/${o.id}`} className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3 hover:border-muted/40">
+            <Link key={o.id} href={`/orders/${o.id}`} className="flex flex-wrap items-center gap-3 glass-card rounded-2xl px-4 py-3 transition-all duration-200 hover:-translate-y-px hover:border-accent/40 hover:shadow-[var(--c-shadow-lg)]">
               <b className="tabular-nums">№{o.number}</b>
               <span className="flex-1 text-[13px] text-muted">{formatDateTime(o.createdAt, locale)}</span>
               <StatusPill status={o.status} t={t} />

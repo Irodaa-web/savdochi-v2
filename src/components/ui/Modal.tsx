@@ -28,7 +28,7 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="m-auto w-[min(calc(100vw-2rem),440px)] rounded-2xl border border-line bg-surface p-0 text-text shadow-2xl backdrop:bg-black/45 backdrop:backdrop-blur-[2px]"
+      className="glass-strong dialog-in m-auto w-[min(calc(100vw-2rem),440px)] rounded-3xl p-0 text-text backdrop:bg-[rgb(7_13_26/0.42)] backdrop:backdrop-blur-sm"
     >
       <div className="flex items-start justify-between gap-3 px-5 pt-5">
         <h2 id={titleId} className="text-[17px] leading-snug font-bold">

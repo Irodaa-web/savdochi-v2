@@ -60,9 +60,9 @@ export default async function Home() {
             <li key={href}>
               <Link
                 href={href}
-                className="group flex h-full flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-md"
+                className="group glass-card sheen flex h-full flex-col gap-3 rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-[var(--c-shadow-lg)]"
               >
-                <span className="relative flex size-10 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                <span className="relative flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent transition-all duration-300 group-hover:bg-accent group-hover:text-accent-fg group-hover:shadow-[var(--c-glow)]">
                   <Icon size={20} aria-hidden />
                   {badge ? (
                     <span className="absolute -top-1.5 -right-1.5 min-w-5 rounded-full bg-accent px-1 text-center text-[11px] leading-5 font-bold text-accent-fg">

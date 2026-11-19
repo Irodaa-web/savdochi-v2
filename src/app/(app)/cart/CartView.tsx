@@ -34,7 +34,7 @@ function SellerGroup({ group: g, defaults }: { group: CartGroup; defaults: Defau
   const units = t.units as Record<string, string>;
 
   return (
-    <section className="overflow-hidden rounded-xl border border-line bg-surface">
+    <section className="overflow-hidden glass-card rounded-2xl">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
         <Link href={`/suppliers/${g.seller.id}`} className="flex items-center gap-1.5 font-semibold hover:text-accent">
           {g.seller.name}

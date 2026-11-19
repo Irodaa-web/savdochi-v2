@@ -58,7 +58,7 @@ export function ImagesField({ value, onChange }: { value: string[]; onChange: (v
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
+    <section className="flex flex-col gap-3 glass-card rounded-2xl p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="font-semibold">{t.products.images}</h2>

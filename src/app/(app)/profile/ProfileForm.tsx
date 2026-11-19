@@ -84,7 +84,7 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
-      <section className="grid gap-4 rounded-xl border border-line bg-surface p-5 sm:grid-cols-2">
+      <section className="grid gap-4 glass-card rounded-2xl p-5 sm:grid-cols-2">
         <h2 className="font-semibold sm:col-span-2">{t.profile.main}</h2>
         <TextField label={t.auth.name} value={form.name} onChange={set("name")} error={fe("name")} required />
         <SelectField label={t.auth.region} value={form.region} onChange={set("region")} error={fe("region")} options={REGION_CODES.map((r) => ({ value: r, label: t.regions[r] }))} />
@@ -102,7 +102,7 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
       </section>
 
       {isSeller && (
-        <section className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-5">
+        <section className="flex flex-col gap-4 glass-card rounded-2xl p-5">
           <h2 className="font-semibold">{t.profile.delivery}</h2>
           <p className="-mt-2 text-[13px] text-muted">{t.profile.deliveryHint}</p>
           <Chips label={t.profile.deliveryRegions} options={REGION_CODES.map((r) => ({ value: r, label: t.regions[r] }))} value={regions} onChange={setRegions} />
@@ -123,7 +123,7 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
         </section>
       )}
 
-      <section className="grid gap-4 rounded-xl border border-line bg-surface p-5 sm:grid-cols-2">
+      <section className="grid gap-4 glass-card rounded-2xl p-5 sm:grid-cols-2">
         <h2 className="font-semibold sm:col-span-2">{t.profile.requisites}</h2>
         <p className="-mt-2 text-[13px] text-muted sm:col-span-2">{t.profile.requisitesHint}</p>
         <TextField label={t.profile.inn} value={form.inn} onChange={set("inn")} error={fe("inn")} inputMode="numeric" maxLength={9} />

@@ -41,7 +41,7 @@ export function NotificationsMenu({ count, onChange }: { count: number; onChange
         <CountBadge count={count} />
       </button>
       {open && (
-        <div role="dialog" aria-label={t.header.notifications} className="absolute top-12 right-0 w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-xl border border-line bg-surface text-text shadow-xl">
+        <div role="dialog" aria-label={t.header.notifications} className="glass-strong menu-in absolute top-12 right-0 w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-2xl text-text">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <span className="font-semibold">{t.header.notifications}</span>
             {items?.some((n) => !n.read) && (
@@ -58,7 +58,7 @@ export function NotificationsMenu({ count, onChange }: { count: number; onChange
             <ul className="max-h-[60vh] overflow-y-auto">
               {items.map((n) => (
                 <li key={n.id}>
-                  <Link href={n.link || "#"} onClick={() => setOpen(false)} className={`flex flex-col gap-0.5 border-b border-line px-4 py-3 last:border-0 hover:bg-surface-2 ${n.read ? "" : "bg-accent-soft/60"}`}>
+                  <Link href={n.link || "#"} onClick={() => setOpen(false)} className={`flex flex-col gap-0.5 border-b border-line/70 px-4 py-3 transition-colors last:border-0 hover:bg-accent-soft/60 ${n.read ? "" : "bg-accent-soft/50"}`}>
                     <span className="text-[14px]">{fmt(texts[n.type] ?? n.type, statusText(n.params))}</span>
                     <span className="text-[12px] text-muted">{formatDateTime(n.createdAt, locale)}</span>
                   </Link>

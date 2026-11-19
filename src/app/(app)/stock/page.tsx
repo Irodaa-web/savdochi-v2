@@ -28,7 +28,7 @@ export default async function StockPage() {
             <Stat label={t.stock.total} value={rows.length} />
             <Stat label={t.stock.lowTotal} value={low} tone={low ? "danger" : undefined} />
           </div>
-          <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+          <div className="overflow-x-auto glass-card rounded-2xl">
             <table className="w-full min-w-[620px] border-collapse text-left text-[14px]">
               <thead>
                 <tr className="border-b border-line text-[13px] text-muted">

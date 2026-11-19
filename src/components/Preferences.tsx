@@ -26,7 +26,7 @@ export function LanguageSwitch({ tone = "light" }: { tone?: "light" | "dark" }) 
   }
 
   return (
-    <div role="group" aria-label={t.header.language} className={clsx("inline-flex rounded-lg p-0.5", tone === "dark" ? "bg-header-2" : "bg-surface-2", pending && "opacity-70")}>
+    <div role="group" aria-label={t.header.language} className={clsx("inline-flex rounded-xl p-0.5", tone === "dark" ? "bg-header-2" : "bg-surface-2/80", pending && "opacity-70")}>
       {locales.map((l) => (
         <button
           key={l}
@@ -34,11 +34,11 @@ export function LanguageSwitch({ tone = "light" }: { tone?: "light" | "dark" }) 
           onClick={() => choose(l)}
           aria-pressed={l === locale}
           className={clsx(
-            "h-8 min-w-10 cursor-pointer rounded-md px-2 text-xs font-semibold uppercase transition-colors",
+            "h-8 min-w-10 cursor-pointer rounded-lg px-2 text-xs font-semibold uppercase transition-all duration-200",
             l === locale
               ? tone === "dark"
                 ? "bg-header-line text-header-text"
-                : "bg-surface text-text shadow-sm"
+                : "bg-surface text-accent shadow-sm"
               : tone === "dark"
                 ? "text-header-muted hover:text-header-text"
                 : "text-muted hover:text-text",

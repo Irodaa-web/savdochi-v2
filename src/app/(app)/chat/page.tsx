@@ -27,7 +27,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
   }
 
   return (
-    <section className="grid h-[calc(100dvh-11rem)] min-h-[420px] overflow-hidden rounded-xl border border-line bg-surface md:h-[calc(100dvh-8rem)] md:grid-cols-[300px_minmax(0,1fr)]">
+    <section className="grid h-[calc(100dvh-11rem)] min-h-[420px] overflow-hidden glass-card rounded-2xl md:h-[calc(100dvh-8rem)] md:grid-cols-[300px_minmax(0,1fr)]">
       <aside className={clsx("min-h-0 flex-col overflow-y-auto border-line md:flex md:border-r", active ? "hidden" : "flex")}>
         <h1 className="border-b border-line px-4 py-3 font-semibold">{t.header.chat}</h1>
         <ul>
