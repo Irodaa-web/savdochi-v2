@@ -59,7 +59,7 @@ export async function LegalPage({ kind }: { kind: LegalKind }) {
           </section>
         ))}
 
-        <section className="rounded-xl border border-line bg-surface p-5 text-[14px]">
+        <section className="glass-card rounded-2xl p-5 text-[14px]">
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
             {details
               .filter(([, value]) => value)

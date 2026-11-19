@@ -37,13 +37,15 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
 
   return (
     <section className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 rounded-xl bg-header px-6 py-6 text-header-text">
+      <div className="hero relative isolate flex flex-col gap-3 overflow-hidden rounded-2xl px-6 py-7 shadow-[var(--c-shadow-lg)]">
+        <span aria-hidden className="orb -top-12 right-8 size-36" />
+        <span aria-hidden className="orb right-44 -bottom-14 size-24 [animation-delay:-4s]" />
         <span className="text-[12px] font-semibold tracking-wider text-header-muted uppercase">
           {t.roles.seller} · {t.regions[s.region]}
         </span>
         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
           {s.name}
-          {s.verified && <BadgeCheck size={20} className="text-accent" aria-label={t.catalog.verified} />}
+          {s.verified && <BadgeCheck size={20} className="text-sky-300" aria-label={t.catalog.verified} />}
         </h1>
         {p.about && <p className="max-w-2xl text-header-muted">{p.about}</p>}
       </div>

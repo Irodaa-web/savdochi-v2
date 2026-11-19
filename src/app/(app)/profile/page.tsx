@@ -47,7 +47,7 @@ export default async function ProfilePage() {
       </div>
       {!profile.verified && <Alert tone="info">{t.home.verifyNote}</Alert>}
       {user.role === "seller" && (
-        <div className="flex items-start gap-3 rounded-xl border border-line bg-surface p-4">
+        <div className="flex items-start gap-3 glass-card rounded-2xl p-4">
           <CreditCard size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden />
           <div className="text-[14px]">
             <b>{t.subscription.title}: </b>

@@ -13,9 +13,9 @@ function initials(name: string): string {
 /** Kompaniya kartasi: butun karta bosiladi va shu kompaniya mahsulotlarini ochadi. */
 export function SupplierCard({ supplier: s, t }: { supplier: SupplierView; t: Dictionary }) {
   return (
-    <li className="group relative flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-[var(--c-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--c-shadow-lg)] focus-within:border-accent">
+    <li className="glass-card sheen group relative flex flex-col gap-4 rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-[var(--c-shadow-lg)] focus-within:border-accent">
       <div className="flex items-start gap-3.5">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent">{initials(s.name)}</span>
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[15px] font-bold text-accent transition-all duration-300 group-hover:bg-accent group-hover:text-accent-fg group-hover:shadow-[var(--c-glow)]">{initials(s.name)}</span>
         <div className="min-w-0 flex-1">
           <Link href={`/catalog?seller=${s.id}`} className="flex items-center gap-1.5 font-semibold outline-none after:absolute after:inset-0 after:rounded-2xl">
             <span className="truncate">{s.name}</span>

@@ -3,7 +3,6 @@
 import clsx from "clsx";
 import { MessageSquare, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { SearchBox } from "@/components/catalog/SearchBox";
 import { ThemeToggle } from "@/components/Preferences";
 import { Logo } from "@/components/ui/Logo";
@@ -11,43 +10,34 @@ import { useI18n } from "@/i18n/client";
 import type { SessionUser } from "@/lib/auth/session";
 import { homePath, mainNav } from "@/lib/navigation";
 import { AccountMenu } from "./AccountMenu";
+import { MainNav } from "./MainNav";
 import { NotificationsMenu } from "./NotificationsMenu";
 import { useBadges } from "./useBadges";
 import { headerIconClass } from "./styles";
 
 export function AppHeader({ user }: { user: SessionUser }) {
   const { t } = useI18n();
-  const pathname = usePathname();
   const [badges, refreshBadges] = useBadges();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-surface/90 text-text backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-5 px-4 sm:px-6">
-        <Link href={homePath[user.role]} aria-label="Savdochi">
+    <header className="sticky top-0 z-30 text-text">
+      {/*
+        Shisha fon alohida qatlamda: header o'zi backdrop-filter olmasa, ichidagi ochiladigan menyular
+        (hover menyu, profil, bildirishnomalar) sahifa kontentini ham xiralashtira oladi.
+      */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 border-b border-[var(--c-glass-border)] bg-[var(--c-glass)] shadow-[0_1px_0_var(--c-glass-highlight)_inset,0_10px_30px_-24px_rgb(15_40_90/0.35)] backdrop-blur-xl backdrop-saturate-150"
+      />
+      <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:gap-5">
+        <Link href={homePath[user.role]} aria-label="Savdochi" className="shrink-0 rounded-lg transition-opacity hover:opacity-90">
           <Logo />
         </Link>
 
-        <nav className="hidden items-center gap-0.5 md:flex">
-          {mainNav[user.role].map(({ href, label }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={clsx(
-                  "rounded-md px-3 py-2 font-medium transition-colors",
-                  active ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-2 hover:text-text",
-                )}
-              >
-                {t.nav[label]}
-              </Link>
-            );
-          })}
-        </nav>
+        <MainNav items={mainNav[user.role]} />
 
         {/* Qidiruv: Kompaniya | Mahsulot almashtirgichi bilan. */}
-        <SearchBox className="hidden flex-1 lg:block" />
+        <SearchBox className="hidden min-w-0 flex-1 lg:block" />
 
         <div className="ml-auto flex items-center gap-0.5 lg:ml-0">
           <Link href="/chat" aria-label={t.header.chat} title={t.header.chat} className={clsx(headerIconClass, "relative hidden sm:flex")}>
@@ -73,7 +63,7 @@ export function AppHeader({ user }: { user: SessionUser }) {
 export function CountBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className="absolute top-1.5 right-1 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] leading-4 font-bold text-accent-fg">
+    <span className="absolute top-1 right-0.5 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] leading-4 font-bold text-accent-fg shadow-[0_0_0_2px_var(--c-surface)]">
       {count > 99 ? "99+" : count}
     </span>
   );

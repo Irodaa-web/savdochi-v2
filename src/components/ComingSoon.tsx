@@ -7,8 +7,8 @@ export async function ComingSoon({ title }: { title: string }) {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-surface px-6 py-16 text-center">
-        <span className="flex size-12 items-center justify-center rounded-xl bg-surface-2 text-muted">
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-accent/25 bg-[var(--c-glass-strong)] px-6 py-16 text-center shadow-[var(--c-shadow)]">
+        <span className="btn-primary flex size-12 items-center justify-center rounded-2xl">
           <Hourglass size={22} aria-hidden />
         </span>
         <p className="max-w-sm text-muted">{t.common.soon}</p>

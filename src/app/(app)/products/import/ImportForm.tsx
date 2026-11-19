@@ -68,7 +68,7 @@ export function ImportForm() {
 
   return (
     <div className="flex max-w-5xl flex-col gap-5">
-      <section className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
+      <section className="flex flex-col gap-3 glass-card rounded-2xl p-5">
         <p className="leading-relaxed">{t.products.importIntro}</p>
         <p className="text-[13px] text-muted">{t.products.importRequired}</p>
         <a href="/api/v1/products/import/template" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
@@ -125,7 +125,7 @@ export function ImportForm() {
           )}
           {!result.committed && result.failed > 0 && <Alert tone="info">{valid ? t.products.importErrorsNote : t.products.importNothing}</Alert>}
 
-          <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+          <div className="overflow-x-auto glass-card rounded-2xl">
             <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
               <thead>
                 <tr className="border-b border-line text-muted">

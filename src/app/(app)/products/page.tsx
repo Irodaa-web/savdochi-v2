@@ -47,7 +47,7 @@ export default async function ProductsPage() {
       {products.length === 0 ? (
         <EmptyState Icon={Package} title={t.products.empty} hint={t.products.emptyHint} action={addButton} />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+        <div className="overflow-x-auto glass-card rounded-2xl">
           <table className="w-full min-w-[820px] border-collapse text-left">
             <thead>
               <tr className="border-b border-line text-[13px] text-muted">

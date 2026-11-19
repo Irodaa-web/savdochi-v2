@@ -1,22 +1,161 @@
-import { ClipboardList, LayoutGrid, LayoutDashboard, MessageSquare, Package, ShoppingCart, Users, Warehouse, type LucideIcon } from "lucide-react";
+import {
+  Apple,
+  BrickWall,
+  Building2,
+  ChartColumn,
+  CircleCheck,
+  CircleDot,
+  CircleX,
+  ClipboardList,
+  Cpu,
+  CreditCard,
+  CupSoda,
+  FileSpreadsheet,
+  Heart,
+  LayoutDashboard,
+  LayoutGrid,
+  List,
+  MessageSquare,
+  Package,
+  PackageCheck,
+  PackagePlus,
+  Search,
+  Shapes,
+  ShoppingCart,
+  Sparkles,
+  SprayCan,
+  Truck,
+  Users,
+  Wallet,
+  Warehouse,
+  type LucideIcon,
+} from "lucide-react";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 import type { Role } from "@/lib/auth/token";
+import type { CategoryCode } from "@/lib/catalog";
+import type { OrderStatus } from "@/lib/orders";
 
-export type NavItem = { href: string; label: keyof Dictionary["nav"]; Icon: LucideIcon };
+/** Ichki sahifaga havola. `hint` bo'lsa — katta ko'rinishda (belgi + nom + izoh), bo'lmasa ixcham. */
+export type NavLink = { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; hint?: (t: Dictionary) => string };
+export type NavSection = { title: (t: Dictionary) => string; links: NavLink[]; columns?: 1 | 2 };
+export type NavItem = { href: string; label: keyof Dictionary["nav"]; Icon: LucideIcon; menu?: NavSection[] };
 
-/** Yuqori menyu — har bir rol uchun faqat 3–4 ta asosiy bo'lim. */
+const STATUS_ICONS: Record<OrderStatus, LucideIcon> = { new: Sparkles, confirmed: CircleCheck, shipped: Truck, delivered: PackageCheck, cancelled: CircleX };
+const CATEGORY_ICONS: Record<CategoryCode, LucideIcon> = { food: Apple, drinks: CupSoda, household: SprayCan, construction: BrickWall, electronics: Cpu, other: Shapes };
+
+const orderStatuses: NavSection = {
+  title: (t) => t.navMenu.byStatus,
+  columns: 2,
+  links: [
+    { href: "/orders?status=open", Icon: CircleDot, label: (t) => t.orders.open },
+    ...(Object.keys(STATUS_ICONS) as OrderStatus[]).map((s) => ({ href: `/orders?status=${s}`, Icon: STATUS_ICONS[s], label: (t: Dictionary) => t.orderStatus[s] })),
+    { href: "/orders", Icon: List, label: (t) => t.catalog.all },
+  ],
+};
+
+const debts: NavLink = { href: "/debts", Icon: Wallet, label: (t) => t.header.debts, hint: (t) => t.navMenu.debtsHint };
+const chat: NavLink = { href: "/chat", Icon: MessageSquare, label: (t) => t.nav.chat, hint: (t) => t.navMenu.chatHint };
+
+/** Yuqori menyu — har bir rol uchun 3–4 ta asosiy bo'lim; ichki sahifalar ochiladigan menyuda. */
 export const mainNav: Record<Role, NavItem[]> = {
   buyer: [
-    { href: "/catalog", label: "catalog", Icon: LayoutGrid },
-    { href: "/orders", label: "orders", Icon: ClipboardList },
+    {
+      href: "/catalog",
+      label: "catalog",
+      Icon: LayoutGrid,
+      menu: [
+        {
+          title: (t) => t.navMenu.views,
+          links: [
+            { href: "/catalog", Icon: Building2, label: (t) => t.navMenu.companies, hint: (t) => t.navMenu.companiesHint },
+            { href: "/catalog?view=products", Icon: LayoutGrid, label: (t) => t.navMenu.products, hint: (t) => t.navMenu.productsHint },
+            { href: "/favorites", Icon: Heart, label: (t) => t.favorites.title, hint: (t) => t.navMenu.favoritesHint },
+          ],
+        },
+        {
+          title: (t) => t.navMenu.categories,
+          columns: 2,
+          links: (Object.keys(CATEGORY_ICONS) as CategoryCode[]).map((c) => ({ href: `/catalog?category=${c}`, Icon: CATEGORY_ICONS[c], label: (t: Dictionary) => t.categories[c] })),
+        },
+      ],
+    },
+    {
+      href: "/orders",
+      label: "orders",
+      Icon: ClipboardList,
+      menu: [
+        orderStatuses,
+        {
+          title: (t) => t.navMenu.shopping,
+          links: [{ href: "/cart", Icon: ShoppingCart, label: (t) => t.nav.cart, hint: (t) => t.navMenu.cartHint }, debts],
+        },
+      ],
+    },
     { href: "/stock", label: "stock", Icon: Warehouse },
-    { href: "/partners", label: "partners", Icon: Users },
+    {
+      href: "/partners",
+      label: "partners",
+      Icon: Users,
+      menu: [
+        {
+          title: (t) => t.navMenu.people,
+          links: [
+            { href: "/partners", Icon: Users, label: (t) => t.nav.partners, hint: (t) => t.navMenu.partnersHint },
+            { href: "/catalog", Icon: Search, label: (t) => t.navMenu.findSuppliers, hint: (t) => t.navMenu.findSuppliersHint },
+            debts,
+            chat,
+          ],
+        },
+      ],
+    },
   ],
   seller: [
-    { href: "/dashboard", label: "dashboard", Icon: LayoutDashboard },
-    { href: "/products", label: "products", Icon: Package },
-    { href: "/orders", label: "orders", Icon: ClipboardList },
-    { href: "/partners", label: "clients", Icon: Users },
+    {
+      href: "/dashboard",
+      label: "dashboard",
+      Icon: LayoutDashboard,
+      menu: [
+        {
+          title: (t) => t.navMenu.report,
+          links: [
+            { href: "/dashboard?days=7", Icon: ChartColumn, label: (t) => t.navMenu.days7, hint: (t) => t.navMenu.reportHint },
+            { href: "/dashboard?days=30", Icon: ChartColumn, label: (t) => t.navMenu.days30, hint: (t) => t.navMenu.reportHint },
+            { href: "/dashboard?days=90", Icon: ChartColumn, label: (t) => t.navMenu.days90, hint: (t) => t.navMenu.reportHint },
+          ],
+        },
+        {
+          title: (t) => t.navMenu.money,
+          links: [debts, { href: "/profile#online-pay", Icon: CreditCard, label: (t) => t.header.payments, hint: (t) => t.navMenu.paymentsHint }],
+        },
+      ],
+    },
+    {
+      href: "/products",
+      label: "products",
+      Icon: Package,
+      menu: [
+        {
+          title: (t) => t.navMenu.manage,
+          links: [
+            { href: "/products", Icon: Package, label: (t) => t.navMenu.allProducts, hint: (t) => t.navMenu.allProductsHint },
+            { href: "/products/new", Icon: PackagePlus, label: (t) => t.products.add, hint: (t) => t.navMenu.newProductHint },
+            { href: "/products/import", Icon: FileSpreadsheet, label: (t) => t.products.importButton, hint: (t) => t.navMenu.importHint },
+          ],
+        },
+      ],
+    },
+    { href: "/orders", label: "orders", Icon: ClipboardList, menu: [orderStatuses] },
+    {
+      href: "/partners",
+      label: "clients",
+      Icon: Users,
+      menu: [
+        {
+          title: (t) => t.navMenu.people,
+          links: [{ href: "/partners", Icon: Users, label: (t) => t.nav.clients, hint: (t) => t.navMenu.clientsHint }, debts, chat],
+        },
+      ],
+    },
   ],
 };
 

@@ -168,7 +168,7 @@ async function Audit({ locale, t }: { locale: string; t: T }) {
   const rows = await listAudit();
   if (!rows.length) return <p className="text-muted">{t.admin.noAudit}</p>;
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+    <div className="overflow-x-auto glass-card rounded-2xl">
       <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
         <tbody>
           {rows.map((r) => (

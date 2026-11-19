@@ -20,7 +20,7 @@ function initials(name: string): string {
     .join("");
 }
 
-const itemClass = "flex items-center gap-3 rounded-md px-3 py-2.5 text-text hover:bg-surface-2";
+const itemClass = "flex items-center gap-3 rounded-xl px-3 py-2.5 text-text transition-colors hover:bg-accent-soft/70 hover:text-accent";
 
 export function AccountMenu({ user }: { user: SessionUser }) {
   const { t } = useI18n();
@@ -45,13 +45,13 @@ export function AccountMenu({ user }: { user: SessionUser }) {
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex size-9 cursor-pointer items-center justify-center rounded-full bg-accent text-[13px] font-bold text-accent-fg"
+        className="btn-primary flex size-9 cursor-pointer items-center justify-center rounded-full text-[13px] font-bold transition-transform duration-200 hover:scale-105 active:scale-95"
       >
         {initials(user.name) || "S"}
       </button>
 
       {open && (
-        <div role="menu" className="absolute top-12 right-0 w-64 rounded-xl border border-line bg-surface p-1.5 text-text shadow-xl">
+        <div role="menu" className="glass-strong menu-in absolute top-12 right-0 w-64 rounded-2xl p-1.5 text-text">
           <div className="mb-1.5 border-b border-line px-3 pt-2 pb-3">
             <div className="truncate font-semibold">{user.name}</div>
             <div className="text-[12px] text-muted">
@@ -111,7 +111,7 @@ export function AccountMenu({ user }: { user: SessionUser }) {
             type="button"
             onClick={logout}
             disabled={leaving}
-            className="flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 text-danger hover:bg-danger-soft disabled:opacity-60"
+            className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-danger transition-colors hover:bg-danger-soft disabled:opacity-60"
           >
             <LogOut size={16} aria-hidden />
             {t.header.logout}

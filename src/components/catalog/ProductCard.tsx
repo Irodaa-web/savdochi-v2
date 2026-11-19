@@ -11,12 +11,12 @@ export function ProductCard({ product: p, t, note }: { product: ProductView; t: 
   const unit = t.units[p.unit];
   const available = p.stock >= p.minOrder;
   return (
-    <article className="relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--c-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--c-shadow-lg)]">
+    <article className="glass-card sheen group relative flex flex-col rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-[var(--c-shadow-lg)]">
       {note && (
         <span className="absolute top-2 left-2 z-10 rounded-md bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-fg">{note}</span>
       )}
-      <Link href={`/catalog/${p.id}`} className="block h-32" tabIndex={-1} aria-hidden>
-        <ProductImage src={p.images[0]} name={p.name} category={p.category} className="h-32 w-full" />
+      <Link href={`/catalog/${p.id}`} className="block h-32 overflow-hidden" tabIndex={-1} aria-hidden>
+        <ProductImage src={p.images[0]} name={p.name} category={p.category} className="h-32 w-full transition-transform duration-500 group-hover:scale-[1.04]" />
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3.5">
         <span className="text-[12px] text-muted">{t.categories[p.category]}</span>

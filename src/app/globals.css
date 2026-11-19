@@ -1,99 +1,160 @@
 @import "tailwindcss";
 
 /*
- * Savdochi dizayn tokenlari — "Ko'mir va terrakota". Yorug' va qorong'i mavzu.
+ * Savdochi dizayn tizimi — "Yumshoq oq, ko'k va shisha" (soft white + blue + glass).
+ * Kunduzgi: yumshoq oq fon, ko'k urg'u. Tungi: to'q ko'k (navy) fon, och ko'k urg'u.
  * Standart: qurilma sozlamasi (tizim mavzusi). Foydalanuvchi tugma bilan tanlasa, cookie "theme" saqlanadi.
- * Komponentlar faqat tokenlardan foydalanadi: bg-surface, text-muted, border-line, bg-accent va hokazo.
+ * Komponentlar faqat tokenlardan foydalanadi: bg-surface, text-muted, border-line, bg-accent, glass va hokazo.
+ * Matn juftliklari WCAG bo'yicha >= 4.5:1, diagramma rangi validator bilan tekshirilgan.
  */
 :root,
 [data-theme="light"] {
-  --c-bg: #f5f3ee;
+  --c-bg: #f3f6fb;
+  --c-bg-2: #e8effa;
   --c-surface: #ffffff;
-  --c-surface-2: #f3f0e9;
-  --c-line: #e4dfd4;
-  --c-text: #1c1a16;
-  --c-muted: #6a645a;
-  --c-header: #1f1d19;
-  --c-header-2: #2b2823;
-  --c-header-line: #413c34;
+  --c-surface-2: #eef3fa;
+  --c-line: #dbe3ef;
+  --c-text: #0e1a2f;
+  --c-muted: #5a6b85;
+  --c-header: #0b1f4d;
+  --c-header-2: #12306e;
+  --c-header-line: rgb(255 255 255 / 0.14);
   --c-header-text: #ffffff;
-  --c-header-muted: #cbc4b5;
-  --c-accent: #9c4a24;
-  --c-accent-hover: #843d1c;
+  --c-header-muted: #c7d6f5;
+  --c-hero-from: #0b1f4d;
+  --c-hero-via: #1e3a8a;
+  --c-hero-to: #1d4ed8;
+  --c-accent: #2563eb;
+  --c-accent-hover: #1d4ed8;
   --c-accent-fg: #ffffff;
-  --c-accent-soft: #f7ebe3;
-  /* Diagramma ustunlari va o'q chizig'i (kontrast tekshirilgan). */
-  --c-chart: #9c4a24;
-  --c-chart-axis: #cfc8ba;
-  --c-danger: #b42318;
-  --c-danger-soft: #fdecea;
-  --c-success: #15803d;
-  --c-success-soft: #e5f4ea;
-  --c-focus: #c4683c;
-  --c-shadow: 0 1px 2px rgb(28 26 22 / 0.05), 0 6px 18px -12px rgb(28 26 22 / 0.14);
-  --c-shadow-lg: 0 24px 48px -20px rgb(28 26 22 / 0.38);
-  --c-shadow-tip: 0 1px 2px rgb(28 26 22 / 0.06), 0 8px 22px -10px rgb(28 26 22 / 0.24);
+  --c-accent-soft: #edf3ff;
+  --c-accent-2: #60a5fa;
+  --c-btn-from: #2563eb;
+  --c-btn-to: #1d4ed8;
+  --c-chart: #2563eb;
+  --c-chart-axis: #c3cede;
+  --c-danger: #c4271c;
+  --c-danger-soft: #fdeeee;
+  --c-danger-fg: #ffffff;
+  --c-success: #0a7a52;
+  --c-success-soft: #e6f6ef;
+  --c-focus: #3b82f6;
+  --c-glass: rgb(255 255 255 / 0.7);
+  --c-glass-strong: rgb(255 255 255 / 0.86);
+  --c-glass-border: rgb(196 211 235 / 0.7);
+  --c-glass-highlight: rgb(255 255 255 / 0.95);
+  --c-aurora-1: rgb(96 165 250 / 0.32);
+  --c-aurora-2: rgb(129 140 248 / 0.2);
+  --c-aurora-3: rgb(34 211 238 / 0.16);
+  --c-shadow: 0 1px 2px rgb(15 40 90 / 0.05), 0 10px 30px -14px rgb(15 40 90 / 0.2);
+  --c-shadow-lg: 0 28px 60px -24px rgb(15 40 90 / 0.38);
+  --c-shadow-tip: 0 1px 2px rgb(15 40 90 / 0.06), 0 10px 26px -10px rgb(15 40 90 / 0.28);
+  --c-glow: 0 10px 26px -10px rgb(37 99 235 / 0.6);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-  --c-bg: #13110f;
-  --c-surface: #1c1915;
-  --c-surface-2: #252019;
-  --c-line: #3a342b;
-  --c-text: #f3eee6;
-  --c-muted: #aca396;
-  --c-header: #0e0c0a;
-  --c-header-2: #1f1b17;
-  --c-header-line: #3a342b;
-  --c-header-text: #f3eee6;
-  --c-header-muted: #aca396;
-  --c-accent: #e0875a;
-  --c-accent-hover: #ea9670;
-  --c-accent-fg: #1b1510;
-  --c-accent-soft: #3a2519;
-  --c-chart: #cf774a;
-  --c-chart-axis: #4d463b;
-  --c-danger: #ff8a7a;
-  --c-danger-soft: #3d1f1c;
-  --c-success: #86e0b4;
-  --c-success-soft: #173326;
-  --c-focus: #ea9670;
-  --c-shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 26px -14px rgb(0 0 0 / 0.65);
-  --c-shadow-lg: 0 26px 52px -18px rgb(0 0 0 / 0.8);
-  --c-shadow-tip: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 24px -10px rgb(0 0 0 / 0.7);
+    --c-bg: #070d1a;
+    --c-bg-2: #0a1528;
+    --c-surface: #0f1829;
+    --c-surface-2: #16223a;
+    --c-line: #22314d;
+    --c-text: #e8eef8;
+    --c-muted: #93a3bd;
+    --c-header: #071331;
+    --c-header-2: #0f2257;
+    --c-header-line: rgb(255 255 255 / 0.1);
+    --c-header-text: #e8eef8;
+    --c-header-muted: #b4c6ea;
+    --c-hero-from: #071331;
+    --c-hero-via: #0f2257;
+    --c-hero-to: #1e3a8a;
+    --c-accent: #5b9bff;
+    --c-accent-hover: #7aaeff;
+    --c-accent-fg: #04101f;
+    --c-accent-soft: #13264a;
+    --c-accent-2: #93c5fd;
+    --c-btn-from: #6aa5ff;
+    --c-btn-to: #4d8af5;
+    --c-chart: #4682f0;
+    --c-chart-axis: #2c3b57;
+    --c-danger: #ff8a80;
+    --c-danger-soft: #3a1a1d;
+    --c-danger-fg: #2a0705;
+    --c-success: #5fd4a3;
+    --c-success-soft: #10302a;
+    --c-focus: #7aaeff;
+    --c-glass: rgb(15 24 41 / 0.62);
+    --c-glass-strong: rgb(15 24 41 / 0.82);
+    --c-glass-border: rgb(148 178 230 / 0.14);
+    --c-glass-highlight: rgb(255 255 255 / 0.06);
+    --c-aurora-1: rgb(37 99 235 / 0.3);
+    --c-aurora-2: rgb(99 102 241 / 0.2);
+    --c-aurora-3: rgb(6 182 212 / 0.14);
+    --c-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -16px rgb(0 0 0 / 0.7);
+    --c-shadow-lg: 0 30px 60px -22px rgb(0 0 0 / 0.85);
+    --c-shadow-tip: 0 1px 2px rgb(0 0 0 / 0.45), 0 12px 28px -10px rgb(0 0 0 / 0.75);
+    --c-glow: 0 10px 30px -10px rgb(91 155 255 / 0.5);
     color-scheme: dark;
   }
 }
 
 [data-theme="dark"] {
-  --c-bg: #13110f;
-  --c-surface: #1c1915;
-  --c-surface-2: #252019;
-  --c-line: #3a342b;
-  --c-text: #f3eee6;
-  --c-muted: #aca396;
-  --c-header: #0e0c0a;
-  --c-header-2: #1f1b17;
-  --c-header-line: #3a342b;
-  --c-header-text: #f3eee6;
-  --c-header-muted: #aca396;
-  --c-accent: #e0875a;
-  --c-accent-hover: #ea9670;
-  --c-accent-fg: #1b1510;
-  --c-accent-soft: #3a2519;
-  --c-chart: #cf774a;
-  --c-chart-axis: #4d463b;
-  --c-danger: #ff8a7a;
-  --c-danger-soft: #3d1f1c;
-  --c-success: #86e0b4;
-  --c-success-soft: #173326;
-  --c-focus: #ea9670;
-  --c-shadow: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 26px -14px rgb(0 0 0 / 0.65);
-  --c-shadow-lg: 0 26px 52px -18px rgb(0 0 0 / 0.8);
-  --c-shadow-tip: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 24px -10px rgb(0 0 0 / 0.7);
+  --c-bg: #070d1a;
+  --c-bg-2: #0a1528;
+  --c-surface: #0f1829;
+  --c-surface-2: #16223a;
+  --c-line: #22314d;
+  --c-text: #e8eef8;
+  --c-muted: #93a3bd;
+  --c-header: #071331;
+  --c-header-2: #0f2257;
+  --c-header-line: rgb(255 255 255 / 0.1);
+  --c-header-text: #e8eef8;
+  --c-header-muted: #b4c6ea;
+  --c-hero-from: #071331;
+  --c-hero-via: #0f2257;
+  --c-hero-to: #1e3a8a;
+  --c-accent: #5b9bff;
+  --c-accent-hover: #7aaeff;
+  --c-accent-fg: #04101f;
+  --c-accent-soft: #13264a;
+  --c-accent-2: #93c5fd;
+  --c-btn-from: #6aa5ff;
+  --c-btn-to: #4d8af5;
+  --c-chart: #4682f0;
+  --c-chart-axis: #2c3b57;
+  --c-danger: #ff8a80;
+  --c-danger-soft: #3a1a1d;
+  --c-danger-fg: #2a0705;
+  --c-success: #5fd4a3;
+  --c-success-soft: #10302a;
+  --c-focus: #7aaeff;
+  --c-glass: rgb(15 24 41 / 0.62);
+  --c-glass-strong: rgb(15 24 41 / 0.82);
+  --c-glass-border: rgb(148 178 230 / 0.14);
+  --c-glass-highlight: rgb(255 255 255 / 0.06);
+  --c-aurora-1: rgb(37 99 235 / 0.3);
+  --c-aurora-2: rgb(99 102 241 / 0.2);
+  --c-aurora-3: rgb(6 182 212 / 0.14);
+  --c-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -16px rgb(0 0 0 / 0.7);
+  --c-shadow-lg: 0 30px 60px -22px rgb(0 0 0 / 0.85);
+  --c-shadow-tip: 0 1px 2px rgb(0 0 0 / 0.45), 0 12px 28px -10px rgb(0 0 0 / 0.75);
+  --c-glow: 0 10px 30px -10px rgb(91 155 255 / 0.5);
   color-scheme: dark;
+}
+
+/* dark: varianti mavzu tugmasiga ham, tizim sozlamasiga ham bo'ysunadi. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
 }
 
 @theme inline {
@@ -112,13 +173,80 @@
   --color-accent-hover: var(--c-accent-hover);
   --color-accent-fg: var(--c-accent-fg);
   --color-accent-soft: var(--c-accent-soft);
+  --color-accent-2: var(--c-accent-2);
   --color-chart: var(--c-chart);
   --color-chart-axis: var(--c-chart-axis);
   --color-danger: var(--c-danger);
   --color-danger-soft: var(--c-danger-soft);
+  --color-danger-fg: var(--c-danger-fg);
   --color-success: var(--c-success);
   --color-success-soft: var(--c-success-soft);
   --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ---------------------------------------------------------------- */
+/* Shisha (glass): shaffof yuza + orqadagi narsalarni xiralashtirish. */
+/* Header, menyular, pastki panel, oynalar — haqiqiy blur.            */
+/* Kartalar — blur'siz yarim shaffof (ko'p karta bo'lsa ham tez).      */
+/* ---------------------------------------------------------------- */
+@utility glass {
+  background-color: var(--c-glass);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  border: 1px solid var(--c-glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--c-glass-highlight),
+    var(--c-shadow);
+}
+@utility glass-strong {
+  background-color: var(--c-glass-strong);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  backdrop-filter: blur(22px) saturate(1.7);
+  border: 1px solid var(--c-glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--c-glass-highlight),
+    var(--c-shadow-lg);
+}
+@utility glass-card {
+  background-color: var(--c-glass-strong);
+  border: 1px solid var(--c-glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--c-glass-highlight),
+    var(--c-shadow);
+}
+/* Ko'k gradient panel (salomlashish, kompaniya sahifasi, kirish sahifasi chap qismi). */
+@utility hero {
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgb(96 165 250 / 0.35), transparent 55%),
+    linear-gradient(135deg, var(--c-hero-from), var(--c-hero-via) 55%, var(--c-hero-to));
+  color: var(--c-header-text);
+}
+/* Asosiy tugma: ko'k gradient, ichki yorug' chiziq va yengil nur. */
+@utility btn-primary {
+  background-image: linear-gradient(180deg, var(--c-btn-from), var(--c-btn-to));
+  color: var(--c-accent-fg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    var(--c-glow);
+}
+/* Shisha ustidan o'tadigan yorug'lik (hover). Ichidagi elementlar ustida, bosishga xalaqit bermaydi. */
+@utility sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.32) 48%, transparent 66%);
+    transform: translateX(-130%);
+    transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  &:hover::after {
+    transform: translateX(130%);
+  }
 }
 
 html,
@@ -126,10 +254,13 @@ body {
   background: var(--c-bg);
   color: var(--c-text);
 }
+html {
+  scrollbar-color: color-mix(in oklab, var(--c-muted) 45%, transparent) transparent;
+}
 
 /* Jadvallar: ilova kontentida bir xil ko'rinish. */
 main thead th {
-  background: var(--c-surface-2);
+  background: color-mix(in oklab, var(--c-surface-2) 88%, transparent);
   color: var(--c-muted);
   font-size: 12px;
   font-weight: 600;
@@ -139,10 +270,10 @@ main tbody tr {
   transition: background-color 0.15s ease;
 }
 main tbody tr:hover {
-  background: var(--c-surface-2);
+  background: color-mix(in oklab, var(--c-accent-soft) 65%, transparent);
 }
 ::selection {
-  background: var(--c-accent-soft);
+  background: color-mix(in oklab, var(--c-accent) 22%, transparent);
 }
 
 body {
@@ -154,6 +285,147 @@ body {
 :focus-visible {
   outline: 2px solid var(--c-focus);
   outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- */
+/* Orqa fon: sekin suzib yuradigan ko'k nur dog'lari (aurora).        */
+/* Faqat transform animatsiyasi (tez); harakat kamaytirilsa — to'xtaydi. */
+/* ---------------------------------------------------------------- */
+.aurora {
+  background: linear-gradient(180deg, var(--c-bg) 0%, var(--c-bg-2) 100%);
+}
+.aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  will-change: transform;
+}
+.aurora-1 {
+  width: 62vmax;
+  height: 62vmax;
+  left: -20vmax;
+  top: -28vmax;
+  background: radial-gradient(closest-side, var(--c-aurora-1), transparent);
+  animation: aurora-a 26s ease-in-out infinite alternate;
+}
+.aurora-2 {
+  width: 54vmax;
+  height: 54vmax;
+  right: -18vmax;
+  top: 4vh;
+  background: radial-gradient(closest-side, var(--c-aurora-2), transparent);
+  animation: aurora-b 32s ease-in-out infinite alternate;
+}
+.aurora-3 {
+  width: 48vmax;
+  height: 48vmax;
+  left: 18vw;
+  bottom: -30vmax;
+  background: radial-gradient(closest-side, var(--c-aurora-3), transparent);
+  animation: aurora-c 38s ease-in-out infinite alternate;
+}
+.aurora-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(color-mix(in oklab, var(--c-accent) 14%, transparent) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(180deg, black, transparent 55%);
+  opacity: 0.5;
+}
+@keyframes aurora-a {
+  to {
+    transform: translate3d(9vw, 7vh, 0) scale(1.12);
+  }
+}
+@keyframes aurora-b {
+  to {
+    transform: translate3d(-10vw, 10vh, 0) scale(0.92);
+  }
+}
+@keyframes aurora-c {
+  to {
+    transform: translate3d(8vw, -9vh, 0) scale(1.15);
+  }
+}
+
+/* Sahifa ochilganda bo'limlar navbat bilan yengil ko'tarilib chiqadi. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.page-in > * > * {
+  animation: page-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+.page-in > * > :nth-child(2) {
+  animation-delay: 50ms;
+}
+.page-in > * > :nth-child(3) {
+  animation-delay: 100ms;
+}
+.page-in > * > :nth-child(4) {
+  animation-delay: 150ms;
+}
+.page-in > * > :nth-child(5) {
+  animation-delay: 200ms;
+}
+.page-in > * > :nth-child(n + 6) {
+  animation-delay: 250ms;
+}
+
+/* Ochiladigan menyular va oynalar. */
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+.menu-in {
+  transform-origin: top right;
+  animation: menu-in 0.18s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+}
+dialog[open].dialog-in {
+  animation: dialog-in 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Ko'k panellardagi suzuvchi shisha doiralar. */
+@keyframes orb-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
+}
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0.04));
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: orb-float 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob,
+  .orb,
+  .page-in > * > *,
+  .menu-in,
+  dialog[open].dialog-in {
+    animation: none !important;
+  }
+  .sheen::after {
+    transition: none !important;
+  }
 }
 
 /* Chop etiladigan hujjatlar (hisob-faktura, akt sverka): mavzudan qat'i nazar oq qog'oz. */

@@ -31,7 +31,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         </div>
 
         <aside className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
+          <div className="flex flex-col gap-3 glass-card rounded-2xl p-5">
             <span className="text-[13px] text-muted">{t.categories[p.category]}</span>
             <h1 className="text-xl leading-snug font-bold">{p.name}</h1>
             <div>
@@ -73,7 +73,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             )}
           </div>
 
-          <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-5">
+          <div className="flex flex-col gap-2 glass-card rounded-2xl p-5">
             <span className="text-[12px] font-semibold tracking-wider text-muted uppercase">{t.catalog.seller}</span>
             <span className="flex items-center gap-1.5 font-semibold">
               {p.seller.name}

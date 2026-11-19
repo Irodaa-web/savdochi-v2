@@ -75,7 +75,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         <ul className="flex flex-col gap-2.5">
           {orders.map((o) => (
             <li key={o.id}>
-              <Link href={`/orders/${o.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line bg-surface px-4 py-3.5 hover:border-muted/40">
+              <Link href={`/orders/${o.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 glass-card rounded-2xl px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:border-accent/40 hover:shadow-[var(--c-shadow-lg)]">
                 <span className="font-bold tabular-nums">№{o.number}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{isSeller ? o.buyer.name : o.seller.name}</span>
