@@ -1,6 +1,7 @@
 import "server-only";
 import { TIME_ZONE } from "@/i18n/format";
 import { Types } from "mongoose";
+import { fillDays, periodStart } from "@/lib/chart";
 import { connectDb } from "@/lib/db";
 import { Order } from "@/models/Order";
 import { Partnership } from "@/models/Partnership";
@@ -14,16 +15,20 @@ export type SellerReport = {
   unpaidValue: number;
   repeatPartners: number;
   newOrders: number;
-  topProducts: { name: string; quantity: number; value: number }[];
+  topProducts: { name: string; quantity: number; value: number; unit: string }[];
   /** Ilgari buyurtma bergan, lekin 30 kundan beri bermagan hamkorlar. */
   inactive: { id: string; name: string; days: number }[];
-  daily: { day: string; value: number }[];
+  /** Davrdagi har bir kun (Toshkent sanasi, YYYY-MM-DD): savdo summasi va buyurtmalar soni. */
+  daily: DailyPoint[];
 };
+
+export type DailyPoint = { day: string; value: number; orders: number };
 
 export async function sellerReport(sellerId: string, days = 30): Promise<SellerReport> {
   await connectDb();
   const seller = new Types.ObjectId(sellerId);
-  const since = new Date(Date.now() - days * 86_400_000);
+  // To'liq kalendar kunlar (Toshkent): diagrammadagi har bir ustun — butun kun, oxirgisi bugun.
+  const since = periodStart(Date.now(), days);
   const match = { seller, status: { $ne: "cancelled" }, createdAt: { $gte: since } };
 
   // Barcha so'rovlar parallel: baza uzoq bo'lsa ham sahifa bitta "aylanish" vaqtida tayyor bo'ladi.
@@ -33,16 +38,16 @@ export async function sellerReport(sellerId: string, days = 30): Promise<SellerR
       { $group: { _id: null, n: { $sum: 1 }, value: { $sum: "$total" }, paid: { $sum: "$paidAmount" } } },
     ]),
     Order.aggregate<{ _id: Types.ObjectId; n: number }>([{ $match: match }, { $group: { _id: "$buyer", n: { $sum: 1 } } }]),
-    Order.aggregate<{ _id: string; quantity: number; value: number }>([
+    Order.aggregate<{ _id: string; quantity: number; value: number; unit: string }>([
       { $match: match },
       { $unwind: "$items" },
-      { $group: { _id: "$items.name", quantity: { $sum: "$items.quantity" }, value: { $sum: "$items.total" } } },
+      { $group: { _id: "$items.name", quantity: { $sum: "$items.quantity" }, value: { $sum: "$items.total" }, unit: { $first: "$items.unit" } } },
       { $sort: { value: -1 } },
       { $limit: 5 },
     ]),
-    Order.aggregate<{ _id: string; value: number }>([
+    Order.aggregate<{ _id: string; value: number; orders: number }>([
       { $match: match },
-      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: TIME_ZONE } }, value: { $sum: "$total" } } },
+      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: TIME_ZONE } }, value: { $sum: "$total" }, orders: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
     Order.countDocuments({ seller, status: "new" }),
@@ -71,20 +76,10 @@ export async function sellerReport(sellerId: string, days = 30): Promise<SellerR
     unpaidValue: (totals?.value ?? 0) - (totals?.paid ?? 0),
     repeatPartners: byBuyer.filter((b) => b.n > 1).length,
     newOrders,
-    topProducts: topProducts.map((p) => ({ name: p._id, quantity: p.quantity, value: p.value })),
+    topProducts: topProducts.map((p) => ({ name: p._id, quantity: p.quantity, value: p.value, unit: p.unit })),
     inactive: stale
       .map((s) => ({ id: String(s._id), name: s.name ?? "—", days: Math.floor((Date.now() - new Date(s.last!).getTime()) / 86_400_000) }))
       .sort((a, b) => b.days - a.days),
     daily: fillDays(since, days, daily),
   };
-}
-
-/** Grafik uchun davrdagi har bir kun (savdo bo'lmagan kunlar — 0). */
-function fillDays(since: Date, days: number, rows: { _id: string; value: number }[]): { day: string; value: number }[] {
-  const by = new Map(rows.map((r) => [r._id, r.value]));
-  return Array.from({ length: days + 1 }, (_, i) => {
-    // Toshkent (UTC+5) kuni — agregatsiyadagi timezone bilan mos.
-    const day = new Date(since.getTime() + i * 86_400_000 + 5 * 3_600_000).toISOString().slice(0, 10);
-    return { day, value: by.get(day) ?? 0 };
-  });
 }
