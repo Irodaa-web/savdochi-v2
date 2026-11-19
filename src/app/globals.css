@@ -393,6 +393,15 @@ body {
 dialog[open].dialog-in {
   animation: dialog-in 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
+/* Telefondagi "Yana" paneli pastdan ko'tarilib chiqadi. */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+dialog[open].sheet-up {
+  animation: sheet-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 
 /* Ko'k panellardagi suzuvchi shisha doiralar. */
 @keyframes orb-float {
@@ -420,7 +429,8 @@ dialog[open].dialog-in {
   .orb,
   .page-in > * > *,
   .menu-in,
-  dialog[open].dialog-in {
+  dialog[open].dialog-in,
+  dialog[open].sheet-up {
     animation: none !important;
   }
   .sheen::after {

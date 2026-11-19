@@ -30,6 +30,8 @@ export function ProductGallery({ images, name, category = "other" }: { images: s
           category={category}
           alt={`${name} — ${angleLabel(active)}`}
           fit="contain"
+          sizes="(min-width: 1024px) 60vw, 100vw"
+          priority={active === 0}
           className="aspect-[4/3] w-full rounded-xl border border-line bg-surface-2 sm:aspect-[16/10]"
         />
         <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-[12px] font-medium text-white">{angleLabel(active)}</span>
@@ -48,7 +50,7 @@ export function ProductGallery({ images, name, category = "other" }: { images: s
                 i === active ? "border-accent" : "border-transparent hover:border-line",
               )}
             >
-              <ProductImage src={src} name={name} category={category} className="aspect-square w-full rounded-md" />
+              <ProductImage src={src} name={name} category={category} sizes="(min-width: 1024px) 12vw, 25vw" className="aspect-square w-full rounded-md" />
               <span className="truncate px-0.5 text-[11px] text-muted">{angleLabel(i)}</span>
             </button>
           ))}

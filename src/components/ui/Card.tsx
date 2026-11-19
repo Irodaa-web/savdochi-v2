@@ -14,7 +14,8 @@ export function PageTitle({ children, action, lead }: { children: ReactNode; act
         <h1 className="text-[26px] leading-tight font-bold tracking-tight sm:text-[30px]">{children}</h1>
         {lead && <p className="max-w-2xl text-[14px] text-muted">{lead}</p>}
       </div>
-      {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
+      {/* Telefonda amallar doim alohida qatorda — shrift yuklanganda joylashuv sakramaydi. */}
+      {action && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">{action}</div>}
     </div>
   );
 }

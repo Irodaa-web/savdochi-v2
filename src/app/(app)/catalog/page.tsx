@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ArrowLeft, Building2, Package, PackageSearch, Search, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Building2, Package, PackageCheck, PackageSearch, Search, ShieldAlert } from "lucide-react";
 import { PageTitle } from "@/components/ui/Card";
 import Link from "next/link";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -13,9 +13,11 @@ import { requireUser } from "@/lib/auth/guard";
 import { CATEGORY_CODES, type CategoryCode } from "@/lib/catalog";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import { CATEGORY_ICONS } from "@/lib/navigation";
-import { categoryCounts, getProductSeller, listCatalog, listSuppliers } from "@/server/products";
+import { categoryCounts, getProductSeller, listCatalog, listSuppliers, type CatalogSort } from "@/server/products";
 
-type Params = { q?: string; category?: string; seller?: string; page?: string; view?: string; region?: string };
+type Params = { q?: string; category?: string; seller?: string; page?: string; view?: string; region?: string; sort?: string; stock?: string };
+const SORT_KEYS = ["new", "cheap", "expensive"] as const;
+const sortOf = (sp: Params): CatalogSort => (SORT_KEYS as readonly string[]).includes(sp.sort ?? "") ? (sp.sort as CatalogSort) : "new";
 
 function hrefWith(current: Params, patch: Partial<Params>): string {
   const params = new URLSearchParams();
@@ -170,8 +172,10 @@ async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }
 }
 
 async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary }) {
-  const result = await listCatalog({ q, category, page: Number(sp.page) || 1 });
-  const base: Params = { q, category, view: "products" };
+  const sort = sortOf(sp);
+  const inStock = sp.stock === "1";
+  const result = await listCatalog({ q, category, page: Number(sp.page) || 1, sort, inStock });
+  const base: Params = { q, category, view: "products", sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined };
   return (
     <>
       <Header title={t.catalog.title} count={fmt(t.catalog.count, { n: result.total })}>
@@ -203,7 +207,9 @@ async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; cat
 
 async function SellerProducts({ sp, q, category, t }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary }) {
   const seller = sp.seller!;
-  const [result, sellerName] = await Promise.all([listCatalog({ q, category, seller, page: Number(sp.page) || 1 }), getProductSeller(seller)]);
+  const sort = sortOf(sp);
+  const inStock = sp.stock === "1";
+  const [result, sellerName] = await Promise.all([listCatalog({ q, category, seller, page: Number(sp.page) || 1, sort, inStock }), getProductSeller(seller)]);
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -227,19 +233,45 @@ async function SellerProducts({ sp, q, category, t }: { sp: Params; q?: string; 
         </div>
         <PageSearch hidden={{ seller, category }} q={q} placeholder={t.suppliers.searchIn} />
       </div>
-      <ProductGrid result={result} base={{ q, category, seller }} t={t} />
+      <ProductGrid result={result} base={{ q, category, seller, sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined }} t={t} />
     </>
   );
 }
 
 function ProductGrid({ result, base, t }: { result: Awaited<ReturnType<typeof listCatalog>>; base: Params; t: Dictionary }) {
   const { items, page, pages } = result;
+  const sort = base.sort ?? "new";
+  const chip = (active: boolean) =>
+    clsx(
+      "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium whitespace-nowrap transition-colors",
+      active ? "border-accent bg-accent-soft text-accent" : "border-line bg-[var(--c-glass-strong)] text-text hover:border-accent/40 hover:text-accent",
+    );
   return (
     <>
+      {/* Saralash va "faqat mavjudlari" — sahifalash va kategoriya tanlovida saqlanadi. */}
+      <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+        <span className="shrink-0 text-[13px] text-muted">{t.catalog.sortLabel}:</span>
+        {(
+          [
+            ["new", t.catalog.sortNew],
+            ["cheap", t.catalog.sortCheap],
+            ["expensive", t.catalog.sortExpensive],
+          ] as const
+        ).map(([key, label]) => (
+          <Link key={key} href={hrefWith(base, { sort: key === "new" ? undefined : key, page: undefined })} aria-current={sort === key ? "true" : undefined} className={chip(sort === key)}>
+            {label}
+          </Link>
+        ))}
+        <Link href={hrefWith(base, { stock: base.stock ? undefined : "1", page: undefined })} aria-pressed={Boolean(base.stock)} className={clsx(chip(Boolean(base.stock)), "sm:ml-auto")}>
+          <PackageCheck size={15} aria-hidden />
+          {t.catalog.inStockOnly}
+        </Link>
+      </div>
       {items.length ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(210px,1fr))] sm:gap-4">
-          {items.map((p) => (
-            <ProductCard key={p.id} product={p} t={t} />
+          {items.map((p, i) => (
+            // Birinchi qator rasmlari kechiktirilmaydi — sahifa tezroq "to'ladi" ko'rinadi.
+            <ProductCard key={p.id} product={p} t={t} priority={i < 2} />
           ))}
         </div>
       ) : (

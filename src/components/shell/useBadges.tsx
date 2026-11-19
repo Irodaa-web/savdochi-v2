@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "@/lib/apiClient";
 
 const BADGES_EVENT = "savdochi:badges";
@@ -12,8 +12,14 @@ export function refreshBadges(): void {
 
 export type Badges = { cart: number; chats: number; notifications: number };
 
-/** Header belgilari: har 30 soniyada, sahifa almashganda (15 s dan keyin) va `refreshBadges()` chaqirilganda yangilanadi. */
-export function useBadges(): [Badges, () => void] {
+const BadgesContext = createContext<[Badges, () => void] | null>(null);
+
+/**
+ * Belgilar (savat, chat, bildirishnomalar) — bitta joyda: header ham, telefondagi pastki panel ham
+ * shu qiymatdan foydalanadi (so'rovlar ikki baravar ko'paymaydi).
+ * Har 30 soniyada, sahifa almashganda (15 s dan keyin) va `refreshBadges()` chaqirilganda yangilanadi.
+ */
+export function BadgesProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [badges, setBadges] = useState<Badges>({ cart: 0, chats: 0, notifications: 0 });
   const last = useRef(0);
@@ -38,5 +44,11 @@ export function useBadges(): [Badges, () => void] {
     return () => clearInterval(timer);
   }, [refresh]);
 
-  return [badges, refresh];
+  return <BadgesContext.Provider value={[badges, refresh]}>{children}</BadgesContext.Provider>;
+}
+
+export function useBadges(): [Badges, () => void] {
+  const value = useContext(BadgesContext);
+  if (!value) throw new Error("useBadges must be used inside BadgesProvider");
+  return value;
 }

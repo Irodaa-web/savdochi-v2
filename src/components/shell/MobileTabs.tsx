@@ -1,38 +1,69 @@
 "use client";
 
 import clsx from "clsx";
+import { LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { useI18n } from "@/i18n/client";
-import type { Role } from "@/lib/auth/token";
+import type { SessionUser } from "@/lib/auth/session";
 import { mobileTabs } from "@/lib/navigation";
+import { MobileMenu } from "./MobileMenu";
+import { useBadges } from "./useBadges";
 
-/** Telefonda pastki panel — suzuvchi shisha panel, ilova kabi. Kompyuterda yashirin. */
-export function MobileTabs({ role }: { role: Role }) {
+const tabClass = "relative flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] transition-all duration-200 active:scale-95";
+
+/**
+ * Telefonda pastki panel — suzuvchi shisha panel, ilova kabi. Kompyuterda yashirin.
+ * 4 ta asosiy bo'lim (savat va chatda raqamli belgi) + "Yana" — barcha bo'limlar paneli.
+ */
+export function MobileTabs({ user }: { user: SessionUser }) {
   const { t } = useI18n();
   const pathname = usePathname();
+  const [badges] = useBadges();
+  const [menu, setMenu] = useState(false);
+  const count: Record<string, number> = { "/cart": badges.cart, "/chat": badges.chats };
 
   return (
-    <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 md:hidden">
-      <div className="glass-strong grid grid-cols-4 gap-1 rounded-2xl p-1.5">
-        {mobileTabs[role].map(({ href, label, Icon }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`);
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={clsx(
-                "flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] transition-all duration-200 active:scale-95",
-                active ? "bg-accent-soft font-semibold text-accent shadow-[inset_0_1px_0_var(--c-glass-highlight)]" : "font-medium text-muted",
-              )}
-            >
-              <Icon size={21} aria-hidden strokeWidth={active ? 2.3 : 2} />
-              {t.nav[label]}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <>
+      <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 md:hidden">
+        <div className="glass-strong grid grid-cols-5 gap-1 rounded-2xl p-1.5">
+          {mobileTabs[user.role].map(({ href, label, Icon }) => {
+            const active = pathname === href || pathname.startsWith(`${href}/`);
+            const n = count[href] ?? 0;
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={clsx(tabClass, active ? "bg-accent-soft font-semibold text-accent shadow-[inset_0_1px_0_var(--c-glass-highlight)]" : "font-medium text-muted")}
+              >
+                <span className="relative">
+                  <Icon size={21} aria-hidden strokeWidth={active ? 2.3 : 2} />
+                  {n > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 min-w-4 rounded-full bg-accent px-1 text-center text-[10px] leading-4 font-bold text-accent-fg shadow-[0_0_0_2px_var(--c-surface)]">
+                      {n > 99 ? "99+" : n}
+                    </span>
+                  )}
+                </span>
+                <span className="max-w-full truncate px-0.5">{t.nav[label]}</span>
+                {n > 0 && <span className="sr-only">({n})</span>}
+              </Link>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => setMenu(true)}
+            aria-haspopup="dialog"
+            aria-expanded={menu}
+            className={clsx(tabClass, "cursor-pointer", menu ? "bg-accent-soft font-semibold text-accent" : "font-medium text-muted")}
+          >
+            <LayoutGrid size={21} aria-hidden />
+            {t.navMenu.more}
+          </button>
+        </div>
+      </nav>
+      <MobileMenu user={user} open={menu} onClose={() => setMenu(false)} />
+    </>
   );
 }

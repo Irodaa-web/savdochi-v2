@@ -1,7 +1,9 @@
 "use client";
 
 import clsx from "clsx";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { isOptimizable, isWikimediaThumb, wikimediaLoader } from "@/lib/images";
 
 const TONES: Record<string, string> = {
   food: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100",
@@ -18,9 +20,13 @@ export function initialsOf(name: string): string {
   return words.slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "?";
 }
 
+/** Katalog kartasi uchun standart o'lcham (ekran kengligiga nisbatan) — brauzer shunga mos nusxani oladi. */
+export const CARD_SIZES = "(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw";
+
 /**
  * Mahsulot rasmi. Yuklanayotganda porlaydi (skeleton), yuklangach silliq paydo bo'ladi.
  * Rasm yo'q yoki yuklanmasa — kategoriya rangi va bosh harflar ko'rinadi.
+ * Kerakli kenglikdagi kichik nusxa olinadi (`sizes`): telefonda katalog bir necha baravar tez ochiladi.
  */
 export function ProductImage({
   src,
@@ -28,6 +34,8 @@ export function ProductImage({
   category = "other",
   alt = "",
   fit = "cover",
+  sizes = CARD_SIZES,
+  priority = false,
   className,
 }: {
   src: string | null | undefined;
@@ -35,6 +43,10 @@ export function ProductImage({
   category?: string;
   alt?: string;
   fit?: "cover" | "contain";
+  /** Rasm sahifada qancha joy egallashi (CSS `sizes`). */
+  sizes?: string;
+  /** Birinchi ekrandagi asosiy rasm — kechiktirmasdan yuklanadi. */
+  priority?: boolean;
   className?: string;
 }) {
   const ref = useRef<HTMLImageElement>(null);
@@ -60,20 +72,23 @@ export function ProductImage({
     );
   }
 
+  const wikimedia = isWikimediaThumb(src);
   return (
     <div className={clsx("relative overflow-hidden", className)}>
       {state === "loading" && <div aria-hidden className="absolute inset-0 animate-pulse bg-surface-2 motion-reduce:animate-none" />}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         ref={ref}
         src={src}
         alt={alt}
-        loading="lazy"
-        decoding="async"
+        fill
+        sizes={sizes}
+        priority={priority}
+        loader={wikimedia ? wikimediaLoader : undefined}
+        unoptimized={!wikimedia && !isOptimizable(src)}
         onLoad={() => setState("loaded")}
         onError={() => setState("error")}
         className={clsx(
-          "size-full transition-opacity duration-300 motion-reduce:transition-none",
+          "transition-opacity duration-300 motion-reduce:transition-none",
           fit === "contain" ? "object-contain" : "object-cover",
           state === "loaded" ? "opacity-100" : "opacity-0",
         )}
