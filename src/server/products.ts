@@ -1,7 +1,7 @@
 import "server-only";
 import { isValidObjectId, Types, type FilterQuery } from "mongoose";
 import { connectDb } from "@/lib/db";
-import type { CategoryCode, PriceTier, UnitCode } from "@/lib/catalog";
+import { CATEGORY_CODES, type CategoryCode, type PriceTier, type UnitCode } from "@/lib/catalog";
 import type { RegionCode } from "@/lib/regions";
 import type { ProductInput } from "@/lib/validation";
 import { Cart } from "@/models/Cart";
@@ -99,6 +99,18 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
     Product.countDocuments(filter),
   ]);
   return { items: await withSellers(docs), total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+}
+
+/** Katalogdagi faol mahsulotlar soni kategoriyalar bo'yicha (bloklangan / obunasi tugagan kompaniyalarsiz). */
+export async function categoryCounts(): Promise<Record<CategoryCode, number>> {
+  await connectDb();
+  const hidden = await hiddenSellers();
+  const match: Record<string, unknown> = { active: true };
+  if (hidden.length) match.seller = { $nin: hidden };
+  const rows = await Product.aggregate<{ _id: CategoryCode; n: number }>([{ $match: match }, { $group: { _id: "$category", n: { $sum: 1 } } }]);
+  const counts = Object.fromEntries(CATEGORY_CODES.map((c) => [c, 0])) as Record<CategoryCode, number>;
+  for (const row of rows) if (row._id in counts) counts[row._id] = row.n;
+  return counts;
 }
 
 export async function getProduct(id: string): Promise<ProductView | null> {

@@ -40,6 +40,46 @@ export async function outstandingBetween(sellerId: string, buyerId: string, sess
   return row?.sum ?? 0;
 }
 
+export type AgingKey = "soon" | "later" | "d7" | "d30" | "d30plus" | "none";
+export type DebtAging = Record<AgingKey, { amount: number; orders: number }>;
+
+/**
+ * Qarzning muddat bo'yicha taqsimoti (qarz "yoshi"): 7 kun ichida to'lanadigan, keyinroq,
+ * 1–7 / 8–30 / 30+ kun kechikkan va muddat belgilanmagan. Bitta agregatsiya.
+ */
+export async function debtAging(user: SessionUser, now = new Date()): Promise<DebtAging> {
+  await connectDb();
+  const { me } = sideOf(user);
+  const rows = await Order.aggregate<{ _id: AgingKey; amount: number; orders: number }>([
+    { $match: { [me]: new Types.ObjectId(user.id), ...unpaidFilter } },
+    { $addFields: { left: { $subtract: ["$total", "$paidAmount"] }, due: { $ifNull: ["$dueDate", null] } } },
+    { $match: { left: { $gt: 0 } } },
+    // late: necha kun kechikkan (manfiy — muddatgacha qolgan kun), muddat yo'q bo'lsa null.
+    { $addFields: { late: { $cond: [{ $eq: ["$due", null] }, null, { $divide: [{ $subtract: [now, "$due"] }, 86_400_000] }] } } },
+    {
+      $group: {
+        _id: {
+          $switch: {
+            branches: [
+              { case: { $eq: ["$late", null] }, then: "none" },
+              { case: { $lt: ["$late", -7] }, then: "later" },
+              { case: { $lte: ["$late", 0] }, then: "soon" },
+              { case: { $lte: ["$late", 7] }, then: "d7" },
+              { case: { $lte: ["$late", 30] }, then: "d30" },
+            ],
+            default: "d30plus",
+          },
+        },
+        amount: { $sum: "$left" },
+        orders: { $sum: 1 },
+      },
+    },
+  ]);
+  const aging = Object.fromEntries((["soon", "later", "d7", "d30", "d30plus", "none"] as AgingKey[]).map((k) => [k, { amount: 0, orders: 0 }])) as DebtAging;
+  for (const row of rows) aging[row._id] = { amount: row.amount, orders: row.orders };
+  return aging;
+}
+
 /** Hamkorlar bo'yicha qarzlar ro'yxati (kompaniya uchun — olinadigan, do'kon uchun — to'lanadigan). */
 export async function listDebts(user: SessionUser): Promise<DebtSummary> {
   await connectDb();

@@ -41,7 +41,7 @@ export type NavSection = { title: (t: Dictionary) => string; links: NavLink[]; c
 export type NavItem = { href: string; label: keyof Dictionary["nav"]; Icon: LucideIcon; menu?: NavSection[] };
 
 const STATUS_ICONS: Record<OrderStatus, LucideIcon> = { new: Sparkles, confirmed: CircleCheck, shipped: Truck, delivered: PackageCheck, cancelled: CircleX };
-const CATEGORY_ICONS: Record<CategoryCode, LucideIcon> = { food: Apple, drinks: CupSoda, household: SprayCan, construction: BrickWall, electronics: Cpu, other: Shapes };
+export const CATEGORY_ICONS: Record<CategoryCode, LucideIcon> = { food: Apple, drinks: CupSoda, household: SprayCan, construction: BrickWall, electronics: Cpu, other: Shapes };
 
 const orderStatuses: NavSection = {
   title: (t) => t.navMenu.byStatus,

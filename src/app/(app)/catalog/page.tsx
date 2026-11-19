@@ -12,7 +12,8 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { CATEGORY_CODES, type CategoryCode } from "@/lib/catalog";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
-import { getProductSeller, listCatalog, listSuppliers } from "@/server/products";
+import { CATEGORY_ICONS } from "@/lib/navigation";
+import { categoryCounts, getProductSeller, listCatalog, listSuppliers } from "@/server/products";
 
 type Params = { q?: string; category?: string; seller?: string; page?: string; view?: string; region?: string };
 
@@ -103,7 +104,8 @@ function Header({ title, count, children }: { title: string; count: string; chil
 
 async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }) {
   const region = (REGION_CODES as readonly string[]).includes(sp.region ?? "") ? (sp.region as RegionCode) : undefined;
-  const suppliers = await listSuppliers({ region, q });
+  // Qidiruv bo'lmasa: kompaniyalar ostida kategoriyalar va yangi mahsulotlar (katalogning "vitrinasi").
+  const [suppliers, counts, latest] = await Promise.all([listSuppliers({ region, q }), q ? null : categoryCounts(), q ? null : listCatalog({})]);
   return (
     <>
       <Header title={q ? fmt(t.suppliers.resultsFor, { q }) : t.catalog.title} count={fmt(t.suppliers.count, { n: suppliers.length })}>
@@ -121,6 +123,47 @@ async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }
         </ul>
       ) : (
         <EmptyState Icon={Building2} title={q ? t.suppliers.notFound : t.catalog.companiesEmpty} hint={q ? t.suppliers.notFoundHint : undefined} />
+      )}
+
+      {counts && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-[17px] font-bold">{t.catalog.byCategory}</h2>
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {CATEGORY_CODES.map((c) => {
+              const Icon = CATEGORY_ICONS[c];
+              return (
+                <li key={c}>
+                  <Link
+                    href={hrefWith({}, { category: c })}
+                    className="group glass-card sheen flex h-full flex-col gap-3 rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-[var(--c-shadow-lg)]"
+                  >
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent transition-all duration-300 group-hover:bg-accent group-hover:text-accent-fg group-hover:shadow-[var(--c-glow)]">
+                      <Icon size={20} aria-hidden />
+                    </span>
+                    <span className="leading-tight font-semibold">{t.categories[c]}</span>
+                    <span className="text-[12px] text-muted">{fmt(t.catalog.count, { n: counts[c] })}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {latest && latest.items.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[17px] font-bold">{t.home.newProducts}</h2>
+            <Link href={hrefWith({}, { view: "products" })} className="text-[13px] font-semibold text-accent hover:underline">
+              {t.home.viewAll}
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {latest.items.slice(0, 5).map((p) => (
+              <ProductCard key={p.id} product={p} t={t} />
+            ))}
+          </div>
+        </section>
       )}
     </>
   );

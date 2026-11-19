@@ -24,6 +24,19 @@ export type SellerReport = {
 
 export type DailyPoint = { day: string; value: number; orders: number };
 
+/** Davrdagi eng ko'p sotilgan mahsulotlar (summa bo'yicha) — bitta yengil agregatsiya. */
+export async function topSellingProducts(sellerId: string, days = 30, limit = 5): Promise<SellerReport["topProducts"]> {
+  await connectDb();
+  const rows = await Order.aggregate<{ _id: string; quantity: number; value: number; unit: string }>([
+    { $match: { seller: new Types.ObjectId(sellerId), status: { $ne: "cancelled" }, createdAt: { $gte: periodStart(Date.now(), days) } } },
+    { $unwind: "$items" },
+    { $group: { _id: "$items.name", quantity: { $sum: "$items.quantity" }, value: { $sum: "$items.total" }, unit: { $first: "$items.unit" } } },
+    { $sort: { value: -1 } },
+    { $limit: limit },
+  ]);
+  return rows.map((p) => ({ name: p._id, quantity: p.quantity, value: p.value, unit: p.unit }));
+}
+
 export async function sellerReport(sellerId: string, days = 30): Promise<SellerReport> {
   await connectDb();
   const seller = new Types.ObjectId(sellerId);

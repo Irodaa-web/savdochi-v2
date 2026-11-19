@@ -1,7 +1,9 @@
 import clsx from "clsx";
-import { BadgeCheck, MessageSquare } from "lucide-react";
+import { BadgeCheck, MessageSquare, MessagesSquare } from "lucide-react";
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LinkButton } from "@/components/ui/LinkButton";
+import { CheckList } from "@/components/ui/SideCard";
 import { formatDateTime } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
@@ -49,7 +51,24 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
         </ul>
       </aside>
       <div className={clsx("min-h-0", active ? "block" : "hidden md:flex md:items-center md:justify-center")}>
-        {active ? <ChatRoom key={active} id={active} role={user.role} /> : <p className="text-muted">{t.chat.pick}</p>}
+        {active ? (
+          <ChatRoom key={active} id={active} role={user.role} />
+        ) : (
+          // Suhbat tanlanmagan: bo'sh joy o'rniga qisqa yo'l-yo'riq va tegishli bo'limga havola.
+          <div className="flex max-w-md flex-col items-center gap-4 px-6 py-10 text-center">
+            <span className="btn-primary flex size-16 items-center justify-center rounded-2xl motion-safe:animate-[orb-float_6s_ease-in-out_infinite]">
+              <MessagesSquare size={28} aria-hidden />
+            </span>
+            <h2 className="text-[18px] font-bold">{t.chat.pick}</h2>
+            <p className="text-muted">{t.chat.pickLead}</p>
+            <div className="w-full rounded-2xl bg-surface-2/60 p-4 text-left text-[14px]">
+              <CheckList items={user.role === "buyer" ? t.chat.tipsBuyer : t.chat.tipsSeller} />
+            </div>
+            <LinkButton href={user.role === "buyer" ? "/catalog" : "/partners"} variant="secondary">
+              {user.role === "buyer" ? t.nav.catalog : t.nav.clients}
+            </LinkButton>
+          </div>
+        )}
       </div>
     </section>
   );
