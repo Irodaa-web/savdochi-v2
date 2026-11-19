@@ -2,14 +2,14 @@ import clsx from "clsx";
 import { ClipboardList, Search } from "lucide-react";
 import Link from "next/link";
 import { PaymentPill, StatusPill } from "@/components/orders/StatusPill";
-import { PageTitle, Pill } from "@/components/ui/Card";
+import { PageTitle, Pill, Stat } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDateTime } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
-import { listOrders } from "@/server/orders";
+import { listOrders, orderCounts } from "@/server/orders";
 
 export const metadata = { title: "Buyurtmalar" };
 
@@ -23,7 +23,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const raw = sp.status ?? "all";
   const filter = (FILTERS as readonly string[]).includes(raw) ? raw : "all";
   const q = (sp.q ?? "").trim().slice(0, 60);
-  const orders = await listOrders(user, { status: filter === "all" ? undefined : (filter as OrderStatus | "open"), q: q || undefined });
+  const [orders, counts] = await Promise.all([listOrders(user, { status: filter === "all" ? undefined : (filter as OrderStatus | "open"), q: q || undefined }), orderCounts(user)]);
+  const countOf = (f: string) => (f === "all" ? counts.all : f === "open" ? counts.open : counts.byStatus[f as OrderStatus]);
   const href = (f: string) => {
     const params = new URLSearchParams();
     if (f !== "all") params.set("status", f);
@@ -52,6 +53,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       >
         {t.nav.orders}
       </PageTitle>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label={t.orders.statOpen} value={counts.open} tone={counts.open ? "accent" : undefined} />
+        <Stat label={t.orders.statNew} value={counts.byStatus.new} />
+        <Stat label={t.orders.statDelivered} value={counts.byStatus.delivered} tone={counts.byStatus.delivered ? "success" : undefined} />
+        <Stat label={t.orders.statUnpaid} value={formatAmount(counts.unpaid)} tone={counts.unpaid ? "danger" : undefined} />
+      </div>
       <nav className="flex gap-1.5 overflow-x-auto pb-1" aria-label={t.orders.filter}>
         {FILTERS.map((f) => (
           <Link
@@ -61,6 +68,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             className={clsx("shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] font-medium", f === filter ? "border-accent bg-accent text-accent-fg" : "border-line bg-surface hover:bg-surface-2")}
           >
             {f === "all" ? t.catalog.all : f === "open" ? t.orders.open : t.orderStatus[f]}
+            <span className={clsx("ml-1.5 tabular-nums", f === filter ? "opacity-80" : "text-muted")}>{countOf(f)}</span>
           </Link>
         ))}
       </nav>

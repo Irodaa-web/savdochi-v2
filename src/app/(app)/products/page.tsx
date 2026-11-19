@@ -1,18 +1,32 @@
-import { FileSpreadsheet, ImageOff, Package, Plus, ShoppingCart } from "lucide-react";
+import { CircleCheck, FileSpreadsheet, FileText, ImageOff, Layers, Package, PackageX, Plus, ShoppingCart, Sparkles, TrendingUp, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { TopProductsList } from "@/components/dashboard/TopProductsList";
+import { Stat } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SideCard } from "@/components/ui/SideCard";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
-import { cartStatsForSeller, listSellerProducts } from "@/server/products";
+import type { Dictionary } from "@/i18n/dictionaries/uz";
+import { cartStatsForSeller, listSellerProducts, type ProductView } from "@/server/products";
+import { topSellingProducts } from "@/server/reports";
 import { ArchiveButton } from "./ArchiveButton";
 
 export default async function ProductsPage() {
   const user = await requireUser("seller");
   const t = getDictionary(await getLocale());
-  const [products, carts] = await Promise.all([listSellerProducts(user.id), cartStatsForSeller(user.id)]);
+  const [products, carts, top] = await Promise.all([listSellerProducts(user.id), cartStatsForSeller(user.id), topSellingProducts(user.id, 30, 5)]);
+  const lowCount = products.filter((p) => p.stock < p.minOrder).length;
+  const stockValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+  // Katalogni yaxshilash: har bir kamchilik — soni va tuzatish uchun mahsulot havolalari.
+  const fixes: { Icon: LucideIcon; text: string; items: ProductView[] }[] = [
+    { Icon: ImageOff, text: t.products.fixImages, items: products.filter((p) => p.images.length < 4) },
+    { Icon: PackageX, text: t.products.fixStock, items: products.filter((p) => p.stock < p.minOrder) },
+    { Icon: Layers, text: t.products.fixTiers, items: products.filter((p) => p.priceTiers.length === 0) },
+    { Icon: FileText, text: t.products.fixDescription, items: products.filter((p) => p.description.trim().length < 20) },
+  ].filter((f) => f.items.length > 0);
 
   const addButton = (
     <div className="flex flex-wrap gap-2">
@@ -41,6 +55,15 @@ export default async function ProductsPage() {
             <p className="font-semibold">{fmt(t.products.cartsSummary, { n: carts.shops })}</p>
             <p className="text-[13px] text-muted">{t.products.cartsHint}</p>
           </div>
+        </div>
+      )}
+
+      {products.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat label={t.products.statCatalog} value={products.length} />
+          <Stat label={t.products.statLow} value={lowCount} tone={lowCount ? "danger" : undefined} />
+          <Stat label={t.products.statInCarts} value={carts.shops} tone={carts.shops ? "accent" : undefined} />
+          <Stat label={t.products.statStockValue} value={formatAmount(stockValue)} />
         </div>
       )}
 
@@ -120,6 +143,53 @@ export default async function ProductsPage() {
           </table>
         </div>
       )}
+
+      {products.length > 0 && (
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <SideCard Icon={Sparkles} title={t.products.improveTitle}>
+            {fixes.length === 0 ? (
+              <p className="flex items-start gap-2 text-success">
+                <CircleCheck size={18} className="mt-0.5 shrink-0" aria-hidden />
+                {t.products.improveDone}
+              </p>
+            ) : (
+              <>
+                <p className="text-muted">{t.products.improveLead}</p>
+                <ul className="flex flex-col gap-3">
+                  {fixes.map(({ Icon, text, items }) => (
+                    <FixRow key={text} Icon={Icon} text={fmt(text, { n: items.length })} items={items} t={t} />
+                  ))}
+                </ul>
+              </>
+            )}
+          </SideCard>
+          <SideCard Icon={TrendingUp} title={t.products.topTitle}>
+            <TopProductsList items={top} t={t} empty={t.products.topEmpty} />
+          </SideCard>
+        </div>
+      )}
     </section>
+  );
+}
+
+/** Bitta kamchilik: belgi, matn va 3 tagacha mahsulot (tahrirlash sahifasiga havola). */
+function FixRow({ Icon, text, items, t }: { Icon: LucideIcon; text: string; items: ProductView[]; t: Dictionary }) {
+  return (
+    <li className="flex items-start gap-3 rounded-xl bg-surface-2/60 p-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-danger-soft text-danger">
+        <Icon size={16} aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-medium">{text}</p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {items.slice(0, 3).map((p) => (
+            <Link key={p.id} href={`/products/${p.id}/edit`} className="rounded-full bg-surface px-2.5 py-1 text-[12px] font-medium text-accent ring-1 ring-line ring-inset transition-colors hover:bg-accent hover:text-accent-fg hover:ring-accent">
+              {p.name}
+            </Link>
+          ))}
+          {items.length > 3 && <span className="px-1 py-1 text-[12px] text-muted">{fmt(t.products.more, { n: items.length - 3 })}</span>}
+        </div>
+      </div>
+    </li>
   );
 }

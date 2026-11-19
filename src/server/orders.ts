@@ -1,5 +1,5 @@
 import "server-only";
-import { isValidObjectId, type ClientSession, type FilterQuery } from "mongoose";
+import { isValidObjectId, Types, type ClientSession, type FilterQuery } from "mongoose";
 import { AppError } from "@/lib/api";
 import type { SessionUser } from "@/lib/auth/session";
 import { connectDb, withTransaction } from "@/lib/db";
@@ -93,6 +93,26 @@ export async function listOrders(user: SessionUser, opts: { status?: OrderStatus
   if (opts.partnerId && isValidObjectId(opts.partnerId)) filter[user.role === "seller" ? "buyer" : "seller"] = opts.partnerId;
   const docs = await Order.find(filter).sort({ createdAt: -1 }).limit(opts.limit ?? 100).lean<OrderDoc[]>();
   return toViews(docs);
+}
+
+export type OrderCounts = { byStatus: Record<OrderStatus, number>; all: number; open: number; unpaid: number };
+
+/** Holatlar bo'yicha buyurtmalar soni va to'lanmagan summa (ro'yxat sahifasi tepasidagi ko'rsatkichlar). */
+export async function orderCounts(user: SessionUser): Promise<OrderCounts> {
+  await connectDb();
+  const me = new Types.ObjectId(user.id);
+  const match = user.role === "seller" ? { seller: me } : { buyer: me };
+  const [rows, [money]] = await Promise.all([
+    Order.aggregate<{ _id: OrderStatus; n: number }>([{ $match: match }, { $group: { _id: "$status", n: { $sum: 1 } } }]),
+    Order.aggregate<{ unpaid: number }>([
+      { $match: { ...match, status: { $ne: "cancelled" } } },
+      { $group: { _id: null, unpaid: { $sum: { $max: [0, { $subtract: ["$total", "$paidAmount"] }] } } } },
+    ]),
+  ]);
+  const byStatus = { new: 0, confirmed: 0, shipped: 0, delivered: 0, cancelled: 0 } as Record<OrderStatus, number>;
+  for (const row of rows) if (row._id in byStatus) byStatus[row._id] = row.n;
+  const all = Object.values(byStatus).reduce((a, b) => a + b, 0);
+  return { byStatus, all, open: byStatus.new + byStatus.confirmed + byStatus.shipped, unpaid: money?.unpaid ?? 0 };
 }
 
 export async function getOrder(user: SessionUser, id: string): Promise<OrderView | null> {

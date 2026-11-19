@@ -14,7 +14,7 @@ import { getOrder } from "@/server/orders";
 import { sellerOnlineMethods } from "@/server/onlinePay";
 import { OrderActions } from "./OrderActions";
 import { PayOnline } from "./PayOnline";
-import { ReorderButton } from "./ReorderButton";
+import { ReorderButton } from "@/components/orders/ReorderButton";
 
 export default async function OrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ placed?: string; paid?: string }> }) {
   const user = await requireUser();

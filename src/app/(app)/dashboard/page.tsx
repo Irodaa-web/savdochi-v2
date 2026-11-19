@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { AlertTriangle, Plus, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { DailySalesChart } from "@/components/dashboard/DailySalesChart";
+import { TopProductsList } from "@/components/dashboard/TopProductsList";
 import { PaymentPill, StatusPill } from "@/components/orders/StatusPill";
 import { Welcome } from "@/components/Welcome";
 import { Alert } from "@/components/ui/Alert";
@@ -39,7 +40,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const lowOwn = products.filter((p) => p.stock < p.minOrder);
   // Sana matnlari serverda: brauzer bilan bir xil chiqadi (hydration mos keladi).
   const chartDays = report.daily.map((d) => ({ ...d, label: formatDay(d.day, locale, "short"), full: formatDay(d.day, locale, "long") }));
-  const topMax = Math.max(1, ...report.topProducts.map((p) => p.value));
 
   return (
     <div className="flex flex-col gap-5">
@@ -125,23 +125,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
         <Card className="flex flex-col gap-3">
           <h3 className="font-semibold">{t.dashboard.top}</h3>
-          {report.topProducts.length === 0 ? (
-            <p className="text-[14px] text-muted">—</p>
-          ) : (
-            <ol className="flex flex-col gap-3.5">
-              {report.topProducts.map((p) => (
-                <li key={p.name}>
-                  <div className="flex items-baseline justify-between gap-3 text-[14px]">
-                    <span className="min-w-0 truncate">{p.name}</span>
-                    <b className="shrink-0 tabular-nums">{formatAmount(p.value)}</b>
-                  </div>
-                  <div className="text-[12px] text-muted">{fmt(t.dashboard.topQuantity, { n: formatAmount(p.quantity), unit: t.units[p.unit as keyof typeof t.units] ?? p.unit })}</div>
-                  {/* Eng ko'p sotilganga nisbatan ulush: qiymat yonida yozilgan, ustun faqat taqqoslash uchun. */}
-                  <div aria-hidden className="mt-1.5 h-1.5 rounded-r-[4px] bg-chart" style={{ width: `${Math.max(2, (p.value / topMax) * 100)}%` }} />
-                </li>
-              ))}
-            </ol>
-          )}
+          <TopProductsList items={report.topProducts} t={t} empty="—" />
           <p className="mt-1 text-[13px] text-muted">{fmt(t.dashboard.repeat, { n: report.repeatPartners })}</p>
         </Card>
 
