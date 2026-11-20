@@ -20,7 +20,8 @@ const MIN_SLOT_PX = 5;
  * Savdo diagrammasi. Ustun ustiga olib borilsa, teginilsa yoki klaviatura bilan
  * (← → Home End) tanlansa — summa, sana va buyurtmalar soni chiqadi. Pastda jadval ko'rinishi bor.
  */
-export function DailySalesChart({ days }: { days: ChartDay[] }) {
+/** title / avgTemplate — boshqa sahifada (masalan, oylik analitika) sarlavha va "o'rtacha" matnini almashtirish uchun. */
+export function DailySalesChart({ days, title, avgTemplate }: { days: ChartDay[]; title?: string; avgTemplate?: string }) {
   const { t, locale } = useI18n();
   const d = t.dashboard;
   const titleId = useId();
@@ -106,9 +107,9 @@ export function DailySalesChart({ days }: { days: ChartDay[] }) {
     <div ref={rootRef} className="@container">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h3 id={titleId} className="text-[15px] font-semibold">
-          {weekly ? d.weekly : d.daily}
+          {title ?? (weekly ? d.weekly : d.daily)}
         </h3>
-        <p className="text-[13px] text-muted">{fmt(d.chartAvg, { sum: sum(total / days.length) })}</p>
+        <p className="text-[13px] text-muted">{fmt(avgTemplate ?? d.chartAvg, { sum: sum(total / days.length) })}</p>
       </div>
 
       <div className="mt-7 flex">

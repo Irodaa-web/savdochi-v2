@@ -13,7 +13,7 @@ export const staffHome: Record<StaffRole, string> = { manager: "/dashboard", age
 
 /** Sahifalar: yo'l prefikslari (prefiks yoki uning ichki sahifasi). */
 const PAGES: Record<StaffRole, string[]> = {
-  manager: ["/dashboard", "/orders", "/products", "/catalog", "/suppliers", "/partners", "/debts", "/chat", "/print", "/help", "/settings"],
+  manager: ["/dashboard", "/analytics", "/orders", "/products", "/catalog", "/suppliers", "/partners", "/debts", "/chat", "/print", "/help", "/settings"],
   agent: ["/orders", "/catalog", "/suppliers", "/partners", "/chat", "/print/invoice", "/help", "/settings"],
   // Omborchi narxlarni ko'rmaydi: katalog va hisob-faktura ham yopiq.
   warehouse: ["/orders", "/products", "/help", "/settings"],

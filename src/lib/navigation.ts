@@ -177,6 +177,7 @@ export const sidebarNav: Record<Role, SideGroup[]> = {
       title: (t) => t.navMenu.groupMain,
       items: [
         { href: "/dashboard", Icon: LayoutDashboard, label: (t) => t.nav.dashboard, children: menuLinks("seller", "/dashboard").filter((l) => l.href.startsWith("/dashboard")) },
+        { href: "/analytics", Icon: ChartColumn, label: (t) => t.navMenu.analytics },
         { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders", children: orderStatuses.links },
         { href: "/products", Icon: Package, label: (t) => t.nav.products, children: menuLinks("seller", "/products") },
       ],
@@ -212,6 +213,7 @@ export const sidebarNav: Record<Role, SideGroup[]> = {
       title: (t) => t.navMenu.groupStock,
       items: [
         { href: "/stock", Icon: Warehouse, label: (t) => t.nav.stock },
+        { href: "/analytics", Icon: ChartColumn, label: (t) => t.navMenu.spending },
         { href: "/debts", Icon: Wallet, label: (t) => t.header.debts },
         { href: "/favorites", Icon: Heart, label: (t) => t.favorites.title },
       ],

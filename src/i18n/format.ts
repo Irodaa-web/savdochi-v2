@@ -33,3 +33,13 @@ export function formatDateTime(iso: string | Date, locale: string, withTime = tr
     ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
   }).format(d);
 }
+
+/** Oy kaliti (YYYY-MM) → "noy" (short) yoki "Noyabr 2026" (long). Serverda chaqiriladi. */
+export function formatMonth(month: string, locale: string, style: "short" | "long"): string {
+  const text = new Intl.DateTimeFormat(LOCALE_TAG[locale] ?? "uz-UZ", {
+    timeZone: "UTC",
+    month: style === "short" ? "short" : "long",
+    ...(style === "long" ? { year: "numeric" as const } : {}),
+  }).format(new Date(`${month}-15T00:00:00Z`));
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
