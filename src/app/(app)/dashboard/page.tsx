@@ -81,6 +81,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {report.totalOrders > 0 && (
         <Card>
           <DailySalesChart key={days} days={chartDays} />
+          {(!user.staff || user.staff.role === "manager") && (
+            <Link href={days === 30 ? "/analytics" : `/analytics?period=${days}`} className="mt-3 inline-flex text-[13px] font-semibold text-accent hover:underline">
+              {t.analytics.more} →
+            </Link>
+          )}
         </Card>
       )}
 
