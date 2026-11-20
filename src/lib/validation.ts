@@ -65,8 +65,17 @@ export const productSchema = z
       .array(z.object({ min: z.coerce.number().int().min(2), price: z.coerce.number().int().min(1) }))
       .max(5)
       .default([]),
+    // Aksiya: ikkalasi birga beriladi yoki ikkalasi ham bo'sh.
+    salePrice: z.preprocess((v) => (v === "" || v == null ? null : v), z.coerce.number().int("numberInvalid").min(1, "numberInvalid").nullable()).default(null),
+    saleUntil: z.preprocess((v) => (v === "" || v == null ? null : v), z.coerce.date({ message: "saleInvalid" }).nullable()).default(null),
   })
   .superRefine((p, ctx) => {
+    if (p.salePrice != null || p.saleUntil != null) {
+      const now = Date.now();
+      if (p.salePrice == null || p.salePrice >= p.price) ctx.addIssue({ code: "custom", path: ["salePrice"], message: "salePriceInvalid" });
+      if (p.saleUntil == null || p.saleUntil.getTime() <= now || p.saleUntil.getTime() > now + 92 * 86_400_000)
+        ctx.addIssue({ code: "custom", path: ["saleUntil"], message: "saleUntilInvalid" });
+    }
     // Pog'onalar o'sib boruvchi miqdor va kamayib boruvchi narx bo'lishi kerak.
     const tiers = [...p.priceTiers].sort((a, b) => a.min - b.min);
     let last = p.price;
@@ -172,6 +181,22 @@ export const orderUpdateSchema = z.object({
   paidAmount: money.optional(),
   deliveryDate: z.union([z.string().date(), z.literal(""), z.null()]).optional(),
 });
+
+/** Kompaniya buyurtmani tahrirlaydi: har qator uchun yangi miqdor (0 — olib tashlash) va sabab. */
+export const orderEditSchema = z.object({
+  items: z
+    .array(z.object({ productId: z.string().min(1).max(40), quantity: z.coerce.number().int("numberInvalid").min(0, "numberInvalid") }))
+    .min(1)
+    .max(200),
+  reason: z.string().trim().max(300).default(""),
+});
+
+export const reviewSchema = z.object({
+  rating: z.coerce.number().int().min(1, "ratingRequired").max(5, "ratingRequired"),
+  text: z.string().trim().max(1000).default(""),
+});
+
+export const reviewReplySchema = z.object({ text: z.string().trim().max(1000).default("") });
 
 export const messageSchema = z.object({
   text: z.string().trim().min(1, "messageEmpty").max(2000),

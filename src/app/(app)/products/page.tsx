@@ -8,7 +8,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
-import { formatAmount } from "@/lib/catalog";
+import { formatAmount, saleDay } from "@/lib/catalog";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 import { cartStatsForSeller, listSellerProducts, type ProductView } from "@/server/products";
 import { topSellingProducts } from "@/server/reports";
@@ -96,7 +96,18 @@ export default async function ProductsPage() {
                       </Link>
                       <div className="text-[12px] text-muted">{t.categories[p.category]}</div>
                     </td>
-                    <td className="px-3 py-3 text-right tabular-nums">{formatAmount(p.price)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">
+                      {p.sale ? (
+                        <>
+                          <span className="font-semibold text-danger">{formatAmount(p.sale.price)}</span>
+                          <span className="block text-[11px] whitespace-nowrap text-muted">
+                            <s>{formatAmount(p.price)}</s> · {fmt(t.products.saleActive, { n: p.sale.percent, date: saleDay(p.sale.until) })}
+                          </span>
+                        </>
+                      ) : (
+                        formatAmount(p.price)
+                      )}
+                    </td>
                     <td className={`px-3 py-3 text-right tabular-nums ${low ? "font-semibold text-danger" : ""}`}>
                       {p.stock} {unit}
                     </td>

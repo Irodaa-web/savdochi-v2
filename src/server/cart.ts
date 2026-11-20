@@ -2,7 +2,7 @@ import "server-only";
 import type { ClientSession } from "mongoose";
 import { isValidObjectId } from "mongoose";
 import { AppError } from "@/lib/api";
-import { unitPriceFor } from "@/lib/catalog";
+import { activeSalePrice, unitPriceFor } from "@/lib/catalog";
 import { connectDb } from "@/lib/db";
 import type { PaymentMethod } from "@/lib/orders";
 import { Cart, type CartDoc } from "@/models/Cart";
@@ -21,6 +21,8 @@ export type CartLine = {
   minOrder: number;
   stock: number;
   unitPrice: number;
+  /** Aksiya narxi qo'llanganmi. */
+  onSale: boolean;
   total: number;
   /** Buyurtma berishga to'sqinlik qiladigan muammo. */
   problem: "unavailable" | "belowMin" | "outOfStock" | null;
@@ -94,7 +96,8 @@ export async function getCart(buyerId: string): Promise<CartView> {
       groups.set(sellerId, group);
     }
     const sellerOk = !seller.blocked && subscriptionActive(seller.subscriptionUntil);
-    const unitPrice = unitPriceFor(item.quantity, p.price, p.priceTiers ?? []);
+    const salePrice = activeSalePrice(p);
+    const unitPrice = unitPriceFor(item.quantity, p.price, p.priceTiers ?? [], salePrice);
     const problem: CartLine["problem"] = !p.active || !sellerOk ? "unavailable" : item.quantity < p.minOrder ? "belowMin" : item.quantity > p.stock ? "outOfStock" : null;
     group.lines.push({
       productId: String(p._id),
@@ -105,6 +108,7 @@ export async function getCart(buyerId: string): Promise<CartView> {
       minOrder: p.minOrder,
       stock: p.stock,
       unitPrice,
+      onSale: salePrice != null && unitPrice === salePrice,
       total: unitPrice * item.quantity,
       problem,
     });

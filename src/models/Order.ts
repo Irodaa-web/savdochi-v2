@@ -18,6 +18,15 @@ export interface OrderEvent {
   at: Date;
 }
 
+/** Kompaniya tasdiqlashdan oldin buyurtmani o'zgartirgani: qaysi qator, qanchadan qanchaga. */
+export interface OrderChange {
+  at: Date;
+  reason: string;
+  lines: { name: string; unit: string; from: number; to: number }[];
+  totalBefore: number;
+  totalAfter: number;
+}
+
 export interface OrderDoc {
   _id: Types.ObjectId;
   number: number;
@@ -46,6 +55,7 @@ export interface OrderDoc {
   creditApproval: "pending" | "approved" | "rejected" | null;
   /** Limitdan qancha oshgani (so'm). */
   creditOver: number;
+  changes: OrderChange[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +68,17 @@ const itemSchema = new Schema<OrderItem>(
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true, min: 0 },
     total: { type: Number, required: true, min: 0 },
+  },
+  { _id: false },
+);
+
+const changeSchema = new Schema<OrderChange>(
+  {
+    at: Date,
+    reason: { type: String, default: "", maxlength: 300 },
+    lines: [{ _id: false, name: String, unit: String, from: Number, to: Number }],
+    totalBefore: Number,
+    totalAfter: Number,
   },
   { _id: false },
 );
@@ -95,6 +116,7 @@ const schema = new Schema<OrderDoc>(
     lastReminder: { type: String, default: null },
     creditApproval: { type: String, enum: ["pending", "approved", "rejected", null], default: null },
     creditOver: { type: Number, default: 0 },
+    changes: { type: [changeSchema], default: [] },
   },
   { timestamps: true },
 );

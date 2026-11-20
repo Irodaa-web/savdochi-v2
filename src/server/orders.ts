@@ -7,7 +7,8 @@ import { ORDER_TRANSITIONS, type DeliveryMethod, type OrderStatus, type PaymentM
 import type { RegionCode } from "@/lib/regions";
 import type { CheckoutInput } from "@/lib/validation";
 import { nextSeq } from "@/models/Counter";
-import { Order, type OrderDoc } from "@/models/Order";
+import { OnlinePayment } from "@/models/OnlinePayment";
+import { Order, type OrderChange, type OrderDoc } from "@/models/Order";
 import { Product } from "@/models/Product";
 import { StoreStock } from "@/models/StoreStock";
 import { User } from "@/models/User";
@@ -37,6 +38,7 @@ export type OrderView = {
   dueDate: string | null;
   creditApproval: "pending" | "approved" | "rejected" | null;
   creditOver: number;
+  changes: { at: string; reason: string; lines: { name: string; unit: string; from: number; to: number }[]; totalBefore: number; totalAfter: number }[];
   createdAt: string;
 };
 
@@ -69,6 +71,7 @@ async function toViews(docs: OrderDoc[]): Promise<OrderView[]> {
     dueDate: d.dueDate ? new Date(d.dueDate).toISOString() : null,
     creditApproval: d.creditApproval ?? null,
     creditOver: d.creditOver ?? 0,
+    changes: (d.changes ?? []).map((c) => ({ at: new Date(c.at).toISOString(), reason: c.reason ?? "", lines: c.lines ?? [], totalBefore: c.totalBefore, totalAfter: c.totalAfter })),
     createdAt: d.createdAt.toISOString(),
   }));
 }
@@ -284,6 +287,63 @@ export async function updateOrder(
   }
 
   return (await getOrder(user, id))!;
+}
+
+/**
+ * Kompaniya yangi buyurtmani tasdiqlashdan oldin tahrirlaydi: miqdorni kamaytiradi yoki qatorni olib tashlaydi
+ * (masalan, omborda yetmasa). Ko'paytirish mumkin emas — buning uchun do'kon yangi buyurtma beradi.
+ * Narx buyurtma paytidagicha qoladi; summa, chegirma va nasiya qayta hisoblanadi, ortgan mahsulot omborga qaytadi.
+ * To'lov boshlangan (qisman/onlayn) buyurtma tahrirlanmaydi.
+ */
+export async function editOrder(user: SessionUser, id: string, input: { items: { productId: string; quantity: number }[]; reason: string }): Promise<OrderView> {
+  if (user.role !== "seller") throw new AppError("FORBIDDEN");
+  if (!isValidObjectId(id)) throw new AppError("NOT_FOUND");
+  await connectDb();
+  const order = await Order.findOne({ _id: id, seller: user.id }).lean<OrderDoc>();
+  if (!order) throw new AppError("NOT_FOUND");
+  if (!canEdit(order) || (await OnlinePayment.exists({ order: order._id, state: { $in: ["created", "pending", "paid"] } }))) throw new AppError("INVALID_STATE");
+
+  const wanted = new Map(input.items.map((i) => [i.productId, i.quantity]));
+  const lines: OrderChange["lines"] = [];
+  const back: StockLine[] = [];
+  const items = order.items.flatMap((item) => {
+    const from = item.quantity;
+    const to = wanted.get(String(item.product)) ?? from;
+    if (to > from || to < 0) throw new AppError("INVALID_INPUT", { items: "editIncrease" });
+    if (to !== from) {
+      lines.push({ name: item.name, unit: item.unit, from, to });
+      back.push({ productId: String(item.product), quantity: from - to });
+    }
+    return to > 0 ? [{ ...item, quantity: to, total: item.unitPrice * to }] : [];
+  });
+  if (!lines.length) throw new AppError("INVALID_INPUT", { items: "editNoChange" });
+  if (!items.length) throw new AppError("INVALID_INPUT", { items: "editEmpty" });
+
+  const subtotal = items.reduce((s, i) => s + i.total, 0);
+  const discount = Math.round((subtotal * order.discountPercent) / 100);
+  const total = subtotal - discount + order.deliveryFee;
+  // Limitdan oshgan nasiya: summa kamaysa, oshiq qism ham kamayadi; oshiq qolmasa — tasdiq kerak emas.
+  const creditOver = Math.max(0, (order.creditOver ?? 0) - (order.total - total));
+  const creditApproval = order.creditApproval === "pending" && creditOver === 0 ? null : order.creditApproval;
+  const change: OrderChange = { at: new Date(), reason: input.reason.trim(), lines, totalBefore: order.total, totalAfter: total };
+
+  await withTransaction(async (session) => {
+    // Shartli yangilash: shu orada holat yoki to'lov o'zgargan bo'lsa — rad etiladi.
+    const res = await Order.updateOne(
+      { _id: order._id, status: "new", paidAmount: 0, paymentStatus: "unpaid", updatedAt: order.updatedAt },
+      { $set: { items, subtotal, discount, total, creditOver, creditApproval }, $push: { changes: change } },
+      { session },
+    );
+    if (res.modifiedCount !== 1) throw new AppError("INVALID_STATE");
+    await returnStock(back, session);
+  });
+  await notify(order.buyer, "orderEdited", { number: order.number, name: user.name, total: total.toLocaleString("ru-RU") }, `/orders/${order._id}`);
+  return (await getOrder(user, id))!;
+}
+
+/** Tahrirlash mumkinmi: yangi, to'lov boshlanmagan buyurtma. */
+export function canEdit(order: Pick<OrderDoc, "status" | "paidAmount" | "paymentStatus">): boolean {
+  return order.status === "new" && (order.paidAmount ?? 0) === 0 && order.paymentStatus === "unpaid";
 }
 
 /** Yetkazilgan mahsulotlar do'kon omboriga qo'shiladi. */

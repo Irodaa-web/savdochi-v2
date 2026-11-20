@@ -11,10 +11,10 @@ import { api } from "@/lib/apiClient";
 import { refreshBadges } from "@/components/shell/useBadges";
 import { formatAmount, unitPriceFor, type PriceTier } from "@/lib/catalog";
 
-type Props = { productId: string; price: number; tiers: PriceTier[]; minOrder: number; stock: number; unit: string; saved: boolean };
+type Props = { productId: string; price: number; salePrice: number | null; tiers: PriceTier[]; minOrder: number; stock: number; unit: string; saved: boolean };
 
 /** Mahsulot sahifasidagi xarid bloki: miqdor, jami narx, savatga qo'shish, saqlash. */
-export function BuyBox({ productId, price, tiers, minOrder, stock, unit, saved: savedInitial }: Props) {
+export function BuyBox({ productId, price, salePrice, tiers, minOrder, stock, unit, saved: savedInitial }: Props) {
   const { t } = useI18n();
   const router = useRouter();
   const [qty, setQty] = useState(minOrder);
@@ -22,7 +22,7 @@ export function BuyBox({ productId, price, tiers, minOrder, stock, unit, saved: 
   const [saved, setSaved] = useState(savedInitial);
   const [message, setMessage] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
   const available = stock >= minOrder;
-  const unitPrice = unitPriceFor(qty, price, tiers);
+  const unitPrice = unitPriceFor(qty, price, tiers, salePrice);
   const clamp = (n: number) => Math.max(minOrder, Math.min(stock, Math.floor(n) || minOrder));
 
   async function add() {
