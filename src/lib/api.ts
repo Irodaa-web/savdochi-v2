@@ -28,7 +28,8 @@ export type ApiErrorCode =
   | "SMS_FAILED"
   | "SMS_DISABLED"
   | "CODE_INVALID"
-  | "ACCOUNT_INACTIVE";
+  | "ACCOUNT_INACTIVE"
+  | "COMPANY_INACTIVE";
 
 const STATUS: Record<ApiErrorCode, number> = {
   FORBIDDEN: 403,
@@ -52,6 +53,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   SMS_DISABLED: 404,
   CODE_INVALID: 400,
   ACCOUNT_INACTIVE: 403,
+  COMPANY_INACTIVE: 403,
 };
 
 /** Biznes qoidasi buzilganda server funksiyalari tashlaydigan xato. */

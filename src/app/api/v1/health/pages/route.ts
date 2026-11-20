@@ -31,6 +31,7 @@ export async function GET() {
   const [sellerDoc, buyerDoc] = await Promise.all([User.findOne({ phone: "+998900000001" }).lean(), User.findOne({ phone: "+998900000011" }).lean()]);
   if (!sellerDoc || !buyerDoc) return NextResponse.json({ ok: false, error: "demo yo'q — avval demo bilan kiring" }, { status: 404 });
   const asUser = (u: typeof sellerDoc): SessionUser => ({
+    staff: null,
     id: String(u._id),
     role: u.role,
     name: u.name,

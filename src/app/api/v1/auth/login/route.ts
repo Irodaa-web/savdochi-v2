@@ -5,6 +5,7 @@ import { startSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
 import { hit, reset } from "@/lib/rateLimit";
 import { fieldErrors, loginSchema } from "@/lib/validation";
+import { Staff } from "@/models/Staff";
 import { User } from "@/models/User";
 import { demoPasswordLogin } from "@/server/demo";
 import { reactivateAccount, touchActivity } from "@/server/inactivity";
@@ -34,8 +35,20 @@ export async function POST(request: Request) {
 
     const user = await User.findOne({ phone }).select("+passwordHash");
     if (!user) {
-      await burnTime(password);
-      return fail("INVALID_CREDENTIALS");
+      // Kompaniya xodimi: o'z paroli bilan, kompaniya hisobi nomidan.
+      const staff = await Staff.findOne({ phone }).select("+passwordHash");
+      if (!staff) {
+        await burnTime(password);
+        return fail("INVALID_CREDENTIALS");
+      }
+      const company = await User.findById(staff.company, { role: 1, name: 1, blocked: 1, inactive: 1 }).lean();
+      if (staff.blocked || !company || company.blocked || !(await verifyPassword(password, staff.passwordHash))) return fail("INVALID_CREDENTIALS");
+      // Kompaniya hisobi nofaol (egasi 15 kun kirmagan) bo'lsa — ega SMS bilan qayta faollashtirishi kerak.
+      if (company.inactive) return fail("COMPANY_INACTIVE");
+      await reset(phoneKey);
+      await Staff.updateOne({ _id: staff._id }, { $set: { lastActiveAt: new Date() } });
+      const token = await startSession({ id: String(company._id), role: "seller", authVersion: staff.authVersion, staff: { id: String(staff._id), role: staff.role } });
+      return ok({ token, user: { id: String(company._id), role: "seller", name: company.name, staff: { name: staff.name, role: staff.role } } });
     }
     // Admin bloklagan hisob kirmaydi va nofaollik mexanizmi orqali ham ochilmaydi.
     if (user.blocked || !(await verifyPassword(password, user.passwordHash))) return fail("INVALID_CREDENTIALS");

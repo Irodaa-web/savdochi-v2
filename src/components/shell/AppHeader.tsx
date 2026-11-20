@@ -9,6 +9,7 @@ import { Logo } from "@/components/ui/Logo";
 import { useI18n } from "@/i18n/client";
 import type { SessionUser } from "@/lib/auth/session";
 import { homePath } from "@/lib/navigation";
+import { staffPageAllowed } from "@/lib/staff";
 import { AccountMenu } from "./AccountMenu";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationsMenu } from "./NotificationsMenu";
@@ -49,15 +50,22 @@ export function AppHeader({ user }: { user: SessionUser }) {
           <Logo markOnly />
         </Link>
 
-        <Suspense fallback={<div className="h-10 min-w-0 flex-1 rounded-xl border border-[var(--c-glass-border)] bg-[var(--c-glass-strong)] lg:max-w-xl" />}>
-          <GlobalSearch className="min-w-0 flex-1 lg:max-w-xl" />
-        </Suspense>
+        {/* Omborchi katalog (narxlar)ni ko'rmaydi — qidiruv ham yo'q. */}
+        {user.staff?.role === "warehouse" ? (
+          <div className="min-w-0 flex-1" />
+        ) : (
+          <Suspense fallback={<div className="h-10 min-w-0 flex-1 rounded-xl border border-[var(--c-glass-border)] bg-[var(--c-glass-strong)] lg:max-w-xl" />}>
+            <GlobalSearch className="min-w-0 flex-1 lg:max-w-xl" />
+          </Suspense>
+        )}
 
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
-          <Link href="/chat" aria-label={t.header.chat} title={t.header.chat} className={clsx(headerIconClass, "relative hidden md:flex")}>
-            <MessageSquare size={20} aria-hidden />
-            <CountBadge count={badges.chats} />
-          </Link>
+          {(!user.staff || staffPageAllowed(user.staff.role, "/chat")) && (
+            <Link href="/chat" aria-label={t.header.chat} title={t.header.chat} className={clsx(headerIconClass, "relative hidden md:flex")}>
+              <MessageSquare size={20} aria-hidden />
+              <CountBadge count={badges.chats} />
+            </Link>
+          )}
           <NotificationsMenu count={badges.notifications} onChange={refreshBadges} />
           {user.role === "buyer" && (
             <Link href="/cart" aria-label={t.header.cart} title={t.header.cart} className={clsx(headerIconClass, "relative hidden md:flex")}>

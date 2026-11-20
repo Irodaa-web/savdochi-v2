@@ -4,6 +4,7 @@ import { startSession } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
 import { hit } from "@/lib/rateLimit";
 import { fieldErrors, registerSchema } from "@/lib/validation";
+import { Staff } from "@/models/Staff";
 import { User } from "@/models/User";
 import { smsEnabled, verifyCode } from "@/server/sms";
 
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
     // SMS yoqilgan bo'lsa — telefon egasi ekanini kod bilan tasdiqlash shart.
     if (smsEnabled()) {
       if (!input.code) return fail("INVALID_INPUT", { code: "codeRequired" });
-      if (await User.exists({ phone: input.phone })) return fail("PHONE_TAKEN", { phone: "PHONE_TAKEN" });
+      if ((await User.exists({ phone: input.phone })) || (await Staff.exists({ phone: input.phone }))) return fail("PHONE_TAKEN", { phone: "PHONE_TAKEN" });
       if (!(await verifyCode(input.phone, "register", input.code))) return fail("CODE_INVALID", { code: "CODE_INVALID" });
     }
 

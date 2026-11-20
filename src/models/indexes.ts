@@ -15,6 +15,7 @@ import "./Product";
 import "./RateLimit";
 import "./Review";
 import "./SmsCode";
+import "./Staff";
 import "./StoreStock";
 import "./Ticket";
 import "./User";

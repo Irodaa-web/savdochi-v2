@@ -4,6 +4,8 @@ import { cookies, headers } from "next/headers";
 import { after } from "next/server";
 import { connectDb } from "@/lib/db";
 import type { RegionCode } from "@/lib/regions";
+import type { StaffRole } from "@/lib/staff";
+import { Staff } from "@/models/Staff";
 import { User, type Verification } from "@/models/User";
 import { SESSION_COOKIE, SESSION_TTL_SECONDS, signToken, verifyToken, type Role } from "./token";
 
@@ -18,6 +20,8 @@ export type SessionUser = {
   demo: boolean;
   /** Kompaniya obunasi: null — cheklovsiz. */
   subscriptionUntil: string | null;
+  /** Kompaniya xodimi kirgan bo'lsa: kim va qanday rolda. null — hisob egasi. */
+  staff: { id: string; name: string; role: StaffRole } | null;
 };
 
 function adminPhones(): Set<string> {
@@ -43,20 +47,31 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const payload = await verifyToken(await readToken());
   if (!payload) return null;
   // Har sahifa bazaga alohida bormasligi uchun: qisqa muddatli xotira (bloklash/parol almashtirish ≤20 s da kuchga kiradi).
-  const key = `${payload.sub}:${payload.v}`;
+  const key = payload.st ? `${payload.sub}:staff:${payload.st}:${payload.v}` : `${payload.sub}:${payload.v}`;
   const hit = sessionCache.get(key);
   if (hit && hit.until > Date.now()) return hit.user;
   await connectDb();
-  const user = await User.findById(payload.sub).lean();
-  if (!user || user.blocked || user.inactive || user.authVersion !== payload.v) {
+  const [user, staff] = await Promise.all([
+    User.findById(payload.sub).lean(),
+    payload.st ? Staff.findOne({ _id: payload.st, company: payload.sub }).lean() : null,
+  ]);
+  // Xodim: kompaniya hisobi faol bo'lishi, xodim bloklanmagan va sessiyasi eskirmagan bo'lishi kerak.
+  const valid = payload.st
+    ? user && user.role === "seller" && !user.blocked && !user.inactive && staff && !staff.blocked && staff.authVersion === payload.v
+    : user && !user.blocked && !user.inactive && user.authVersion === payload.v;
+  if (!user || !valid) {
     sessionCache.delete(key);
     return null;
   }
   // Faollik: sessiya ishlatilsa ham hisob faol hisoblanadi (15 kunlik nofaollik — lib/inactivity).
   // Bazaga yozish ko'pi bilan har ACTIVITY_REFRESH_MS da bir marta; o'qish allaqachon yuklangan hujjatdan.
   const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt).getTime() : 0;
+  // Xodim ishlasa — kompaniya ham faol hisoblanadi (ega kirmasa ham hisob nofaol bo'lib qolmaydi).
   if (Date.now() - lastActive > ACTIVITY_REFRESH_MS) touchLater(user._id);
-  const view = toSessionUser(user);
+  if (staff && Date.now() - (staff.lastActiveAt ? new Date(staff.lastActiveAt).getTime() : 0) > ACTIVITY_REFRESH_MS) {
+    void Staff.updateOne({ _id: staff._id }, { $set: { lastActiveAt: new Date() } }).catch(() => undefined);
+  }
+  const view = { ...toSessionUser(user), ...(staff ? { staff: { id: String(staff._id), name: staff.name, role: staff.role }, isAdmin: false } : {}) };
   if (sessionCache.size > 1000) sessionCache.clear();
   sessionCache.set(key, { user: view, until: Date.now() + SESSION_CACHE_MS });
   return view;
@@ -96,11 +111,12 @@ function toSessionUser(user: { _id: unknown; role: Role; name: string; phone: st
     isAdmin: adminPhones().has(user.phone),
     demo: Boolean(user.demo),
     subscriptionUntil: user.subscriptionUntil ? new Date(user.subscriptionUntil).toISOString() : null,
+    staff: null,
   };
 }
 
-export async function startSession(user: { id: string; role: Role; authVersion: number }): Promise<string> {
-  const token = await signToken({ sub: user.id, role: user.role, v: user.authVersion });
+export async function startSession(user: { id: string; role: Role; authVersion: number; staff?: { id: string; role: StaffRole } }): Promise<string> {
+  const token = await signToken({ sub: user.id, role: user.role, v: user.authVersion, ...(user.staff ? { st: user.staff.id, sr: user.staff.role } : {}) });
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

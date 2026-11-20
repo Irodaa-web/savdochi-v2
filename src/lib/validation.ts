@@ -1,3 +1,4 @@
+import { STAFF_ROLES } from "@/lib/staff";
 import { z } from "zod";
 import { normalizePhone } from "./phone";
 import { REGION_CODES } from "./regions";
@@ -230,6 +231,23 @@ export const orderListUpdateSchema = z.object({
   name: z.string().trim().min(2, "listNameShort").max(80).optional(),
   items: z.array(z.object({ productId: z.string().min(1).max(40), quantity: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(1_000_000) })).max(100).optional(),
 });
+
+export const staffCreateSchema = z.object({
+  name: z.string().trim().min(2, "nameShort").max(120, "nameShort"),
+  phone,
+  role: z.enum(STAFF_ROLES),
+  password,
+});
+
+export const staffUpdateSchema = z.object({
+  name: z.string().trim().min(2, "nameShort").max(120, "nameShort").optional(),
+  role: z.enum(STAFF_ROLES).optional(),
+  blocked: z.boolean().optional(),
+  password: password.optional(),
+});
+
+/** Omborchi/menejer: mahsulot qoldig'ini yangilash. */
+export const stockOnlySchema = z.object({ stock: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000, "numberInvalid") });
 
 export const messageSchema = z.object({
   text: z.string().trim().min(1, "messageEmpty").max(2000),

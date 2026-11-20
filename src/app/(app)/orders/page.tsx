@@ -17,6 +17,9 @@ const FILTERS = ["all", "open", ...ORDER_STATUSES] as const;
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   const user = await requireUser();
+  // Omborchi summalarni ko'rmaydi; Excel eksport — ega va menejer.
+  const showMoney = user.staff?.role !== "warehouse";
+  const canExport = !user.staff || user.staff.role === "manager";
   const locale = await getLocale();
   const t = getDictionary(locale);
   const sp = await searchParams;
@@ -50,14 +53,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               {t.orders.search}
             </button>
           </form>
-          <a
+          {canExport && <a
             href={`/api/v1/orders/export${href(filter).replace("/orders", "")}`}
             download
             className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 text-[14px] font-semibold text-accent hover:bg-surface-2"
           >
             <FileSpreadsheet size={16} aria-hidden />
             {t.orders.export}
-          </a>
+          </a>}
           </>
         }
       >
@@ -67,7 +70,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         <Stat label={t.orders.statOpen} value={counts.open} tone={counts.open ? "accent" : undefined} />
         <Stat label={t.orders.statNew} value={counts.byStatus.new} />
         <Stat label={t.orders.statDelivered} value={counts.byStatus.delivered} tone={counts.byStatus.delivered ? "success" : undefined} />
-        <Stat label={t.orders.statUnpaid} value={formatAmount(counts.unpaid)} tone={counts.unpaid ? "danger" : undefined} />
+        {showMoney && <Stat label={t.orders.statUnpaid} value={formatAmount(counts.unpaid)} tone={counts.unpaid ? "danger" : undefined} />}
       </div>
       <nav className="flex gap-1.5 overflow-x-auto pb-1" aria-label={t.orders.filter}>
         {FILTERS.map((f) => (
@@ -106,9 +109,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   <StatusPill status={o.status} t={t} />
                   <PaymentPill status={o.paymentStatus} t={t} />
                 </span>
-                <span className="w-32 text-right font-bold tabular-nums">
-                  {formatAmount(o.total)} {t.common.sum}
-                </span>
+                {showMoney && (
+                  <span className="w-32 text-right font-bold tabular-nums">
+                    {formatAmount(o.total)} {t.common.sum}
+                  </span>
+                )}
               </Link>
             </li>
           ))}

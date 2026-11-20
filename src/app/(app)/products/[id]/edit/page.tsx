@@ -5,7 +5,7 @@ import { getProduct } from "@/server/products";
 import { ProductForm } from "../../ProductForm";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser("seller");
+  const user = await requireUser("seller", { staff: ["manager"] });
   const t = getDictionary(await getLocale());
   const product = await getProduct((await params).id);
   if (!product || !product.active || product.seller.id !== user.id) notFound();

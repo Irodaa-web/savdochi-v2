@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, CreditCard, Heart, LogOut, Settings, ShieldCheck, UserRound, Users, Wallet, Warehouse } from "lucide-react";
+import { CircleHelp, CreditCard, Heart, LogOut, Settings, ShieldCheck, UserRound, Users, UsersRound, Wallet, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import type { SessionUser } from "@/lib/auth/session";
 import { formatPhone } from "@/lib/phone";
+import { staffPageAllowed } from "@/lib/staff";
 import { usePopover } from "./usePopover";
 
 function initials(name: string): string {
@@ -36,6 +37,8 @@ export function AccountMenu({ user }: { user: SessionUser }) {
   }
 
   const close = () => setOpen(false);
+  // Xodimga faqat roliga ochiq bo'limlar ko'rsatiladi.
+  const can = (href: string) => !user.staff || staffPageAllowed(user.staff.role, href);
 
   return (
     <div ref={ref} className="relative ml-1.5">
@@ -47,30 +50,42 @@ export function AccountMenu({ user }: { user: SessionUser }) {
         onClick={() => setOpen((v) => !v)}
         className="btn-primary flex size-9 cursor-pointer items-center justify-center rounded-full text-[13px] font-bold transition-transform duration-200 hover:scale-105 active:scale-95"
       >
-        {initials(user.name) || "S"}
+        {initials(user.staff?.name ?? user.name) || "S"}
       </button>
 
       {open && (
         <div role="menu" className="glass-strong menu-in absolute top-12 right-0 w-64 rounded-2xl p-1.5 text-text">
           <div className="mb-1.5 border-b border-line px-3 pt-2 pb-3">
-            <div className="truncate font-semibold">{user.name}</div>
+            <div className="truncate font-semibold">{user.staff ? user.staff.name : user.name}</div>
             <div className="text-[12px] text-muted">
-              {t.roles[user.role]} · {formatPhone(user.phone)}
+              {user.staff ? `${t.staff.roles[user.staff.role]} · ${user.name}` : `${t.roles[user.role]} · ${formatPhone(user.phone)}`}
             </div>
           </div>
-          <Link role="menuitem" href="/profile" onClick={close} className={itemClass}>
-            <UserRound size={16} aria-hidden />
-            {t.header.profile}
-          </Link>
-          <Link role="menuitem" href="/partners" onClick={close} className={itemClass}>
-            <Users size={16} aria-hidden />
-            {user.role === "seller" ? t.header.myClients : t.header.myPartners}
-          </Link>
-          <Link role="menuitem" href="/debts" onClick={close} className={itemClass}>
-            <Wallet size={16} aria-hidden />
-            {t.header.debts}
-          </Link>
-          {user.role === "seller" && (
+          {!user.staff && (
+            <Link role="menuitem" href="/profile" onClick={close} className={itemClass}>
+              <UserRound size={16} aria-hidden />
+              {t.header.profile}
+            </Link>
+          )}
+          {can("/partners") && (
+            <Link role="menuitem" href="/partners" onClick={close} className={itemClass}>
+              <Users size={16} aria-hidden />
+              {user.role === "seller" ? t.header.myClients : t.header.myPartners}
+            </Link>
+          )}
+          {can("/debts") && (
+            <Link role="menuitem" href="/debts" onClick={close} className={itemClass}>
+              <Wallet size={16} aria-hidden />
+              {t.header.debts}
+            </Link>
+          )}
+          {user.role === "seller" && !user.staff && (
+            <Link role="menuitem" href="/staff" onClick={close} className={itemClass}>
+              <UsersRound size={16} aria-hidden />
+              {t.navMenu.staff}
+            </Link>
+          )}
+          {user.role === "seller" && !user.staff && (
             <Link role="menuitem" href="/profile#online-pay" onClick={close} className={itemClass}>
               <CreditCard size={16} aria-hidden />
               {t.header.payments}

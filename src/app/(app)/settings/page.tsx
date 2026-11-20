@@ -29,7 +29,7 @@ export default async function SettingsPage() {
             <span className="font-semibold">{t.settings.theme}</span>
             <ThemeToggle className="flex size-10 cursor-pointer items-center justify-center rounded-xl border border-line text-muted transition-colors hover:border-accent/40 hover:text-accent" />
           </Card>
-          {telegram.enabled && (
+          {telegram.enabled && !user.staff && (
             <Card>
               <TelegramCard linked={telegram.linked} />
             </Card>
@@ -43,9 +43,9 @@ export default async function SettingsPage() {
         <aside className="flex flex-col gap-4">
           <SideCard Icon={UserRound} title={t.settings.accountTitle}>
             <div>
-              <p className="font-semibold">{user.name}</p>
+              <p className="font-semibold">{user.staff ? user.staff.name : user.name}</p>
               <p className="text-[13px] text-muted">
-                {t.roles[user.role]} · {formatPhone(user.phone)} · {t.regions[user.region]}
+                {user.staff ? `${t.staff.roles[user.staff.role]} · ${user.name}` : `${t.roles[user.role]} · ${formatPhone(user.phone)} · ${t.regions[user.region]}`}
               </p>
             </div>
             <LogoutButton />

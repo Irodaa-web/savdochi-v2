@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/client";
 import type { SessionUser } from "@/lib/auth/session";
 import { mobileTabs } from "@/lib/navigation";
+import { staffPageAllowed } from "@/lib/staff";
 import { useShell } from "./Shell";
 import { useBadges } from "./useBadges";
 
@@ -21,13 +22,15 @@ export function MobileTabs({ user }: { user: SessionUser }) {
   const pathname = usePathname();
   const [badges] = useBadges();
   const { drawer, setDrawer } = useShell();
+  // Xodimga faqat roliga ochiq bo'limlar.
+  const tabs = mobileTabs[user.role].filter((tab) => !user.staff || staffPageAllowed(user.staff.role, tab.href));
   const count: Record<string, number> = { "/cart": badges.cart, "/chat": badges.chats, "/orders": badges.orders };
 
   return (
     <>
       <nav className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 md:hidden">
-        <div className="glass-strong grid grid-cols-5 gap-1 rounded-2xl p-1.5">
-          {mobileTabs[user.role].map(({ href, label, Icon }) => {
+        <div className="glass-strong grid gap-1 rounded-2xl p-1.5" style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))` }}>
+          {tabs.map(({ href, label, Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
             const n = count[href] ?? 0;
             return (
