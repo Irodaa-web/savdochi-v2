@@ -10,10 +10,12 @@ export function connectDB() {
 }
 
 export interface MessageLog {
-  senderName: string;
-  fromEmail: string; // login qilingan foydalanuvchining emaili (Google'dan)
+  senderName: string; // yuboruvchi o'zi yozgan ism
+  from: string; // xat qaysi pochtadan ketgani (SMTP_USER)
   to: string;
   message: string;
+  ip: string; // yuboruvchining IP manzili
+  userAgent: string; // yuboruvchining brauzeri/qurilmasi
   status: "sent" | "failed";
   error?: string;
   sentAt: Date;
@@ -21,9 +23,11 @@ export interface MessageLog {
 
 const messageLogSchema = new Schema<MessageLog>({
   senderName: { type: String, required: true },
-  fromEmail: { type: String, required: true, index: true },
+  from: { type: String, required: true },
   to: { type: String, required: true, index: true },
   message: { type: String, required: true },
+  ip: { type: String, index: true },
+  userAgent: String,
   status: { type: String, enum: ["sent", "failed"], required: true },
   error: String,
   sentAt: { type: Date, default: Date.now },

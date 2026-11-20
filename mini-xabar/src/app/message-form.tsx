@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { messageSchema, type MessageInput } from "@/lib/schema";
 
-export default function MessageForm({ defaultName }: { defaultName: string }) {
+export default function MessageForm() {
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const {
     register,
@@ -14,7 +14,7 @@ export default function MessageForm({ defaultName }: { defaultName: string }) {
     formState: { errors, isSubmitting },
   } = useForm<MessageInput>({
     resolver: zodResolver(messageSchema),
-    defaultValues: { senderName: defaultName, to: "", message: "" },
+    defaultValues: { senderName: "", to: "", message: "" },
   });
 
   const onSubmit = async (data: MessageInput) => {
