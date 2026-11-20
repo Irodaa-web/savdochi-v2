@@ -6,8 +6,8 @@ import { useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 
-/** Hisobdan chiqish (sozlamalar sahifasi uchun; profil menyusidagi bilan bir xil ish). */
-export function LogoutButton() {
+/** Hisobdan chiqish (sozlamalar sahifasi; compact — sidebar pastidagi belgi). Profil menyusidagi bilan bir xil ish. */
+export function LogoutButton({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -18,6 +18,20 @@ export function LogoutButton() {
     router.replace("/login");
     router.refresh();
   }
+
+  if (compact)
+    return (
+      <button
+        type="button"
+        onClick={logout}
+        disabled={busy}
+        aria-label={t.settings.logout}
+        title={t.settings.logout}
+        className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-danger transition-colors hover:bg-danger-soft disabled:opacity-60"
+      >
+        <LogOut size={17} aria-hidden />
+      </button>
+    );
 
   return (
     <button

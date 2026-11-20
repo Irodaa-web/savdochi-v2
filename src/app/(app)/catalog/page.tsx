@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ArrowLeft, Building2, Package, PackageCheck, PackageSearch, Search, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Building2, Package, PackageCheck, PackageSearch, Search, ShieldAlert, X } from "lucide-react";
 import { PageTitle } from "@/components/ui/Card";
 import Link from "next/link";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -83,7 +83,20 @@ function ViewSwitch({ view, q, t }: { view: "companies" | "products"; q?: string
   );
 }
 
-/** Sahifa ichidagi qidiruv (telefonda; kompyuterda yuqoridagi qidiruv bor). */
+/** Joriy qidiruv so'zi — × bosilsa so'zsiz ro'yxatga qaytadi. Qidirish o'zi yuqoridagi yagona maydonda. */
+function QueryChip({ q, href, t }: { q: string; href: string; t: Dictionary }) {
+  return (
+    <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-accent/30 bg-accent-soft pr-1 pl-3 text-[13px] font-medium text-accent">
+      <Search size={14} aria-hidden />
+      <span className="max-w-[14rem] truncate">«{q}»</span>
+      <Link href={href} aria-label={t.search.clear} title={t.search.clear} className="flex size-7 items-center justify-center rounded-full hover:bg-accent hover:text-accent-fg">
+        <X size={14} aria-hidden />
+      </Link>
+    </span>
+  );
+}
+
+/** Bitta kompaniya ichida qidiruv. */
 function PageSearch({ hidden, placeholder, q, className }: { hidden: Record<string, string | undefined>; placeholder: string; q?: string; className?: string }) {
   return (
     <form action="/catalog" role="search" className={clsx("w-full sm:w-80", className)}>
@@ -111,12 +124,12 @@ async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }
   return (
     <>
       <Header title={q ? fmt(t.suppliers.resultsFor, { q }) : t.catalog.title} count={fmt(t.suppliers.count, { n: suppliers.length })}>
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-          <PageSearch hidden={{ region }} q={q} placeholder={t.header.search} className="min-w-0 flex-1 sm:flex-none lg:hidden" />
-          <RegionFilter value={region ?? ""} q={q} base="/catalog" />
-        </div>
+        <RegionFilter value={region ?? ""} q={q} base="/catalog" />
       </Header>
-      <ViewSwitch view="companies" q={q} t={t} />
+      <div className="flex flex-wrap items-center gap-2">
+        <ViewSwitch view="companies" q={q} t={t} />
+        {q && <QueryChip q={q} href={hrefWith({ region }, {})} t={t} />}
+      </div>
       {suppliers.length ? (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {suppliers.map((s) => (
@@ -178,10 +191,11 @@ async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; cat
   const base: Params = { q, category, view: "products", sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined };
   return (
     <>
-      <Header title={t.catalog.title} count={fmt(t.catalog.count, { n: result.total })}>
-        <PageSearch hidden={{ view: "products", category }} q={q} placeholder={t.header.searchProducts} className="lg:hidden" />
-      </Header>
-      <ViewSwitch view="products" q={q} t={t} />
+      <Header title={q ? fmt(t.suppliers.resultsFor, { q }) : t.catalog.title} count={fmt(t.catalog.count, { n: result.total })} />
+      <div className="flex flex-wrap items-center gap-2">
+        <ViewSwitch view="products" q={q} t={t} />
+        {q && <QueryChip q={q} href={hrefWith({ ...base, q: undefined }, {})} t={t} />}
+      </div>
       <nav aria-label={t.catalog.title} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
         {[undefined, ...CATEGORY_CODES].map((code) => {
           const active = code === category;

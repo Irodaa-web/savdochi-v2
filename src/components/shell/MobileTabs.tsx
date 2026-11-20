@@ -4,25 +4,24 @@ import clsx from "clsx";
 import { LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { useI18n } from "@/i18n/client";
 import type { SessionUser } from "@/lib/auth/session";
 import { mobileTabs } from "@/lib/navigation";
-import { MobileMenu } from "./MobileMenu";
+import { useShell } from "./Shell";
 import { useBadges } from "./useBadges";
 
 const tabClass = "relative flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] transition-all duration-200 active:scale-95";
 
 /**
  * Telefonda pastki panel — suzuvchi shisha panel, ilova kabi. Kompyuterda yashirin.
- * 4 ta asosiy bo'lim (savat va chatda raqamli belgi) + "Yana" — barcha bo'limlar paneli.
+ * 4 ta asosiy bo'lim (raqamli belgilar bilan) + "Yana" — chapdan sidebar menyusini ochadi.
  */
 export function MobileTabs({ user }: { user: SessionUser }) {
   const { t } = useI18n();
   const pathname = usePathname();
   const [badges] = useBadges();
-  const [menu, setMenu] = useState(false);
-  const count: Record<string, number> = { "/cart": badges.cart, "/chat": badges.chats };
+  const { drawer, setDrawer } = useShell();
+  const count: Record<string, number> = { "/cart": badges.cart, "/chat": badges.chats, "/orders": badges.orders };
 
   return (
     <>
@@ -53,17 +52,15 @@ export function MobileTabs({ user }: { user: SessionUser }) {
           })}
           <button
             type="button"
-            onClick={() => setMenu(true)}
-            aria-haspopup="dialog"
-            aria-expanded={menu}
-            className={clsx(tabClass, "cursor-pointer", menu ? "bg-accent-soft font-semibold text-accent" : "font-medium text-muted")}
+            onClick={() => setDrawer(true)}
+            aria-expanded={drawer}
+            className={clsx(tabClass, "cursor-pointer", drawer ? "bg-accent-soft font-semibold text-accent" : "font-medium text-muted")}
           >
             <LayoutGrid size={21} aria-hidden />
             {t.navMenu.more}
           </button>
         </div>
       </nav>
-      <MobileMenu user={user} open={menu} onClose={() => setMenu(false)} />
     </>
   );
 }
