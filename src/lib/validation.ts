@@ -198,6 +198,14 @@ export const reviewSchema = z.object({
 
 export const reviewReplySchema = z.object({ text: z.string().trim().max(1000).default("") });
 
+/** Bir nechta mahsulotni savatga birdaniga qo'shish. */
+export const bulkCartSchema = z.object({
+  items: z
+    .array(z.object({ productId: z.string().min(1).max(40), quantity: z.coerce.number().int("numberInvalid").min(1, "numberInvalid").max(1_000_000) }))
+    .min(1)
+    .max(100),
+});
+
 export const messageSchema = z.object({
   text: z.string().trim().min(1, "messageEmpty").max(2000),
   orderId: z.string().optional(),

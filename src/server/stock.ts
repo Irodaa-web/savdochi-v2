@@ -3,7 +3,8 @@ import { isValidObjectId, Types } from "mongoose";
 import { AppError } from "@/lib/api";
 import { connectDb } from "@/lib/db";
 import { Partnership } from "@/models/Partnership";
-import { Product } from "@/models/Product";
+import { activeSalePrice, unitPriceFor } from "@/lib/catalog";
+import { Product, type ProductDoc } from "@/models/Product";
 import { StoreStock, type StoreStockDoc } from "@/models/StoreStock";
 import { User } from "@/models/User";
 import { notify } from "./notify";
@@ -34,6 +35,53 @@ async function toRows(docs: StoreStockDoc[]): Promise<StockRow[]> {
     seller: { id: String(d.seller), name: name.get(String(d.seller)) ?? "—" },
     updatedAt: d.updatedAt.toISOString(),
   }));
+}
+
+export type RestockLine = {
+  productId: string;
+  name: string;
+  unit: string;
+  have: number;
+  minLevel: number;
+  /** Taklif: qoldiqni minimal darajaning 2 baravariga yetkazadigan miqdor (kamida minimal buyurtma). */
+  suggested: number;
+  minOrder: number;
+  available: number;
+  unitPrice: number;
+  seller: { id: string; name: string };
+  status: "ok" | "unavailable" | "outOfStock";
+};
+
+/**
+ * Kam qolganlarni to'ldirish rejasi: har bir kam qolgan mahsulot uchun tavsiya etilgan miqdor va narx
+ * (aksiya va ulgurji pog'ona hisobga olingan). Yetkazib beruvchi bo'yicha guruhlab ko'rsatiladi.
+ */
+export async function restockPlan(buyerId: string): Promise<RestockLine[]> {
+  await connectDb();
+  const rows = (await listMyStock(buyerId)).filter((r) => r.low && r.minLevel > 0);
+  if (!rows.length) return [];
+  const products = await Product.find({ _id: { $in: rows.map((r) => r.productId) } }).lean<ProductDoc[]>();
+  const byId = new Map(products.map((p) => [String(p._id), p]));
+  return rows.map((r) => {
+    const p = byId.get(r.productId);
+    const minOrder = p?.minOrder ?? 1;
+    const available = p?.stock ?? 0;
+    const suggested = Math.max(minOrder, Math.min(available || Infinity, r.minLevel * 2 - r.quantity));
+    const status: RestockLine["status"] = !p || !p.active ? "unavailable" : available < minOrder ? "outOfStock" : "ok";
+    return {
+      productId: r.productId,
+      name: r.name,
+      unit: r.unit,
+      have: r.quantity,
+      minLevel: r.minLevel,
+      suggested,
+      minOrder,
+      available,
+      unitPrice: p ? unitPriceFor(suggested, p.price, p.priceTiers ?? [], activeSalePrice(p)) : 0,
+      seller: r.seller,
+      status,
+    };
+  });
 }
 
 /** Do'konning o'z ombori. Kam qolganlar birinchi. */

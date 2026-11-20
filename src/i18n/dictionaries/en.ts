@@ -218,6 +218,18 @@ const en: Dictionary = {
     sendReply: "Send",
     orderReview: "Store's rating",
   },
+  restock: {
+    title: "Restock low items",
+    hint: "Items whose stock fell to the minimum. Quantities are suggested to bring stock to twice the minimum — adjust as you like.",
+    have: "Have: {have} / min. {min} {unit}",
+    total: "Estimated total",
+    addAll: "Add to cart ({n})",
+    added: "{n} items added to the cart.",
+    openCart: "Go to cart",
+    skipped: "Not added",
+    unavailable: "not available",
+    fromCart: "Add all to cart in one click",
+  },
   nav: {
     cart: "Cart",
     catalog: "Catalog",

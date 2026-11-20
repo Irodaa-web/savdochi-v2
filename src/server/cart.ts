@@ -160,6 +160,45 @@ export async function setCartItem(buyerId: string, productId: string, quantity: 
   return cart.items.length;
 }
 
+export type BulkAddResult = { added: { name: string; quantity: number }[]; skipped: { name: string; reason: "unavailable" | "outOfStock" }[] };
+
+/**
+ * Bir nechta mahsulotni savatga birdaniga qo'shadi (kam qolganlarni to'ldirish, doimiy ro'yxat).
+ * Miqdor minimal buyurtma va qoldiq oralig'iga keltiriladi; savatda ko'proq bo'lsa — kamaytirilmaydi.
+ * Sotuvdan chiqqan yoki tugagan mahsulotlar o'tkazib yuboriladi va ro'yxatda qaytariladi.
+ */
+export async function addManyToCart(buyerId: string, items: { productId: string; quantity: number }[]): Promise<BulkAddResult> {
+  await connectDb();
+  const ids = items.map((i) => i.productId).filter((id) => isValidObjectId(id));
+  const products = await Product.find({ _id: { $in: ids } }, { name: 1, active: 1, minOrder: 1, stock: 1, seller: 1 }).lean();
+  const blocked = new Set(
+    (await User.find({ _id: { $in: products.map((p) => p.seller) }, $or: [{ blocked: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean()).map((u) => String(u._id)),
+  );
+  const byId = new Map(products.map((p) => [String(p._id), p]));
+  const cart = (await Cart.findOne({ buyer: buyerId })) ?? new Cart({ buyer: buyerId, items: [] });
+  const result: BulkAddResult = { added: [], skipped: [] };
+  for (const item of items) {
+    const p = byId.get(item.productId);
+    if (!p) continue;
+    if (!p.active || blocked.has(String(p.seller))) {
+      result.skipped.push({ name: p.name, reason: "unavailable" });
+      continue;
+    }
+    if (p.stock < p.minOrder) {
+      result.skipped.push({ name: p.name, reason: "outOfStock" });
+      continue;
+    }
+    const quantity = Math.min(p.stock, Math.max(p.minOrder, Math.floor(item.quantity)));
+    const existing = cart.items.find((i) => String(i.product) === item.productId);
+    if (existing) existing.quantity = Math.max(existing.quantity, quantity);
+    else cart.items.push({ product: p._id, quantity });
+    result.added.push({ name: p.name, quantity });
+  }
+  if (cart.items.length > 100) throw new AppError("INVALID_INPUT");
+  if (result.added.length) await cart.save();
+  return result;
+}
+
 export async function removeCartItems(buyerId: string, productIds: string[], session?: ClientSession): Promise<void> {
   await Cart.updateOne({ buyer: buyerId }, { $pull: { items: { product: { $in: productIds } } } }, { session });
 }

@@ -58,6 +58,11 @@ export default async function CartPage() {
                   ))}
                 </ul>
               )}
+              {low.length > 0 && (
+                <Link href="/stock#restock" className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
+                  {t.restock.fromCart} →
+                </Link>
+              )}
             </SideCard>
             <SideCard Icon={RotateCcw} title={t.cart.recentTitle}>
               {recent.length === 0 ? (

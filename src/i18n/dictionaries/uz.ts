@@ -216,6 +216,18 @@ const uz = {
     sendReply: "Yuborish",
     orderReview: "Do‘kon bahosi",
   },
+  restock: {
+    title: "Kam qolganlarni to‘ldirish",
+    hint: "Qoldiq minimal darajaga tushgan mahsulotlar. Miqdor qoldiqni minimal darajaning 2 baravariga yetkazadigan qilib taklif qilindi — xohlasangiz o‘zgartiring.",
+    have: "Bor: {have} / min. {min} {unit}",
+    total: "Taxminiy summa",
+    addAll: "Savatga qo‘shish ({n})",
+    added: "{n} ta mahsulot savatga qo‘shildi.",
+    openCart: "Savatga o‘tish",
+    skipped: "Qo‘shilmadi",
+    unavailable: "sotuvda yo‘q",
+    fromCart: "Hammasini bir bosishda savatga",
+  },
   nav: {
     cart: "Savat",
     catalog: "Katalog",
