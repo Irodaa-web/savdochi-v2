@@ -182,6 +182,22 @@ export const orderUpdateSchema = z.object({
   deliveryDate: z.union([z.string().date(), z.literal(""), z.null()]).optional(),
 });
 
+/** Kompaniya buyurtmani tahrirlaydi: har qator uchun yangi miqdor (0 — olib tashlash) va sabab. */
+export const orderEditSchema = z.object({
+  items: z
+    .array(z.object({ productId: z.string().min(1).max(40), quantity: z.coerce.number().int("numberInvalid").min(0, "numberInvalid") }))
+    .min(1)
+    .max(200),
+  reason: z.string().trim().max(300).default(""),
+});
+
+export const reviewSchema = z.object({
+  rating: z.coerce.number().int().min(1, "ratingRequired").max(5, "ratingRequired"),
+  text: z.string().trim().max(1000).default(""),
+});
+
+export const reviewReplySchema = z.object({ text: z.string().trim().max(1000).default("") });
+
 export const messageSchema = z.object({
   text: z.string().trim().min(1, "messageEmpty").max(2000),
   orderId: z.string().optional(),

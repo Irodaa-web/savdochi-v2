@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 import { fmt } from "@/i18n/format";
 import type { SupplierView } from "@/server/products";
+import { RatingBadge } from "@/components/reviews/Stars";
 
 /** Nomidan bosh harflar: "Demo Oziq-ovqat MChJ" → "DO". */
 function initials(name: string): string {
@@ -21,9 +22,12 @@ export function SupplierCard({ supplier: s, t }: { supplier: SupplierView; t: Di
             <span className="truncate">{s.name}</span>
             {s.verified && <BadgeCheck size={16} className="shrink-0 text-accent" aria-label={t.catalog.verified} />}
           </Link>
-          <span className="mt-1 flex items-center gap-1.5 text-[13px] text-muted">
-            <MapPin size={14} aria-hidden />
-            {t.regions[s.region]}
+          <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
+            <span className="flex items-center gap-1.5">
+              <MapPin size={14} aria-hidden />
+              {t.regions[s.region]}
+            </span>
+            {s.rating.count > 0 && <RatingBadge average={s.rating.average} count={s.rating.count} t={t} />}
           </span>
         </div>
         <ChevronRight size={18} className="mt-1 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" aria-hidden />

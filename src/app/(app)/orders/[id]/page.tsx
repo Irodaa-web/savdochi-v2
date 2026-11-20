@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, MapPin, Phone } from "lucide-react";
+import { ArrowLeft, FileText, MapPin, PencilLine, Phone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StartChatButton } from "@/components/chat/StartChatButton";
@@ -10,8 +10,12 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
 import { formatPhone } from "@/lib/phone";
-import { getOrder } from "@/server/orders";
+import { canEdit, getOrder } from "@/server/orders";
+import { reviewForOrder } from "@/server/reviews";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { Stars } from "@/components/reviews/Stars";
 import { sellerOnlineMethods } from "@/server/onlinePay";
+import { EditOrder } from "./EditOrder";
 import { OrderActions } from "./OrderActions";
 import { PayOnline } from "./PayOnline";
 import { ReorderButton } from "@/components/orders/ReorderButton";
@@ -32,6 +36,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const partner = isSeller ? o.buyer : o.seller;
   const units = t.units as Record<string, string>;
   const d = o.delivery;
+  const review = o.status === "delivered" ? await reviewForOrder(o.id) : null;
 
   return (
     <article className="flex flex-col gap-5">
@@ -110,6 +115,52 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             </dl>
           </Card>
 
+          {o.status === "delivered" && user.role === "buyer" && (
+            <Card>
+              <ReviewForm orderId={o.id} initial={review && { rating: review.rating, text: review.text }} />
+            </Card>
+          )}
+          {isSeller && review && (
+            <Card className="flex flex-col gap-2">
+              <h2 className="font-semibold">{t.reviews.orderReview}</h2>
+              <Stars value={review.rating} size={18} />
+              {review.text && <p className="text-[14px] whitespace-pre-line">{review.text}</p>}
+              <Link href={`/suppliers/${o.seller.id}#reviews`} className="w-fit text-[13px] font-semibold text-accent hover:underline">
+                {review.reply ? t.reviews.editReply : t.reviews.reply} →
+              </Link>
+            </Card>
+          )}
+
+          {o.changes.length > 0 && (
+            <Card className="flex flex-col gap-3">
+              <h2 className="flex items-center gap-2 font-semibold">
+                <PencilLine size={17} className="text-accent" aria-hidden />
+                {t.orderEdit.changesTitle}
+              </h2>
+              {o.changes.map((c, i) => (
+                <div key={i} className="flex flex-col gap-1.5 rounded-xl border border-line bg-surface-2/50 p-3 text-[14px]">
+                  <span className="text-[12px] text-muted">{formatDateTime(c.at, locale)}</span>
+                  <ul className="flex flex-col gap-0.5">
+                    {c.lines.map((l) => (
+                      <li key={l.name}>
+                        <b>{l.name}</b>:{" "}
+                        {l.to === 0 ? (
+                          <span className="text-danger">{t.orderEdit.removed}</span>
+                        ) : (
+                          <span className="tabular-nums">
+                            {l.from} → {l.to} {units[l.unit] ?? l.unit}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="text-[13px] font-medium tabular-nums">{fmt(t.orderEdit.changeTotal, { before: formatAmount(c.totalBefore), after: formatAmount(c.totalAfter) })}</span>
+                  {c.reason && <p className="rounded-lg bg-surface px-3 py-2 text-[13px] whitespace-pre-line">{c.reason}</p>}
+                </div>
+              ))}
+            </Card>
+          )}
+
           <Card>
             <h2 className="mb-3 font-semibold">{t.orders.history}</h2>
             <ol className="flex flex-col gap-2 text-[14px]">
@@ -128,6 +179,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         <aside className="flex flex-col gap-4">
           <Card className="flex flex-col gap-3">
             {canPay && <PayOnline orderId={o.id} left={left} methods={payMethods} />}
+            {isSeller && canEdit(o) && <EditOrder orderId={o.id} items={o.items} discountPercent={o.discountPercent} deliveryFee={o.deliveryFee} />}
             <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
             {user.role === "buyer" && <ReorderButton items={o.items.map((i) => ({ productId: i.productId, quantity: i.quantity }))} />}
           </Card>

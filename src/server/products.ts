@@ -5,6 +5,7 @@ import { activeSalePrice, CATEGORY_CODES, saleDay, salePercent, type CategoryCod
 import type { RegionCode } from "@/lib/regions";
 import type { ProductInput } from "@/lib/validation";
 import { notify } from "@/server/notify";
+import { ratingsFor, type Rating } from "@/server/reviews";
 import { Cart } from "@/models/Cart";
 import { Order } from "@/models/Order";
 import { Partnership } from "@/models/Partnership";
@@ -221,7 +222,7 @@ export async function getProductSeller(sellerId: string): Promise<string | null>
   return seller?.name ?? null;
 }
 
-export type SupplierView = { id: string; name: string; region: RegionCode; verified: boolean; productCount: number };
+export type SupplierView = { id: string; name: string; region: RegionCode; verified: boolean; productCount: number; rating: Rating };
 
 export type SupplierQuery = { region?: RegionCode; q?: string };
 
@@ -236,9 +237,9 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
   if (q) and.push({ name: { $regex: q.slice(0, 80).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } });
   if (and.length) filter.$and = and;
   const sellers = await User.find(filter, { name: 1, region: 1, verification: 1 }).sort({ verification: -1, name: 1 }).limit(200).lean<SellerInfo[]>();
-  const counts = await Product.aggregate<{ _id: unknown; n: number }>([
-    { $match: { active: true, seller: { $in: sellers.map((s) => s._id) } } },
-    { $group: { _id: "$seller", n: { $sum: 1 } } },
+  const [counts, ratings] = await Promise.all([
+    Product.aggregate<{ _id: unknown; n: number }>([{ $match: { active: true, seller: { $in: sellers.map((s) => s._id) } } }, { $group: { _id: "$seller", n: { $sum: 1 } } }]),
+    ratingsFor(sellers.map((s) => String(s._id))),
   ]);
   const countBy = new Map(counts.map((c) => [String(c._id), c.n]));
   return sellers.map((s) => ({
@@ -247,6 +248,7 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
     region: s.region,
     verified: s.verification === "verified",
     productCount: countBy.get(String(s._id)) ?? 0,
+    rating: ratings.get(String(s._id)) ?? { average: 0, count: 0 },
   }));
 }
 

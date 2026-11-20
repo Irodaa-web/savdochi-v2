@@ -12,15 +12,24 @@ import { formatAmount } from "@/lib/catalog";
 import { findPartnership } from "@/server/partners";
 import { getSellerHighlights, type RankedProduct } from "@/server/products";
 import { getSellerPublic } from "@/server/profile";
+import { sellerReviews } from "@/server/reviews";
+import { ReviewsSection } from "@/components/reviews/ReviewsSection";
+import { Stars } from "@/components/reviews/Stars";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 
 /** Kompaniya sahifasi: kim, qayerga, qanday shartlarda yetkazadi. */
 export default async function SupplierPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
-  const t = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const t = getDictionary(locale);
   const id = (await params).id;
-  // Uchala so'rov parallel — bazaga bir "aylanish".
-  const [s, partnership, highlights] = await Promise.all([getSellerPublic(id), user.role === "buyer" ? findPartnership(id, user.id) : null, getSellerHighlights(id)]);
+  // So'rovlar parallel — bazaga bir "aylanish".
+  const [s, partnership, highlights, reviews] = await Promise.all([
+    getSellerPublic(id),
+    user.role === "buyer" ? findPartnership(id, user.id) : null,
+    getSellerHighlights(id),
+    sellerReviews(id),
+  ]);
   if (!s) notFound();
   const p = s.profile;
   const hasStats = highlights.bestSelling.length > 0 || highlights.popular.length > 0;
@@ -47,6 +56,13 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
           {s.name}
           {s.verified && <BadgeCheck size={20} className="text-sky-300" aria-label={t.catalog.verified} />}
         </h1>
+        {reviews.rating.count > 0 && (
+          <a href="#reviews" className="flex w-fit items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-[13px] text-white backdrop-blur-sm hover:bg-white/20">
+            <Stars value={reviews.rating.average} size={14} />
+            <b className="tabular-nums">{reviews.rating.average.toFixed(1)}</b>
+            <span className="text-header-muted">· {fmt(t.reviews.count, { n: reviews.rating.count })}</span>
+          </a>
+        )}
         {p.about && <p className="max-w-2xl text-header-muted">{p.about}</p>}
       </div>
 
@@ -117,6 +133,8 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
       ) : (
         s.productCount > 0 && <p className="rounded-xl border border-dashed border-line px-4 py-3 text-[13px] text-muted">{t.supplierPage.noStats}</p>
       )}
+
+      <ReviewsSection data={reviews} owner={user.id === s.id} locale={locale} t={t} />
     </section>
   );
 }

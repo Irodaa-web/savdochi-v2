@@ -5,6 +5,8 @@ import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount, saleDay } from "@/lib/catalog";
+import { ratingsFor } from "@/server/reviews";
+import { RatingBadge } from "@/components/reviews/Stars";
 import { BuyBox } from "@/components/catalog/BuyBox";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { StartChatButton } from "@/components/chat/StartChatButton";
@@ -15,6 +17,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const t = getDictionary(await getLocale());
   const p = await getProduct((await params).id);
   if (!p || !p.active) notFound();
+  const sellerRating = (await ratingsFor([p.seller.id])).get(p.seller.id) ?? null;
   const unit = t.units[p.unit];
 
   return (
@@ -91,6 +94,11 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               {p.seller.name}
               {p.seller.verified && <BadgeCheck size={16} className="text-accent" aria-label={t.catalog.verified} />}
             </span>
+            {sellerRating && (
+              <Link href={`/suppliers/${p.seller.id}#reviews`} className="w-fit hover:underline">
+                <RatingBadge average={sellerRating.average} count={sellerRating.count} t={t} />
+              </Link>
+            )}
             <span className="flex items-center gap-1.5 text-[13px] text-muted">
               <MapPin size={14} aria-hidden />
               {t.regions[p.seller.region]}
