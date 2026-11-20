@@ -32,6 +32,7 @@ export const DEFAULT_PROFILE: Profile = {
   leadDays: 1,
   deliveryFee: 0,
   minOrderTotal: 0,
+  regionRules: [],
   paymentMethods: ["cash"] as PaymentMethod[],
   pickup: false,
   inn: "",

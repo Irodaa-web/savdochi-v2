@@ -8,6 +8,7 @@ import "./Counter";
 import "./Notification";
 import "./OnlinePayment";
 import "./Order";
+import "./OrderList";
 import "./Partnership";
 import "./Payment";
 import "./Product";

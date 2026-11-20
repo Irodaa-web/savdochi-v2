@@ -3,6 +3,7 @@ import type { ClientSession } from "mongoose";
 import { isValidObjectId } from "mongoose";
 import { AppError } from "@/lib/api";
 import { activeSalePrice, unitPriceFor } from "@/lib/catalog";
+import { nextDeliveryDay, termsForRegion } from "@/lib/delivery";
 import { connectDb } from "@/lib/db";
 import type { PaymentMethod } from "@/lib/orders";
 import { Cart, type CartDoc } from "@/models/Cart";
@@ -30,7 +31,17 @@ export type CartLine = {
 
 export type CartGroup = {
   seller: { id: string; name: string; verified: boolean };
-  terms: Pick<Profile, "deliveryFee" | "minOrderTotal" | "paymentMethods" | "deliveryRegions" | "leadDays" | "pickup"> & { address: string };
+  /**
+   * deliveryFee / minOrderTotal — tanlangan viloyat uchun amaldagisi; deliveryDays/regionRules — butun jadval
+   * (do'kon buyurtma formasida boshqa viloyat tanlasa, shartlar brauzerda qayta hisoblanadi).
+   */
+  terms: Pick<Profile, "deliveryFee" | "minOrderTotal" | "paymentMethods" | "deliveryRegions" | "leadDays" | "pickup" | "deliveryDays" | "regionRules"> & {
+    address: string;
+    /** Shu viloyatga eng yaqin yetkazish kuni (YYYY-MM-DD). */
+    nextDelivery: string;
+    /** Umumiy jadval (viloyat qoidasidan oldingi) — boshqa viloyatlar uchun hisoblashda kerak. */
+    base: { deliveryFee: number; minOrderTotal: number };
+  };
   lines: CartLine[];
   subtotal: number;
   discountPercent: number;
@@ -45,9 +56,13 @@ export type CartGroup = {
 
 export type CartView = { groups: CartGroup[]; count: number };
 
-/** Savatni sotuvchilar bo'yicha guruhlab, narx va to'siqlarni hisoblaydi. */
-export async function getCart(buyerId: string): Promise<CartView> {
+/**
+ * Savatni sotuvchilar bo'yicha guruhlab, narx va to'siqlarni hisoblaydi.
+ * region — yetkazish viloyati (berilmasa — do'konning o'z viloyati): yetkazish narxi va minimal summa shunga qarab.
+ */
+export async function getCart(buyerId: string, region?: string): Promise<CartView> {
   await connectDb();
+  const where = region ?? (await User.findById(buyerId, { region: 1 }).lean())?.region;
   const cart = await Cart.findOne({ buyer: buyerId }).lean<CartDoc>();
   const items = cart?.items ?? [];
   if (!items.length) return { groups: [], count: 0 };
@@ -72,11 +87,16 @@ export async function getCart(buyerId: string): Promise<CartView> {
     let group = groups.get(sellerId);
     if (!group) {
       const profile = profileOf(seller);
+      const local = termsForRegion(profile, where);
       group = {
         seller: { id: sellerId, name: seller.name, verified: seller.verification === "verified" },
         terms: {
-          deliveryFee: profile.deliveryFee,
-          minOrderTotal: profile.minOrderTotal,
+          deliveryFee: local.fee,
+          minOrderTotal: local.minOrderTotal,
+          deliveryDays: profile.deliveryDays,
+          regionRules: profile.regionRules ?? [],
+          nextDelivery: nextDeliveryDay(local.days, profile.leadDays),
+          base: { deliveryFee: profile.deliveryFee, minOrderTotal: profile.minOrderTotal },
           paymentMethods: profile.paymentMethods.length ? profile.paymentMethods : (["cash"] as PaymentMethod[]),
           deliveryRegions: profile.deliveryRegions,
           leadDays: profile.leadDays,
@@ -87,7 +107,7 @@ export async function getCart(buyerId: string): Promise<CartView> {
         subtotal: 0,
         discountPercent: discountBy.get(sellerId) ?? 0,
         discount: 0,
-        deliveryFee: profile.deliveryFee,
+        deliveryFee: local.fee,
         total: 0,
         belowMinTotal: false,
         canOrder: true,
@@ -158,6 +178,45 @@ export async function setCartItem(buyerId: string, productId: string, quantity: 
   if (cart.items.length > 100) throw new AppError("INVALID_INPUT");
   await cart.save();
   return cart.items.length;
+}
+
+export type BulkAddResult = { added: { name: string; quantity: number }[]; skipped: { name: string; reason: "unavailable" | "outOfStock" }[] };
+
+/**
+ * Bir nechta mahsulotni savatga birdaniga qo'shadi (kam qolganlarni to'ldirish, doimiy ro'yxat).
+ * Miqdor minimal buyurtma va qoldiq oralig'iga keltiriladi; savatda ko'proq bo'lsa — kamaytirilmaydi.
+ * Sotuvdan chiqqan yoki tugagan mahsulotlar o'tkazib yuboriladi va ro'yxatda qaytariladi.
+ */
+export async function addManyToCart(buyerId: string, items: { productId: string; quantity: number }[]): Promise<BulkAddResult> {
+  await connectDb();
+  const ids = items.map((i) => i.productId).filter((id) => isValidObjectId(id));
+  const products = await Product.find({ _id: { $in: ids } }, { name: 1, active: 1, minOrder: 1, stock: 1, seller: 1 }).lean();
+  const blocked = new Set(
+    (await User.find({ _id: { $in: products.map((p) => p.seller) }, $or: [{ blocked: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean()).map((u) => String(u._id)),
+  );
+  const byId = new Map(products.map((p) => [String(p._id), p]));
+  const cart = (await Cart.findOne({ buyer: buyerId })) ?? new Cart({ buyer: buyerId, items: [] });
+  const result: BulkAddResult = { added: [], skipped: [] };
+  for (const item of items) {
+    const p = byId.get(item.productId);
+    if (!p) continue;
+    if (!p.active || blocked.has(String(p.seller))) {
+      result.skipped.push({ name: p.name, reason: "unavailable" });
+      continue;
+    }
+    if (p.stock < p.minOrder) {
+      result.skipped.push({ name: p.name, reason: "outOfStock" });
+      continue;
+    }
+    const quantity = Math.min(p.stock, Math.max(p.minOrder, Math.floor(item.quantity)));
+    const existing = cart.items.find((i) => String(i.product) === item.productId);
+    if (existing) existing.quantity = Math.max(existing.quantity, quantity);
+    else cart.items.push({ product: p._id, quantity });
+    result.added.push({ name: p.name, quantity });
+  }
+  if (cart.items.length > 100) throw new AppError("INVALID_INPUT");
+  if (result.added.length) await cart.save();
+  return result;
 }
 
 export async function removeCartItems(buyerId: string, productIds: string[], session?: ClientSession): Promise<void> {

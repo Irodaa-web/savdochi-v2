@@ -16,6 +16,8 @@ import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { Stars } from "@/components/reviews/Stars";
 import { sellerOnlineMethods } from "@/server/onlinePay";
 import { EditOrder } from "./EditOrder";
+import { SaveAsList } from "./SaveAsList";
+import { listOrderLists } from "@/server/lists";
 import { OrderActions } from "./OrderActions";
 import { PayOnline } from "./PayOnline";
 import { ReorderButton } from "@/components/orders/ReorderButton";
@@ -36,7 +38,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const partner = isSeller ? o.buyer : o.seller;
   const units = t.units as Record<string, string>;
   const d = o.delivery;
-  const review = o.status === "delivered" ? await reviewForOrder(o.id) : null;
+  const [review, lists] = await Promise.all([o.status === "delivered" ? reviewForOrder(o.id) : null, user.role === "buyer" ? listOrderLists(user.id) : []]);
 
   return (
     <article className="flex flex-col gap-5">
@@ -182,6 +184,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             {isSeller && canEdit(o) && <EditOrder orderId={o.id} items={o.items} discountPercent={o.discountPercent} deliveryFee={o.deliveryFee} />}
             <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
             {user.role === "buyer" && <ReorderButton items={o.items.map((i) => ({ productId: i.productId, quantity: i.quantity }))} />}
+            {user.role === "buyer" && <SaveAsList orderId={o.id} defaultName={fmt(t.lists.defaultName, { seller: o.seller.name })} lists={lists.map((l) => ({ id: l.id, name: l.name }))} />}
           </Card>
 
           <Card className="flex flex-col gap-2 text-[14px]">

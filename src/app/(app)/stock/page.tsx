@@ -9,7 +9,8 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
 import { listOrders, orderCounts } from "@/server/orders";
-import { listMyStock } from "@/server/stock";
+import { listMyStock, restockPlan } from "@/server/stock";
+import { RestockCard } from "./RestockCard";
 import { StockRowEditor } from "./StockRowEditor";
 
 export const metadata = { title: "Ombor" };
@@ -19,7 +20,7 @@ export default async function StockPage() {
   const user = await requireUser("buyer");
   const locale = await getLocale();
   const t = getDictionary(locale);
-  const [rows, delivered, counts] = await Promise.all([listMyStock(user.id), listOrders(user, { status: "delivered", limit: 4 }), orderCounts(user)]);
+  const [rows, delivered, counts, plan] = await Promise.all([listMyStock(user.id), listOrders(user, { status: "delivered", limit: 4 }), orderCounts(user), restockPlan(user.id)]);
   const low = rows.filter((r) => r.low).length;
   // Yetkazib beruvchilar bo'yicha: nechta mahsulot va nechtasi kam qolgan (avval kam qolgani ko'p bo'lganlar).
   const bySupplier = [...rows.reduce((map, r) => {
@@ -43,6 +44,7 @@ export default async function StockPage() {
             <Stat label={t.stock.statSuppliers} value={bySupplier.length} />
             <Stat label={t.stock.statDelivered} value={counts.byStatus.delivered} tone={counts.byStatus.delivered ? "success" : undefined} />
           </div>
+          {plan.length > 0 && <RestockCard lines={plan} />}
           <div className="overflow-x-auto glass-card rounded-2xl">
             <table className="w-full min-w-[620px] border-collapse text-left text-[14px]">
               <thead>

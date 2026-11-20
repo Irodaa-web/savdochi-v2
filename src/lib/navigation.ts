@@ -15,6 +15,7 @@ import {
   Home,
   LayoutDashboard,
   LayoutGrid,
+  ListChecks,
   List,
   MessageSquare,
   Package,
@@ -204,6 +205,7 @@ export const sidebarNav: Record<Role, SideGroup[]> = {
         { href: "/catalog", Icon: LayoutGrid, label: (t) => t.nav.catalog, children: menuLinks("buyer", "/catalog").filter((l) => l.href !== "/favorites") },
         { href: "/cart", Icon: ShoppingCart, label: (t) => t.nav.cart, badge: "cart" },
         { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders", children: orderStatuses.links },
+        { href: "/lists", Icon: ListChecks, label: (t) => t.navMenu.lists },
       ],
     },
     {
