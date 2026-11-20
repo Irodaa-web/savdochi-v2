@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { ChevronDown, CircleHelp, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { LanguageSwitch, ThemeToggle } from "@/components/Preferences";
 import { Logo } from "@/components/ui/Logo";
@@ -156,6 +156,9 @@ function SideLink({ item, pathname, mini, count }: { item: SideItem; pathname: s
   const { t } = useI18n();
   const active = isActive(pathname, item.href);
   const [open, setOpen] = useState(active);
+  // Ichki sahifa manzili so'rov qismi bilan solishtiriladi: /catalog va /catalog?view=products alohida.
+  const search = useSearchParams().toString();
+  const here = search ? `${pathname}?${search}` : pathname;
   const name = item.label(t);
   const hasChildren = Boolean(item.children?.length);
   const expanded = hasChildren && open;
@@ -204,7 +207,7 @@ function SideLink({ item, pathname, mini, count }: { item: SideItem; pathname: s
           <ul className="min-h-0 overflow-hidden">
             <li className="relative ml-[22px] flex flex-col gap-0.5 border-l border-line py-1 pl-3">
               {item.children!.map((child) => {
-                const current = !child.href.includes("?") && child.href === pathname;
+                const current = child.href === here;
                 return (
                   <Link
                     key={child.href}

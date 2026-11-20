@@ -14,6 +14,7 @@ export const NOTIFICATION_TYPES = [
   "debtOverdue",
   "debtOverdueSeller",
   "stockLow",
+  "partnerSale",
   "ticketReply",
   "verified",
   "inactivityWarning",

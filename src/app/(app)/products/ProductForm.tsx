@@ -1,13 +1,13 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { BadgePercent, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { SelectField, TextField } from "@/components/ui/Field";
-import { useI18n } from "@/i18n/client";
+import { fmt, useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { CATEGORY_CODES, UNIT_CODES } from "@/lib/catalog";
 import type { ProductView } from "@/server/products";
@@ -33,6 +33,8 @@ export function ProductForm({ product }: { product?: ProductView }) {
     stock: product ? String(product.stock) : "",
     packSize: product ? String(product.packSize) : "1",
     description: product?.description ?? "",
+    salePrice: product?.sale ? String(product.sale.price) : "",
+    saleUntil: product?.sale ? product.sale.until.slice(0, 10) : "",
   });
   const [tiers, setTiers] = useState<Tier[]>(product?.priceTiers.map((x) => ({ min: String(x.min), price: String(x.price) })) ?? []);
   const [images, setImages] = useState<string[]>(product?.images ?? []);
@@ -48,7 +50,9 @@ export function ProductForm({ product }: { product?: ProductView }) {
     setSaving(true);
     setError(null);
     setFields({});
-    const body = { ...form, images, priceTiers: tiers.filter((x) => x.min && x.price) };
+    // Sana kun oxirigacha amal qiladi (Toshkent vaqti bilan 23:59).
+    const saleUntil = form.saleUntil ? `${form.saleUntil}T23:59:59+05:00` : "";
+    const body = { ...form, saleUntil, images, priceTiers: tiers.filter((x) => x.min && x.price) };
     const res = product
       ? await api(`/api/v1/products/${product.id}`, { method: "PATCH", body })
       : await api("/api/v1/products", { method: "POST", body });
@@ -63,6 +67,10 @@ export function ProductForm({ product }: { product?: ProductView }) {
   }
 
   const num = { type: "number", inputMode: "numeric" as const, min: 0, step: 1 };
+  const price = Number(form.price);
+  const sale = Number(form.salePrice);
+  const percent = price > 0 && sale > 0 && sale < price ? Math.round((1 - sale / price) * 100) : null;
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex max-w-3xl flex-col gap-5">
@@ -134,6 +142,29 @@ export function ProductForm({ product }: { product?: ProductView }) {
           <button type="button" onClick={() => setTiers((all) => [...all, { min: "", price: "" }])} className="flex w-fit cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
             <Plus size={15} aria-hidden />
             {t.products.addTier}
+          </button>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3 glass-card rounded-2xl p-5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h2 className="flex items-center gap-2 font-semibold">
+              <BadgePercent size={18} className="text-accent" aria-hidden />
+              {t.products.saleTitle}
+            </h2>
+            <p className="mt-1 text-[13px] text-muted">{t.products.saleHint}</p>
+          </div>
+          {percent != null && <span className="rounded-full bg-danger-soft px-2.5 py-1 text-[12px] font-bold text-danger">{fmt(t.products.salePreview, { n: percent })}</span>}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <TextField label={t.products.salePrice} {...num} min={1} value={form.salePrice} onChange={set("salePrice")} error={errorText(errors, fields.salePrice)} />
+          <TextField label={t.products.saleUntil} type="date" min={today} value={form.saleUntil} onChange={set("saleUntil")} error={errorText(errors, fields.saleUntil)} />
+        </div>
+        {(form.salePrice || form.saleUntil) && (
+          <button type="button" onClick={() => setForm((f) => ({ ...f, salePrice: "", saleUntil: "" }))} className="flex w-fit cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-danger hover:underline">
+            <X size={15} aria-hidden />
+            {t.products.saleClear}
           </button>
         )}
       </section>

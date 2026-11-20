@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
-import { formatAmount } from "@/lib/catalog";
+import { formatAmount, saleDay } from "@/lib/catalog";
 import { BuyBox } from "@/components/catalog/BuyBox";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { StartChatButton } from "@/components/chat/StartChatButton";
@@ -34,8 +34,20 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           <div className="flex flex-col gap-3 glass-card rounded-2xl p-5">
             <span className="text-[13px] text-muted">{t.categories[p.category]}</span>
             <h1 className="text-xl leading-snug font-bold">{p.name}</h1>
-            <div>
-              <span className="text-2xl font-bold">{formatAmount(p.price)}</span> <span className="text-muted">{fmt(t.catalog.perUnit, { unit })}</span>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className={p.sale ? "text-2xl font-bold text-danger" : "text-2xl font-bold"}>{formatAmount(p.sale?.price ?? p.price)}</span>
+              <span className="text-muted">{fmt(t.catalog.perUnit, { unit })}</span>
+              {p.sale && (
+                <>
+                  <s className="text-muted" aria-label={t.catalog.oldPrice}>
+                    {formatAmount(p.price)}
+                  </s>
+                  <span className="rounded-md bg-danger px-1.5 py-0.5 text-[12px] font-bold text-white">−{p.sale.percent}%</span>
+                  <span className="basis-full text-[13px] font-medium text-danger">
+                    {t.catalog.saleBadge} · {fmt(t.catalog.saleUntil, { date: saleDay(p.sale.until) })}
+                  </span>
+                </>
+              )}
             </div>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
               <dt className="text-muted">{t.products.minOrder}</dt>
@@ -69,7 +81,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             )}
 
             {user.role === "buyer" && (
-              <BuyBox productId={p.id} price={p.price} tiers={p.priceTiers} minOrder={p.minOrder} stock={p.stock} unit={unit} saved={await isFavorite(user.id, p.id)} />
+              <BuyBox productId={p.id} price={p.price} salePrice={p.sale?.price ?? null} tiers={p.priceTiers} minOrder={p.minOrder} stock={p.stock} unit={unit} saved={await isFavorite(user.id, p.id)} />
             )}
           </div>
 

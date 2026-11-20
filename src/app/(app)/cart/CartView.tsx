@@ -127,6 +127,7 @@ function CartRow({ line, unit }: { line: CartLine; unit: string }) {
           {line.name}
         </Link>
         <div className="text-[13px] text-muted">
+          {line.onSale && <span className="mr-1.5 rounded bg-danger px-1 py-px text-[11px] font-bold text-white">{t.catalog.saleBadge}</span>}
           {formatAmount(line.unitPrice)} {t.common.sum} / {unit} · {fmt(t.catalog.minOrder, { n: line.minOrder, unit })}
         </div>
         {problem && <div className="text-[13px] font-medium text-danger">{fmt(problem, { n: line.stock, unit })}</div>}

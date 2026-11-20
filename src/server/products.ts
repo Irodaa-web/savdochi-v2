@@ -1,11 +1,13 @@
 import "server-only";
 import { isValidObjectId, Types, type FilterQuery } from "mongoose";
 import { connectDb } from "@/lib/db";
-import { CATEGORY_CODES, type CategoryCode, type PriceTier, type UnitCode } from "@/lib/catalog";
+import { activeSalePrice, CATEGORY_CODES, saleDay, salePercent, type CategoryCode, type PriceTier, type UnitCode } from "@/lib/catalog";
 import type { RegionCode } from "@/lib/regions";
 import type { ProductInput } from "@/lib/validation";
+import { notify } from "@/server/notify";
 import { Cart } from "@/models/Cart";
 import { Order } from "@/models/Order";
+import { Partnership } from "@/models/Partnership";
 import { Product, type ProductDoc } from "@/models/Product";
 import { User } from "@/models/User";
 
@@ -17,6 +19,8 @@ export type ProductView = {
   unit: UnitCode;
   price: number;
   priceTiers: PriceTier[];
+  /** Amaldagi aksiya (muddati o'tganlari ko'rsatilmaydi). */
+  sale: { price: number; until: string; percent: number } | null;
   minOrder: number;
   stock: number;
   packSize: number;
@@ -41,6 +45,11 @@ async function hiddenSellers(): Promise<unknown[]> {
   return hiddenCache.ids;
 }
 
+function saleOf(p: ProductDoc): ProductView["sale"] {
+  const price = activeSalePrice(p);
+  return price == null ? null : { price, until: new Date(p.saleUntil!).toISOString(), percent: salePercent(p.price, price) };
+}
+
 function toView(p: ProductDoc, seller: SellerInfo | undefined): ProductView {
   return {
     id: String(p._id),
@@ -49,6 +58,7 @@ function toView(p: ProductDoc, seller: SellerInfo | undefined): ProductView {
     unit: p.unit,
     price: p.price,
     priceTiers: (p.priceTiers ?? []).map((t) => ({ min: t.min, price: t.price })),
+    sale: saleOf(p),
     minOrder: p.minOrder,
     stock: p.stock,
     packSize: p.packSize,
@@ -72,7 +82,7 @@ async function withSellers(products: ProductDoc[]): Promise<ProductView[]> {
 }
 
 export type CatalogSort = "new" | "cheap" | "expensive";
-export type CatalogQuery = { q?: string; category?: CategoryCode; seller?: string; page?: number; ids?: string[]; sort?: CatalogSort; inStock?: boolean };
+export type CatalogQuery = { q?: string; category?: CategoryCode; seller?: string; page?: number; ids?: string[]; sort?: CatalogSort; inStock?: boolean; onSale?: boolean };
 const SORTS: Record<CatalogSort, Record<string, 1 | -1>> = { new: { createdAt: -1 }, cheap: { price: 1, createdAt: -1 }, expensive: { price: -1, createdAt: -1 } };
 export const PAGE_SIZE = 24;
 
@@ -90,6 +100,8 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
   }
   // Faqat mavjudlari: qoldiq kamida bitta minimal buyurtmaga yetadi.
   if (query.inStock) filter.$expr = { $gte: ["$stock", "$minOrder"] };
+  // Faqat amaldagi aksiyalar.
+  if (query.onSale) Object.assign(filter, { salePrice: { $ne: null }, saleUntil: { $gt: new Date() } });
   const hidden = await hiddenSellers();
   if (hidden.length) filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $nin: hidden };
 
@@ -136,16 +148,35 @@ export async function createProduct(sellerId: string, input: ProductInput): Prom
   await connectDb();
   const doc = await Product.create({ ...input, seller: sellerId });
   const [view] = await withSellers([doc.toObject() as ProductDoc]);
+  await announceSale(view!, null);
   return view!;
+}
+
+/**
+ * Yangi aksiya (yoki narxi/muddati o'zgargan aksiya) — faol hamkor do'konlarga bildirishnoma.
+ * Ko'p hamkorli kompaniyada ham so'rov tez qaytsin: xabarlar parallel yuboriladi.
+ */
+async function announceSale(view: ProductView, before: ProductView["sale"]): Promise<void> {
+  const sale = view.sale;
+  if (!sale || (before && before.price === sale.price && before.until === sale.until)) return;
+  const partners = await Partnership.find({ seller: view.seller.id, status: "active" }, { buyer: 1 }).lean();
+  await Promise.all(
+    partners.map((p) =>
+      notify(p.buyer, "partnerSale", { seller: view.seller.name, product: view.name, percent: sale.percent, price: sale.price, until: saleDay(sale.until) }, `/catalog/${view.id}`),
+    ),
+  );
 }
 
 /** Faqat egasi o'zgartira oladi. Topilmasa yoki egasi boshqa bo'lsa — null. */
 export async function updateProduct(sellerId: string, id: string, input: ProductInput): Promise<ProductView | null> {
   if (!isValidObjectId(id)) return null;
   await connectDb();
+  const prev = await Product.findOne({ _id: id, seller: sellerId, active: true }).lean<ProductDoc>();
+  if (!prev) return null;
   const doc = await Product.findOneAndUpdate({ _id: id, seller: sellerId, active: true }, { $set: input }, { new: true, runValidators: true }).lean<ProductDoc>();
   if (!doc) return null;
   const [view] = await withSellers([doc]);
+  if (view) await announceSale(view, saleOf(prev));
   return view ?? null;
 }
 

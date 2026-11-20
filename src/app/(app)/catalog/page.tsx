@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ArrowLeft, Building2, Package, PackageCheck, PackageSearch, Search, ShieldAlert, X } from "lucide-react";
+import { ArrowLeft, BadgePercent, Building2, Package, PackageCheck, PackageSearch, Search, ShieldAlert, X } from "lucide-react";
 import { PageTitle } from "@/components/ui/Card";
 import Link from "next/link";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -15,7 +15,7 @@ import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import { CATEGORY_ICONS } from "@/lib/navigation";
 import { categoryCounts, getProductSeller, listCatalog, listSuppliers, type CatalogSort } from "@/server/products";
 
-type Params = { q?: string; category?: string; seller?: string; page?: string; view?: string; region?: string; sort?: string; stock?: string };
+type Params = { q?: string; category?: string; seller?: string; page?: string; view?: string; region?: string; sort?: string; stock?: string; sale?: string };
 const SORT_KEYS = ["new", "cheap", "expensive"] as const;
 const sortOf = (sp: Params): CatalogSort => (SORT_KEYS as readonly string[]).includes(sp.sort ?? "") ? (sp.sort as CatalogSort) : "new";
 
@@ -187,8 +187,9 @@ async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }
 async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary }) {
   const sort = sortOf(sp);
   const inStock = sp.stock === "1";
-  const result = await listCatalog({ q, category, page: Number(sp.page) || 1, sort, inStock });
-  const base: Params = { q, category, view: "products", sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined };
+  const onSale = sp.sale === "1";
+  const result = await listCatalog({ q, category, page: Number(sp.page) || 1, sort, inStock, onSale });
+  const base: Params = { q, category, view: "products", sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined, sale: onSale ? "1" : undefined };
   return (
     <>
       <Header title={q ? fmt(t.suppliers.resultsFor, { q }) : t.catalog.title} count={fmt(t.catalog.count, { n: result.total })} />
@@ -223,7 +224,8 @@ async function SellerProducts({ sp, q, category, t }: { sp: Params; q?: string; 
   const seller = sp.seller!;
   const sort = sortOf(sp);
   const inStock = sp.stock === "1";
-  const [result, sellerName] = await Promise.all([listCatalog({ q, category, seller, page: Number(sp.page) || 1, sort, inStock }), getProductSeller(seller)]);
+  const onSale = sp.sale === "1";
+  const [result, sellerName] = await Promise.all([listCatalog({ q, category, seller, page: Number(sp.page) || 1, sort, inStock, onSale }), getProductSeller(seller)]);
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -247,7 +249,7 @@ async function SellerProducts({ sp, q, category, t }: { sp: Params; q?: string; 
         </div>
         <PageSearch hidden={{ seller, category }} q={q} placeholder={t.suppliers.searchIn} />
       </div>
-      <ProductGrid result={result} base={{ q, category, seller, sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined }} t={t} />
+      <ProductGrid result={result} base={{ q, category, seller, sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined, sale: onSale ? "1" : undefined }} t={t} />
     </>
   );
 }
@@ -276,7 +278,11 @@ function ProductGrid({ result, base, t }: { result: Awaited<ReturnType<typeof li
             {label}
           </Link>
         ))}
-        <Link href={hrefWith(base, { stock: base.stock ? undefined : "1", page: undefined })} aria-pressed={Boolean(base.stock)} className={clsx(chip(Boolean(base.stock)), "sm:ml-auto")}>
+        <Link href={hrefWith(base, { sale: base.sale ? undefined : "1", page: undefined })} aria-pressed={Boolean(base.sale)} className={clsx(chip(Boolean(base.sale)), "sm:ml-auto")}>
+          <BadgePercent size={15} aria-hidden />
+          {t.catalog.onSaleOnly}
+        </Link>
+        <Link href={hrefWith(base, { stock: base.stock ? undefined : "1", page: undefined })} aria-pressed={Boolean(base.stock)} className={chip(Boolean(base.stock))}>
           <PackageCheck size={15} aria-hidden />
           {t.catalog.inStockOnly}
         </Link>

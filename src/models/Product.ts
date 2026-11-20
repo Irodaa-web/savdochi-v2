@@ -18,6 +18,9 @@ export interface ProductDoc {
   description: string;
   /** Rasm manzillari (Vercel Blob). */
   images: string[];
+  /** Aksiya narxi (asosiy narxdan arzon) va tugash vaqti. Muddati o'tsa avtomatik amal qilmaydi. */
+  salePrice: number | null;
+  saleUntil: Date | null;
   /** Arxivlangan mahsulot katalogda ko'rinmaydi, lekin eski buyurtmalarda qoladi. */
   active: boolean;
   createdAt: Date;
@@ -39,6 +42,8 @@ const productSchema = new Schema<ProductDoc>(
     packSize: { type: Number, default: 1, min: 1 },
     description: { type: String, default: "", maxlength: 2000 },
     images: { type: [String], default: [] },
+    salePrice: { type: Number, default: null, min: 1 },
+    saleUntil: { type: Date, default: null, index: true },
     active: { type: Boolean, default: true, index: true },
   },
   { timestamps: true },
