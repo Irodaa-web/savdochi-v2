@@ -160,7 +160,7 @@ export function GlobalSearch({ className }: { className?: string }) {
             aria-activedescendant={options[active] ? `${listId}-${options[active].key}` : undefined}
             autoComplete="off"
             enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent text-[14px] text-text outline-none placeholder:text-muted focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
+            className="min-w-0 flex-1 bg-transparent text-[14px] text-text outline-none placeholder:text-muted focus-none [&::-webkit-search-cancel-button]:hidden"
           />
           {q && (
             <button
