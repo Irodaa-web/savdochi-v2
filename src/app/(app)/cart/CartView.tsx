@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { AlertTriangle, BadgeCheck, Minus, Package, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { ProductImage } from "@/components/catalog/ProductImage";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LocationField, type Point } from "@/components/orders/LocationField";
@@ -119,8 +120,7 @@ function CartRow({ line, unit }: { line: CartLine; unit: string }) {
   return (
     <li className="flex flex-wrap items-center gap-3 px-4 py-3">
       <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-2 text-muted/60">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {line.image ? <img src={line.image} alt="" className="size-full object-cover" /> : <Package size={22} aria-hidden />}
+        {line.image ? <ProductImage src={line.image} name={line.name} sizes="56px" className="size-full" /> : <Package size={22} aria-hidden />}
       </div>
       <div className="min-w-0 flex-1">
         <Link href={`/catalog/${line.productId}`} className="font-semibold hover:text-accent">

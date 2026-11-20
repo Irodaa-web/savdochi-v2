@@ -71,7 +71,9 @@ async function withSellers(products: ProductDoc[]): Promise<ProductView[]> {
   return products.map((p) => toView(p, byId.get(String(p.seller))));
 }
 
-export type CatalogQuery = { q?: string; category?: CategoryCode; seller?: string; page?: number; ids?: string[] };
+export type CatalogSort = "new" | "cheap" | "expensive";
+export type CatalogQuery = { q?: string; category?: CategoryCode; seller?: string; page?: number; ids?: string[]; sort?: CatalogSort; inStock?: boolean };
+const SORTS: Record<CatalogSort, Record<string, 1 | -1>> = { new: { createdAt: -1 }, cheap: { price: 1, createdAt: -1 }, expensive: { price: -1, createdAt: -1 } };
 export const PAGE_SIZE = 24;
 
 /** Katalog: faqat faol mahsulotlar, bloklanmagan sotuvchilardan. */
@@ -86,13 +88,15 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 80);
     filter.name = { $regex: escaped, $options: "i" };
   }
+  // Faqat mavjudlari: qoldiq kamida bitta minimal buyurtmaga yetadi.
+  if (query.inStock) filter.$expr = { $gte: ["$stock", "$minOrder"] };
   const hidden = await hiddenSellers();
   if (hidden.length) filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $nin: hidden };
 
   const page = Math.max(1, query.page ?? 1);
   const [docs, total] = await Promise.all([
     Product.find(filter)
-      .sort({ createdAt: -1 })
+      .sort(SORTS[query.sort ?? "new"])
       .skip((page - 1) * PAGE_SIZE)
       .limit(PAGE_SIZE)
       .lean<ProductDoc[]>(),

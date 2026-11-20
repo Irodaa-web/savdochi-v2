@@ -12,6 +12,7 @@ import {
   CupSoda,
   FileSpreadsheet,
   Heart,
+  Home,
   LayoutDashboard,
   LayoutGrid,
   List,
@@ -154,6 +155,70 @@ export const mainNav: Record<Role, NavItem[]> = {
           title: (t) => t.navMenu.people,
           links: [{ href: "/partners", Icon: Users, label: (t) => t.nav.clients, hint: (t) => t.navMenu.clientsHint }, debts, chat],
         },
+      ],
+    },
+  ],
+};
+
+/** Sidebar bandi: belgi, nom, raqamli belgi (savat/chat/buyurtmalar) va ochiladigan ichki sahifalar. */
+export type SideItem = { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; badge?: "cart" | "chats" | "orders"; children?: NavLink[] };
+export type SideGroup = { title: (t: Dictionary) => string; items: SideItem[] };
+
+const menuLinks = (role: Role, href: string): NavLink[] => mainNav[role].find((i) => i.href === href)?.menu?.flatMap((s) => s.links) ?? [];
+
+/**
+ * Sidebar: barcha bo'limlar guruhlarga ajratilgan — foydalanuvchi platformaning hamma imkoniyatini bir joyda ko'radi.
+ * Ichki sahifalar yuqori menyudagi bilan bir xil (mainNav), shuning uchun ro'yxat bitta joyda yuritiladi.
+ */
+export const sidebarNav: Record<Role, SideGroup[]> = {
+  seller: [
+    {
+      title: (t) => t.navMenu.groupMain,
+      items: [
+        { href: "/dashboard", Icon: LayoutDashboard, label: (t) => t.nav.dashboard, children: menuLinks("seller", "/dashboard").filter((l) => l.href.startsWith("/dashboard")) },
+        { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders", children: orderStatuses.links },
+        { href: "/products", Icon: Package, label: (t) => t.nav.products, children: menuLinks("seller", "/products") },
+      ],
+    },
+    {
+      title: (t) => t.navMenu.groupClients,
+      items: [
+        { href: "/partners", Icon: Users, label: (t) => t.nav.clients },
+        { href: "/debts", Icon: Wallet, label: (t) => t.header.debts },
+        { href: "/profile#online-pay", Icon: CreditCard, label: (t) => t.header.payments },
+      ],
+    },
+    {
+      title: (t) => t.navMenu.groupMarket,
+      items: [
+        { href: "/catalog", Icon: LayoutGrid, label: (t) => t.nav.catalog },
+        { href: "/chat", Icon: MessageSquare, label: (t) => t.nav.chat, badge: "chats" },
+      ],
+    },
+  ],
+  buyer: [
+    {
+      title: (t) => t.navMenu.groupMain,
+      items: [
+        { href: "/", Icon: Home, label: (t) => t.nav.dashboard },
+        { href: "/catalog", Icon: LayoutGrid, label: (t) => t.nav.catalog, children: menuLinks("buyer", "/catalog").filter((l) => l.href !== "/favorites") },
+        { href: "/cart", Icon: ShoppingCart, label: (t) => t.nav.cart, badge: "cart" },
+        { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders", children: orderStatuses.links },
+      ],
+    },
+    {
+      title: (t) => t.navMenu.groupStock,
+      items: [
+        { href: "/stock", Icon: Warehouse, label: (t) => t.nav.stock },
+        { href: "/debts", Icon: Wallet, label: (t) => t.header.debts },
+        { href: "/favorites", Icon: Heart, label: (t) => t.favorites.title },
+      ],
+    },
+    {
+      title: (t) => t.navMenu.groupContact,
+      items: [
+        { href: "/partners", Icon: Users, label: (t) => t.nav.partners },
+        { href: "/chat", Icon: MessageSquare, label: (t) => t.nav.chat, badge: "chats" },
       ],
     },
   ],

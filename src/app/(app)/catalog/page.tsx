@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ArrowLeft, Building2, Package, PackageSearch, Search, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Building2, Package, PackageCheck, PackageSearch, Search, ShieldAlert, X } from "lucide-react";
 import { PageTitle } from "@/components/ui/Card";
 import Link from "next/link";
 import { ProductCard } from "@/components/catalog/ProductCard";
@@ -13,9 +13,11 @@ import { requireUser } from "@/lib/auth/guard";
 import { CATEGORY_CODES, type CategoryCode } from "@/lib/catalog";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import { CATEGORY_ICONS } from "@/lib/navigation";
-import { categoryCounts, getProductSeller, listCatalog, listSuppliers } from "@/server/products";
+import { categoryCounts, getProductSeller, listCatalog, listSuppliers, type CatalogSort } from "@/server/products";
 
-type Params = { q?: string; category?: string; seller?: string; page?: string; view?: string; region?: string };
+type Params = { q?: string; category?: string; seller?: string; page?: string; view?: string; region?: string; sort?: string; stock?: string };
+const SORT_KEYS = ["new", "cheap", "expensive"] as const;
+const sortOf = (sp: Params): CatalogSort => (SORT_KEYS as readonly string[]).includes(sp.sort ?? "") ? (sp.sort as CatalogSort) : "new";
 
 function hrefWith(current: Params, patch: Partial<Params>): string {
   const params = new URLSearchParams();
@@ -81,7 +83,20 @@ function ViewSwitch({ view, q, t }: { view: "companies" | "products"; q?: string
   );
 }
 
-/** Sahifa ichidagi qidiruv (telefonda; kompyuterda yuqoridagi qidiruv bor). */
+/** Joriy qidiruv so'zi — × bosilsa so'zsiz ro'yxatga qaytadi. Qidirish o'zi yuqoridagi yagona maydonda. */
+function QueryChip({ q, href, t }: { q: string; href: string; t: Dictionary }) {
+  return (
+    <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-accent/30 bg-accent-soft pr-1 pl-3 text-[13px] font-medium text-accent">
+      <Search size={14} aria-hidden />
+      <span className="max-w-[14rem] truncate">«{q}»</span>
+      <Link href={href} aria-label={t.search.clear} title={t.search.clear} className="flex size-7 items-center justify-center rounded-full hover:bg-accent hover:text-accent-fg">
+        <X size={14} aria-hidden />
+      </Link>
+    </span>
+  );
+}
+
+/** Bitta kompaniya ichida qidiruv. */
 function PageSearch({ hidden, placeholder, q, className }: { hidden: Record<string, string | undefined>; placeholder: string; q?: string; className?: string }) {
   return (
     <form action="/catalog" role="search" className={clsx("w-full sm:w-80", className)}>
@@ -109,12 +124,12 @@ async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }
   return (
     <>
       <Header title={q ? fmt(t.suppliers.resultsFor, { q }) : t.catalog.title} count={fmt(t.suppliers.count, { n: suppliers.length })}>
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-          <PageSearch hidden={{ region }} q={q} placeholder={t.header.search} className="min-w-0 flex-1 sm:flex-none lg:hidden" />
-          <RegionFilter value={region ?? ""} q={q} base="/catalog" />
-        </div>
+        <RegionFilter value={region ?? ""} q={q} base="/catalog" />
       </Header>
-      <ViewSwitch view="companies" q={q} t={t} />
+      <div className="flex flex-wrap items-center gap-2">
+        <ViewSwitch view="companies" q={q} t={t} />
+        {q && <QueryChip q={q} href={hrefWith({ region }, {})} t={t} />}
+      </div>
       {suppliers.length ? (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {suppliers.map((s) => (
@@ -170,14 +185,17 @@ async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }
 }
 
 async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary }) {
-  const result = await listCatalog({ q, category, page: Number(sp.page) || 1 });
-  const base: Params = { q, category, view: "products" };
+  const sort = sortOf(sp);
+  const inStock = sp.stock === "1";
+  const result = await listCatalog({ q, category, page: Number(sp.page) || 1, sort, inStock });
+  const base: Params = { q, category, view: "products", sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined };
   return (
     <>
-      <Header title={t.catalog.title} count={fmt(t.catalog.count, { n: result.total })}>
-        <PageSearch hidden={{ view: "products", category }} q={q} placeholder={t.header.searchProducts} className="lg:hidden" />
-      </Header>
-      <ViewSwitch view="products" q={q} t={t} />
+      <Header title={q ? fmt(t.suppliers.resultsFor, { q }) : t.catalog.title} count={fmt(t.catalog.count, { n: result.total })} />
+      <div className="flex flex-wrap items-center gap-2">
+        <ViewSwitch view="products" q={q} t={t} />
+        {q && <QueryChip q={q} href={hrefWith({ ...base, q: undefined }, {})} t={t} />}
+      </div>
       <nav aria-label={t.catalog.title} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
         {[undefined, ...CATEGORY_CODES].map((code) => {
           const active = code === category;
@@ -203,7 +221,9 @@ async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; cat
 
 async function SellerProducts({ sp, q, category, t }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary }) {
   const seller = sp.seller!;
-  const [result, sellerName] = await Promise.all([listCatalog({ q, category, seller, page: Number(sp.page) || 1 }), getProductSeller(seller)]);
+  const sort = sortOf(sp);
+  const inStock = sp.stock === "1";
+  const [result, sellerName] = await Promise.all([listCatalog({ q, category, seller, page: Number(sp.page) || 1, sort, inStock }), getProductSeller(seller)]);
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -227,19 +247,45 @@ async function SellerProducts({ sp, q, category, t }: { sp: Params; q?: string; 
         </div>
         <PageSearch hidden={{ seller, category }} q={q} placeholder={t.suppliers.searchIn} />
       </div>
-      <ProductGrid result={result} base={{ q, category, seller }} t={t} />
+      <ProductGrid result={result} base={{ q, category, seller, sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined }} t={t} />
     </>
   );
 }
 
 function ProductGrid({ result, base, t }: { result: Awaited<ReturnType<typeof listCatalog>>; base: Params; t: Dictionary }) {
   const { items, page, pages } = result;
+  const sort = base.sort ?? "new";
+  const chip = (active: boolean) =>
+    clsx(
+      "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium whitespace-nowrap transition-colors",
+      active ? "border-accent bg-accent-soft text-accent" : "border-line bg-[var(--c-glass-strong)] text-text hover:border-accent/40 hover:text-accent",
+    );
   return (
     <>
+      {/* Saralash va "faqat mavjudlari" — sahifalash va kategoriya tanlovida saqlanadi. */}
+      <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+        <span className="shrink-0 text-[13px] text-muted">{t.catalog.sortLabel}:</span>
+        {(
+          [
+            ["new", t.catalog.sortNew],
+            ["cheap", t.catalog.sortCheap],
+            ["expensive", t.catalog.sortExpensive],
+          ] as const
+        ).map(([key, label]) => (
+          <Link key={key} href={hrefWith(base, { sort: key === "new" ? undefined : key, page: undefined })} aria-current={sort === key ? "true" : undefined} className={chip(sort === key)}>
+            {label}
+          </Link>
+        ))}
+        <Link href={hrefWith(base, { stock: base.stock ? undefined : "1", page: undefined })} aria-pressed={Boolean(base.stock)} className={clsx(chip(Boolean(base.stock)), "sm:ml-auto")}>
+          <PackageCheck size={15} aria-hidden />
+          {t.catalog.inStockOnly}
+        </Link>
+      </div>
       {items.length ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(210px,1fr))] sm:gap-4">
-          {items.map((p) => (
-            <ProductCard key={p.id} product={p} t={t} />
+          {items.map((p, i) => (
+            // Birinchi qator rasmlari kechiktirilmaydi — sahifa tezroq "to'ladi" ko'rinadi.
+            <ProductCard key={p.id} product={p} t={t} priority={i < 2} />
           ))}
         </div>
       ) : (

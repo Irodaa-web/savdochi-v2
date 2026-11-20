@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ClipboardList, Search } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Search } from "lucide-react";
 import Link from "next/link";
 import { PaymentPill, StatusPill } from "@/components/orders/StatusPill";
 import { PageTitle, Pill, Stat } from "@/components/ui/Card";
@@ -38,6 +38,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     <section className="flex flex-col gap-5">
       <PageTitle
         action={
+          <>
           <form method="get" role="search" className="flex w-full gap-2 sm:w-auto">
             {filter !== "all" && <input type="hidden" name="status" value={filter} />}
             <label className="relative flex-1 sm:w-72">
@@ -49,6 +50,15 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               {t.orders.search}
             </button>
           </form>
+          <a
+            href={`/api/v1/orders/export${href(filter).replace("/orders", "")}`}
+            download
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 text-[14px] font-semibold text-accent hover:bg-surface-2"
+          >
+            <FileSpreadsheet size={16} aria-hidden />
+            {t.orders.export}
+          </a>
+          </>
         }
       >
         {t.nav.orders}

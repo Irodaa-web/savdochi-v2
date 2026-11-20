@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { fmt } from "@/i18n/format";
 import { PRODUCT_ANGLES, PRODUCT_IMAGES } from "@/lib/catalog";
+import { compressImage } from "@/lib/compressImage";
 
 /**
  * Mahsulot rasmlari — 4 tomondan: oldi, orqasi, yoni, yuqoridan.
@@ -41,7 +42,8 @@ export function ImagesField({ value, onChange }: { value: string[]; onChange: (v
       const index = order[k]!;
       setBusy(index);
       const body = new FormData();
-      body.append("file", file);
+      // Telefon surati brauzerda kichraytiriladi: tez yuklanadi va 4 MB chegarasidan oshmaydi.
+      body.append("file", await compressImage(file));
       const res = await fetch("/api/v1/uploads", { method: "POST", body })
         .then((r) => r.json())
         .catch(() => null);
