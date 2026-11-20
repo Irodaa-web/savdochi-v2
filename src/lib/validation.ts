@@ -206,6 +206,17 @@ export const bulkCartSchema = z.object({
     .max(100),
 });
 
+export const orderListCreateSchema = z.object({
+  orderId: z.string().min(1).max(40),
+  name: z.string().trim().max(80).default(""),
+  listId: z.string().max(40).optional(),
+}).refine((v) => v.listId || v.name.length >= 2, { path: ["name"], message: "listNameShort" });
+
+export const orderListUpdateSchema = z.object({
+  name: z.string().trim().min(2, "listNameShort").max(80).optional(),
+  items: z.array(z.object({ productId: z.string().min(1).max(40), quantity: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(1_000_000) })).max(100).optional(),
+});
+
 export const messageSchema = z.object({
   text: z.string().trim().min(1, "messageEmpty").max(2000),
   orderId: z.string().optional(),
