@@ -23,6 +23,8 @@ export default async function PartnersPage() {
   const locale = await getLocale();
   const t = getDictionary(locale);
   const isSeller = user.role === "seller";
+  // Agent shartlarni (chegirma, nasiya) o'zgartira olmaydi.
+  const canTerms = isSeller && user.staff?.role !== "agent";
   const [all, debts] = await Promise.all([listPartners(user), listDebts(user)]);
   const incoming = all.filter((p) => p.incoming);
   const rest = all.filter((p) => !p.incoming);
@@ -118,7 +120,7 @@ export default async function PartnersPage() {
                     {p.terms}
                   </p>
                 )}
-                {p.status === "active" && isSeller && <PartnerTerms id={p.id} discount={p.discount} terms={p.terms} creditLimit={p.creditLimit} paymentDays={p.paymentDays} />}
+                {p.status === "active" && canTerms && <PartnerTerms id={p.id} discount={p.discount} terms={p.terms} creditLimit={p.creditLimit} paymentDays={p.paymentDays} />}
                 {p.status === "active" && !isSeller && (
                   <ActionButton path={`/api/v1/partnerships/${p.id}`} method="PATCH" body={{ action: "update", shareStock: !p.shareStock }} variant="ghost" className="w-fit px-2">
                     {p.shareStock ? t.partners.stopSharing : t.partners.startSharing}

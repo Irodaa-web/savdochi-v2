@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { ChevronDown, CircleHelp, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldCheck, UserRound, X, type LucideIcon } from "lucide-react";
+import { ChevronDown, CircleHelp, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldCheck, UserRound, UsersRound, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { Logo } from "@/components/ui/Logo";
 import { fmt, useI18n } from "@/i18n/client";
 import type { SessionUser } from "@/lib/auth/session";
 import { homePath, sidebarNav, type SideItem } from "@/lib/navigation";
+import { staffHome, staffPageAllowed } from "@/lib/staff";
 import { LogoutButton } from "./LogoutButton";
 import { useShell } from "./Shell";
 import { useBadges } from "./useBadges";
@@ -31,13 +32,20 @@ export function AppSidebar({ user }: { user: SessionUser }) {
   const mini = collapsed;
 
   const footer: { href: string; Icon: LucideIcon; label: string }[] = [
-    { href: "/profile", Icon: UserRound, label: t.header.profile },
+    ...(user.staff ? [] : [{ href: "/profile", Icon: UserRound, label: t.header.profile }]),
+    ...(user.role === "seller" && !user.staff ? [{ href: "/staff", Icon: UsersRound, label: t.navMenu.staff }] : []),
     { href: "/settings", Icon: Settings, label: t.header.settings },
     { href: "/help", Icon: CircleHelp, label: t.header.help },
     ...(user.isAdmin ? [{ href: "/admin", Icon: ShieldCheck, label: t.admin.title }] : []),
   ];
+
   // Tezkor amal faqat kompaniyada (do'kon uchun savat ro'yxatning o'zida, belgi bilan).
-  const quick = user.role === "seller" ? { href: "/products/new", Icon: Plus, label: t.products.add } : null;
+  const quick = user.role === "seller" && (!user.staff || user.staff.role === "manager") ? { href: "/products/new", Icon: Plus, label: t.products.add } : null;
+  // Xodim: faqat roliga ochiq bo'limlar (ichki sahifalari bilan).
+  const can = (href: string) => !user.staff || staffPageAllowed(user.staff.role, href.split(/[?#]/)[0]!);
+  const groups = sidebarNav[user.role]
+    .map((g) => ({ ...g, items: g.items.filter((i) => can(i.href)).map((i) => ({ ...i, children: i.children?.filter((c) => can(c.href)) })) }))
+    .filter((g) => g.items.length);
 
   return (
     <>
@@ -58,7 +66,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
       >
         {/* Logotip va yig'ish tugmasi */}
         <div className={clsx("flex h-16 shrink-0 items-center gap-2 border-b border-line/70 px-4", mini && "lg:justify-center lg:px-2")}>
-          <Link href={homePath[user.role]} aria-label="Savdochi" className={clsx("min-w-0 flex-1", mini && "lg:flex-none")}>
+          <Link href={user.staff ? staffHome[user.staff.role] : homePath[user.role]} aria-label="Savdochi" className={clsx("min-w-0 flex-1", mini && "lg:flex-none")}>
             <span className={clsx(mini && "lg:hidden")}>
               <Logo />
             </span>
@@ -93,7 +101,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
           </Link>
           )}
 
-          {sidebarNav[user.role].map((group) => (
+          {groups.map((group) => (
             <div key={group.title(t)} className="flex flex-col gap-0.5">
               <p className={clsx("px-3 pb-1 text-[11px] font-semibold tracking-wider text-muted uppercase", mini && "lg:sr-only")}>{group.title(t)}</p>
               {mini && <span aria-hidden className="mx-auto mb-1 hidden h-px w-8 bg-line lg:block" />}

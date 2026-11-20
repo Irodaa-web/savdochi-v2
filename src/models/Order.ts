@@ -16,11 +16,14 @@ export interface OrderEvent {
   status: OrderStatus;
   by: "buyer" | "seller" | "system";
   at: Date;
+  /** Kompaniya xodimi bajargan bo'lsa — uning ismi va roli. */
+  staff?: { name: string; role: string } | null;
 }
 
 /** Kompaniya tasdiqlashdan oldin buyurtmani o'zgartirgani: qaysi qator, qanchadan qanchaga. */
 export interface OrderChange {
   at: Date;
+  staff?: { name: string; role: string } | null;
   reason: string;
   lines: { name: string; unit: string; from: number; to: number }[];
   totalBefore: number;
@@ -75,6 +78,7 @@ const itemSchema = new Schema<OrderItem>(
 const changeSchema = new Schema<OrderChange>(
   {
     at: Date,
+    staff: { type: { _id: false, name: String, role: String }, default: null },
     reason: { type: String, default: "", maxlength: 300 },
     lines: [{ _id: false, name: String, unit: String, from: Number, to: Number }],
     totalBefore: Number,
@@ -83,7 +87,7 @@ const changeSchema = new Schema<OrderChange>(
   { _id: false },
 );
 
-const eventSchema = new Schema<OrderEvent>({ status: { type: String, enum: ORDER_STATUSES }, by: String, at: Date }, { _id: false });
+const eventSchema = new Schema<OrderEvent>({ status: { type: String, enum: ORDER_STATUSES }, by: String, at: Date, staff: { type: { _id: false, name: String, role: String }, default: null } }, { _id: false });
 
 const schema = new Schema<OrderDoc>(
   {

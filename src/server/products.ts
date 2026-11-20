@@ -1,5 +1,6 @@
 import "server-only";
 import { isValidObjectId, Types, type FilterQuery } from "mongoose";
+import { AppError } from "@/lib/api";
 import { connectDb } from "@/lib/db";
 import { activeSalePrice, CATEGORY_CODES, saleDay, salePercent, type CategoryCode, type PriceTier, type UnitCode } from "@/lib/catalog";
 import type { RegionCode } from "@/lib/regions";
@@ -166,6 +167,15 @@ async function announceSale(view: ProductView, before: ProductView["sale"]): Pro
       notify(p.buyer, "partnerSale", { seller: view.seller.name, product: view.name, percent: sale.percent, price: sale.price, until: saleDay(sale.until) }, `/catalog/${view.id}`),
     ),
   );
+}
+
+/** Faqat qoldiqni yangilash (omborchi). */
+export async function setProductStock(sellerId: string, id: string, stock: number): Promise<{ stock: number }> {
+  if (!isValidObjectId(id)) throw new AppError("NOT_FOUND");
+  await connectDb();
+  const res = await Product.updateOne({ _id: id, seller: sellerId, active: true }, { $set: { stock } });
+  if (!res.matchedCount) throw new AppError("NOT_FOUND");
+  return { stock };
 }
 
 /** Faqat egasi o'zgartira oladi. Topilmasa yoki egasi boshqa bo'lsa — null. */

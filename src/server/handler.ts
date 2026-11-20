@@ -1,4 +1,5 @@
 import "server-only";
+import { staffApiAllowed } from "@/lib/staff";
 import type { z } from "zod";
 import { AppError, clientIp, fail, readJson } from "@/lib/api";
 import { fieldErrors } from "@/lib/validation";
@@ -17,6 +18,8 @@ export function withUser<Ctx>(role: Role | "admin" | null, handler: (user: Sessi
       const user = await getSessionUser();
       if (!user) return fail("UNAUTHORIZED");
       if (role === "admin" ? !user.isAdmin : role && user.role !== role) return fail("FORBIDDEN");
+      // Kompaniya xodimi: faqat roliga ochiq API (lib/staff — qolgani yopiq).
+      if (user.staff && !staffApiAllowed(user.staff.role, new URL(request.url).pathname, request.method)) return fail("FORBIDDEN");
       return await handler(user, request, ctx);
     } catch (error) {
       if (error instanceof AppError) return fail(error.code, error.fields);

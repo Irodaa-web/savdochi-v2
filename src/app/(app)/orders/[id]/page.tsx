@@ -11,6 +11,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
 import { formatPhone } from "@/lib/phone";
 import { canEdit, getOrder } from "@/server/orders";
+import type { StaffRole } from "@/lib/staff";
 import { reviewForOrder } from "@/server/reviews";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { Stars } from "@/components/reviews/Stars";
@@ -35,6 +36,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const canPay = user.role === "buyer" && o.status !== "cancelled" && left > 0 && o.creditApproval !== "pending";
   const payMethods = canPay ? await sellerOnlineMethods(o.seller.id) : [];
   const isSeller = user.role === "seller";
+  const staffRole = user.staff?.role ?? null;
+  // Omborchi narx va summalarni ko'rmaydi; buyurtmani tahrirlash — ega va menejer.
+  const showMoney = staffRole !== "warehouse";
+  const canManage = !staffRole || staffRole === "manager";
   const partner = isSeller ? o.buyer : o.seller;
   const units = t.units as Record<string, string>;
   const d = o.delivery;
@@ -58,10 +63,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         <h1 className="text-2xl font-bold tracking-tight">{fmt(t.orders.title, { n: o.number })}</h1>
         <StatusPill status={o.status} t={t} />
         <PaymentPill status={o.paymentStatus} t={t} />
-        <Link href={`/print/invoice/${o.id}`} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[14px] font-semibold hover:bg-surface-2">
+        {showMoney && <Link href={`/print/invoice/${o.id}`} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-[14px] font-semibold hover:bg-surface-2">
           <FileText size={16} aria-hidden />
           {t.docs.invoice}
-        </Link>
+        </Link>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -72,8 +77,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                 <tr className="border-b border-line text-[13px] text-muted">
                   <th className="px-4 py-3 font-medium">{t.products.colName}</th>
                   <th className="px-3 py-3 text-right font-medium">{t.cart.quantity}</th>
-                  <th className="hidden px-3 py-3 text-right font-medium sm:table-cell">{t.products.colPrice}</th>
-                  <th className="px-4 py-3 text-right font-medium">{t.cart.total}</th>
+                  {showMoney && <th className="hidden px-3 py-3 text-right font-medium sm:table-cell">{t.products.colPrice}</th>}
+                  {showMoney && <th className="px-4 py-3 text-right font-medium">{t.cart.total}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -87,13 +92,13 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                     <td className="px-3 py-3 text-right tabular-nums">
                       {i.quantity} {units[i.unit] ?? i.unit}
                     </td>
-                    <td className="hidden px-3 py-3 text-right tabular-nums sm:table-cell">{formatAmount(i.unitPrice)}</td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums">{formatAmount(i.total)}</td>
+                    {showMoney && <td className="hidden px-3 py-3 text-right tabular-nums sm:table-cell">{formatAmount(i.unitPrice)}</td>}
+                    {showMoney && <td className="px-4 py-3 text-right font-semibold tabular-nums">{formatAmount(i.total)}</td>}
                   </tr>
                 ))}
               </tbody>
             </table>
-            <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t border-line px-4 py-3 text-[14px]">
+            {showMoney && <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t border-line px-4 py-3 text-[14px]">
               <dt className="text-muted">{t.cart.subtotal}</dt>
               <dd className="text-right tabular-nums">{formatAmount(o.subtotal)}</dd>
               {o.discount > 0 && (
@@ -114,7 +119,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   <dd className="text-right tabular-nums">{formatAmount(o.paidAmount)}</dd>
                 </>
               )}
-            </dl>
+            </dl>}
           </Card>
 
           {o.status === "delivered" && user.role === "buyer" && (
@@ -141,7 +146,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
               </h2>
               {o.changes.map((c, i) => (
                 <div key={i} className="flex flex-col gap-1.5 rounded-xl border border-line bg-surface-2/50 p-3 text-[14px]">
-                  <span className="text-[12px] text-muted">{formatDateTime(c.at, locale)}</span>
+                  <span className="text-[12px] text-muted">
+                    {formatDateTime(c.at, locale)}
+                    {c.staff && isSeller && <> · {c.staff.name} ({t.staff.roles[c.staff.role as StaffRole] ?? c.staff.role})</>}
+                  </span>
                   <ul className="flex flex-col gap-0.5">
                     {c.lines.map((l) => (
                       <li key={l.name}>
@@ -156,7 +164,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                       </li>
                     ))}
                   </ul>
-                  <span className="text-[13px] font-medium tabular-nums">{fmt(t.orderEdit.changeTotal, { before: formatAmount(c.totalBefore), after: formatAmount(c.totalAfter) })}</span>
+                  {showMoney && <span className="text-[13px] font-medium tabular-nums">{fmt(t.orderEdit.changeTotal, { before: formatAmount(c.totalBefore), after: formatAmount(c.totalAfter) })}</span>}
                   {c.reason && <p className="rounded-lg bg-surface px-3 py-2 text-[13px] whitespace-pre-line">{c.reason}</p>}
                 </div>
               ))}
@@ -171,6 +179,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
                   <span className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" aria-hidden />
                   <span>
                     <b>{t.orderStatus[h.status]}</b> · <span className="text-muted">{formatDateTime(h.at, locale)}</span>
+                    {h.staff && isSeller && <span className="text-muted"> · {h.staff.name} ({t.staff.roles[h.staff.role as StaffRole] ?? h.staff.role})</span>}
                   </span>
                 </li>
               ))}
@@ -181,8 +190,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         <aside className="flex flex-col gap-4">
           <Card className="flex flex-col gap-3">
             {canPay && <PayOnline orderId={o.id} left={left} methods={payMethods} />}
-            {isSeller && canEdit(o) && <EditOrder orderId={o.id} items={o.items} discountPercent={o.discountPercent} deliveryFee={o.deliveryFee} />}
-            <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} />
+            {isSeller && canManage && canEdit(o) && <EditOrder orderId={o.id} items={o.items} discountPercent={o.discountPercent} deliveryFee={o.deliveryFee} />}
+            <OrderActions id={o.id} role={user.role} status={o.status} creditPending={o.creditApproval === "pending"} paymentStatus={o.paymentStatus} paidAmount={o.paidAmount} total={o.total} deliveryDate={d.date} staffRole={staffRole} />
             {user.role === "buyer" && <ReorderButton items={o.items.map((i) => ({ productId: i.productId, quantity: i.quantity }))} />}
             {user.role === "buyer" && <SaveAsList orderId={o.id} defaultName={fmt(t.lists.defaultName, { seller: o.seller.name })} lists={lists.map((l) => ({ id: l.id, name: l.name }))} />}
           </Card>
@@ -192,7 +201,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
             <Link href={isSeller ? `/partners/${partner.id}` : `/suppliers/${partner.id}`} className="font-semibold hover:text-accent">
               {partner.name}
             </Link>
-            <StartChatButton partnerId={partner.id} className="mt-1" />
+            {staffRole !== "warehouse" && <StartChatButton partnerId={partner.id} className="mt-1" />}
           </Card>
 
           <Card className="flex flex-col gap-2 text-[14px]">

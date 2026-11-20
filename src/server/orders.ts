@@ -3,6 +3,7 @@ import { isValidObjectId, Types, type ClientSession, type FilterQuery } from "mo
 import { AppError } from "@/lib/api";
 import type { SessionUser } from "@/lib/auth/session";
 import { connectDb, withTransaction } from "@/lib/db";
+import { WAREHOUSE_STATUSES } from "@/lib/staff";
 import { ORDER_TRANSITIONS, type DeliveryMethod, type OrderStatus, type PaymentMethod, type PaymentStatus } from "@/lib/orders";
 import type { RegionCode } from "@/lib/regions";
 import type { CheckoutInput } from "@/lib/validation";
@@ -34,11 +35,11 @@ export type OrderView = {
   paidAmount: number;
   delivery: { method: DeliveryMethod; phone: string; region: RegionCode; address: string; lat: number | null; lng: number | null; date: string | null };
   comment: string;
-  history: { status: OrderStatus; by: string; at: string }[];
+  history: { status: OrderStatus; by: string; at: string; staff: { name: string; role: string } | null }[];
   dueDate: string | null;
   creditApproval: "pending" | "approved" | "rejected" | null;
   creditOver: number;
-  changes: { at: string; reason: string; lines: { name: string; unit: string; from: number; to: number }[]; totalBefore: number; totalAfter: number }[];
+  changes: { at: string; staff: { name: string; role: string } | null; reason: string; lines: { name: string; unit: string; from: number; to: number }[]; totalBefore: number; totalAfter: number }[];
   createdAt: string;
 };
 
@@ -67,11 +68,11 @@ async function toViews(docs: OrderDoc[]): Promise<OrderView[]> {
     paidAmount: d.paidAmount,
     delivery: { ...d.delivery, method: d.delivery.method ?? "delivery", date: d.delivery.date ? new Date(d.delivery.date).toISOString() : null },
     comment: d.comment,
-    history: (d.history ?? []).map((h) => ({ status: h.status, by: h.by, at: new Date(h.at).toISOString() })),
+    history: (d.history ?? []).map((h) => ({ status: h.status, by: h.by, at: new Date(h.at).toISOString(), staff: h.staff?.name ? { name: h.staff.name, role: h.staff.role } : null })),
     dueDate: d.dueDate ? new Date(d.dueDate).toISOString() : null,
     creditApproval: d.creditApproval ?? null,
     creditOver: d.creditOver ?? 0,
-    changes: (d.changes ?? []).map((c) => ({ at: new Date(c.at).toISOString(), reason: c.reason ?? "", lines: c.lines ?? [], totalBefore: c.totalBefore, totalAfter: c.totalAfter })),
+    changes: (d.changes ?? []).map((c) => ({ at: new Date(c.at).toISOString(), staff: c.staff?.name ? { name: c.staff.name, role: c.staff.role } : null, reason: c.reason ?? "", lines: c.lines ?? [], totalBefore: c.totalBefore, totalAfter: c.totalAfter })),
     createdAt: d.createdAt.toISOString(),
   }));
 }
@@ -247,6 +248,13 @@ export async function updateOrder(
   if (!order) throw new AppError("NOT_FOUND");
   const other = side === "seller" ? order.buyer : order.seller;
   const link = `/orders/${order._id}`;
+  // Omborchi: faqat yetkazish holatlari (yo'lda / yetkazildi) va yetkazish sanasi; to'lovga tegmaydi.
+  if (user.staff?.role === "warehouse") {
+    if (input.paymentStatus !== undefined || input.paidAmount !== undefined) throw new AppError("FORBIDDEN");
+    if (input.status && !(WAREHOUSE_STATUSES as readonly string[]).includes(input.status)) throw new AppError("FORBIDDEN");
+  }
+  if (user.staff && user.staff.role === "agent") throw new AppError("FORBIDDEN");
+  const actor = user.staff ? { name: user.staff.name, role: user.staff.role } : null;
 
   if (input.status && input.status !== order.status) {
     const allowed = ORDER_TRANSITIONS[side][order.status] ?? [];
@@ -259,7 +267,7 @@ export async function updateOrder(
       // Shartli yangilash: ikki tomon bir vaqtda o'zgartirsa, faqat bittasi o'tadi.
       // Limitdan oshgan nasiya: kompaniya tasdiqlasa — oshiq summa ham ma'qullandi; bekor qilinsa — rad etildi.
       const approval = snapshot.creditApproval === "pending" ? (to === "confirmed" ? { creditApproval: "approved" } : to === "cancelled" ? { creditApproval: "rejected" } : {}) : {};
-      const res = await Order.updateOne({ _id: order._id, status: from }, { $set: { status: to, ...approval }, $push: { history: { status: to, by: side, at: new Date() } } }, { session });
+      const res = await Order.updateOne({ _id: order._id, status: from }, { $set: { status: to, ...approval }, $push: { history: { status: to, by: side, at: new Date(), staff: actor } } }, { session });
       if (res.modifiedCount !== 1) throw new AppError("INVALID_STATE");
       if (to === "cancelled") await returnStock(snapshot.items.map((i) => ({ productId: String(i.product), quantity: i.quantity })), session);
       if (to === "delivered") await addToStoreStock(snapshot, session);
@@ -326,7 +334,7 @@ export async function editOrder(user: SessionUser, id: string, input: { items: {
   // Limitdan oshgan nasiya: summa kamaysa, oshiq qism ham kamayadi; oshiq qolmasa — tasdiq kerak emas.
   const creditOver = Math.max(0, (order.creditOver ?? 0) - (order.total - total));
   const creditApproval = order.creditApproval === "pending" && creditOver === 0 ? null : order.creditApproval;
-  const change: OrderChange = { at: new Date(), reason: input.reason.trim(), lines, totalBefore: order.total, totalAfter: total };
+  const change: OrderChange = { at: new Date(), staff: user.staff ? { name: user.staff.name, role: user.staff.role } : null, reason: input.reason.trim(), lines, totalBefore: order.total, totalAfter: total };
 
   await withTransaction(async (session) => {
     // Shartli yangilash: shu orada holat yoki to'lov o'zgargan bo'lsa — rad etiladi.

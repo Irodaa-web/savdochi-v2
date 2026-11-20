@@ -1,13 +1,14 @@
 import { CircleCheck, FileSpreadsheet, FileText, ImageOff, Layers, Package, PackageX, Plus, ShoppingCart, Sparkles, TrendingUp, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { TopProductsList } from "@/components/dashboard/TopProductsList";
-import { Stat } from "@/components/ui/Card";
+import { PageTitle, Stat } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SideCard } from "@/components/ui/SideCard";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
+import { WarehouseStock } from "./WarehouseStock";
 import { formatAmount, saleDay } from "@/lib/catalog";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 import { cartStatsForSeller, listSellerProducts, type ProductView } from "@/server/products";
@@ -17,6 +18,16 @@ import { ArchiveButton } from "./ArchiveButton";
 export default async function ProductsPage() {
   const user = await requireUser("seller");
   const t = getDictionary(await getLocale());
+  // Omborchi: faqat qoldiqlarni yangilash (narx, tahrirlash va statistika ko'rinmaydi).
+  if (user.staff?.role === "warehouse") {
+    const items = await listSellerProducts(user.id);
+    return (
+      <section className="flex flex-col gap-5">
+        <PageTitle lead={t.staff.warehouseLead}>{t.nav.products}</PageTitle>
+        <WarehouseStock products={items.map((p) => ({ id: p.id, name: p.name, category: p.category, unit: p.unit, stock: p.stock, minOrder: p.minOrder }))} />
+      </section>
+    );
+  }
   const [products, carts, top] = await Promise.all([listSellerProducts(user.id), cartStatsForSeller(user.id), topSellingProducts(user.id, 30, 5)]);
   const lowCount = products.filter((p) => p.stock < p.minOrder).length;
   const stockValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);

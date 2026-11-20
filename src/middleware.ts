@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifyToken } from "@/lib/auth/token";
+import { staffHome, staffPageAllowed } from "@/lib/staff";
 
 /**
  * Ilova kabi: kirmagan foydalanuvchi faqat landing (/welcome), kirish va ro'yxatdan o'tish sahifalarini ko'radi.
@@ -26,6 +27,12 @@ export async function middleware(request: NextRequest) {
   }
   if (session && isAuthPage) {
     return NextResponse.redirect(new URL("/", request.url));
+  }
+  // Kompaniya xodimi: roliga ochiq bo'lmagan sahifa — o'z bosh sahifasiga. Bosh sahifa ham shu yerga.
+  // (Rol tokenda; rol o'zgarsa xodim sessiyasi bekor qilinadi. API alohida, bazadagi rol bo'yicha tekshiriladi.)
+  if (session?.sr) {
+    const home = staffHome[session.sr];
+    if (pathname !== home && (pathname === "/" || !staffPageAllowed(session.sr, pathname))) return NextResponse.redirect(new URL(home, request.url));
   }
   return NextResponse.next();
 }

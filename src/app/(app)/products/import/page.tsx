@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { ImportForm } from "./ImportForm";
 
 export default async function ImportProductsPage() {
-  await requireUser("seller");
+  await requireUser("seller", { staff: ["manager"] });
   const t = getDictionary(await getLocale());
   const p = t.products;
   // Ustunlar tartibi importdagi maydonlar bilan bir xil; birinchi uchtasi majburiy.

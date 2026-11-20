@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { fmt, useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
+import { WAREHOUSE_STATUSES, type StaffRole } from "@/lib/staff";
 import { ORDER_TRANSITIONS, PAYMENT_STATUSES, type OrderStatus, type PaymentStatus } from "@/lib/orders";
 
 /** Holatni o'zgartirish tugmalari (rolga qarab) va kompaniya uchun to'lovni qayd etish. */
@@ -19,6 +20,7 @@ export function OrderActions({
   paidAmount,
   total,
   deliveryDate,
+  staffRole = null,
 }: {
   id: string;
   role: "buyer" | "seller";
@@ -28,9 +30,13 @@ export function OrderActions({
   paidAmount: number;
   total: number;
   deliveryDate: string | null;
+  /** Kompaniya xodimi: omborchi — faqat yetkazish holatlari, agent — faqat ko'rish. */
+  staffRole?: StaffRole | null;
 }) {
   const { t } = useI18n();
-  const next = ORDER_TRANSITIONS[role][status] ?? [];
+  const all = ORDER_TRANSITIONS[role][status] ?? [];
+  const next = staffRole === "agent" ? [] : staffRole === "warehouse" ? all.filter((s) => (WAREHOUSE_STATUSES as readonly string[]).includes(s)) : all;
+  const money = !staffRole || staffRole === "manager";
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,7 +56,7 @@ export function OrderActions({
           ))}
         </div>
       )}
-      {role === "seller" && status !== "cancelled" && <PaymentForm id={id} paymentStatus={paymentStatus} paidAmount={paidAmount} total={total} deliveryDate={deliveryDate} />}
+      {role === "seller" && money && status !== "cancelled" && <PaymentForm id={id} paymentStatus={paymentStatus} paidAmount={paidAmount} total={total} deliveryDate={deliveryDate} />}
       {role === "buyer" && (
         <ActionButton path={`/api/v1/orders/${id}/reorder`} variant="secondary" onDone={() => (window.location.href = "/cart")}>
           {t.orders.reorder}

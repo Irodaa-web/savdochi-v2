@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { ProductForm } from "../ProductForm";
 
 export default async function NewProductPage() {
-  await requireUser("seller");
+  await requireUser("seller", { staff: ["manager"] });
   const t = getDictionary(await getLocale());
   return (
     <section className="flex flex-col gap-5">
