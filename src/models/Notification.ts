@@ -18,6 +18,7 @@ export const NOTIFICATION_TYPES = [
   "partnerSale",
   "reviewNew",
   "ticketReply",
+  "ticketNew",
   "verified",
   "inactivityWarning",
   "inactivityFinal",

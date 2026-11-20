@@ -48,6 +48,8 @@ export const registerSchema = z.object({
 
 export const smsRequestSchema = z.object({ phone, purpose: z.enum(["register", "reset"]) });
 export const passwordResetSchema = z.object({ phone, code: smsCode, password });
+/** Telegram orqali tasdiqlangan raqam: bir martalik kalit (havoladan) + yangi parol. */
+export const telegramResetSchema = z.object({ phone, key: z.string().regex(/^[A-Za-z0-9_-]{20,80}$/, "CODE_INVALID"), password });
 
 const positiveInt = (max: number) => z.coerce.number().int("numberInvalid").min(1, "numberInvalid").max(max, "numberInvalid");
 

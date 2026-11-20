@@ -7,7 +7,7 @@ import { staffHome, staffPageAllowed } from "@/lib/staff";
  * Bu yerda faqat token imzosi tekshiriladi; bloklangan hisob va hokazo
  * sahifa ichida getSessionUser() orqali tekshiriladi.
  */
-const AUTH_PAGES = ["/login", "/register", "/forgot"];
+const AUTH_PAGES = ["/login", "/register", "/forgot", "/reset-password"];
 /** Kirmaganlar uchun ochiq sahifa (landing). */
 const PUBLIC_PAGES = ["/welcome"];
 /** Hamma uchun ochiq (kirgan va kirmagan): ommaviy oferta va maxfiylik siyosati. */
