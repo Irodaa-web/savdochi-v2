@@ -3,6 +3,7 @@ import type { ClientSession } from "mongoose";
 import { isValidObjectId } from "mongoose";
 import { AppError } from "@/lib/api";
 import { activeSalePrice, unitPriceFor } from "@/lib/catalog";
+import { nextDeliveryDay, termsForRegion } from "@/lib/delivery";
 import { connectDb } from "@/lib/db";
 import type { PaymentMethod } from "@/lib/orders";
 import { Cart, type CartDoc } from "@/models/Cart";
@@ -30,7 +31,17 @@ export type CartLine = {
 
 export type CartGroup = {
   seller: { id: string; name: string; verified: boolean };
-  terms: Pick<Profile, "deliveryFee" | "minOrderTotal" | "paymentMethods" | "deliveryRegions" | "leadDays" | "pickup"> & { address: string };
+  /**
+   * deliveryFee / minOrderTotal — tanlangan viloyat uchun amaldagisi; deliveryDays/regionRules — butun jadval
+   * (do'kon buyurtma formasida boshqa viloyat tanlasa, shartlar brauzerda qayta hisoblanadi).
+   */
+  terms: Pick<Profile, "deliveryFee" | "minOrderTotal" | "paymentMethods" | "deliveryRegions" | "leadDays" | "pickup" | "deliveryDays" | "regionRules"> & {
+    address: string;
+    /** Shu viloyatga eng yaqin yetkazish kuni (YYYY-MM-DD). */
+    nextDelivery: string;
+    /** Umumiy jadval (viloyat qoidasidan oldingi) — boshqa viloyatlar uchun hisoblashda kerak. */
+    base: { deliveryFee: number; minOrderTotal: number };
+  };
   lines: CartLine[];
   subtotal: number;
   discountPercent: number;
@@ -45,9 +56,13 @@ export type CartGroup = {
 
 export type CartView = { groups: CartGroup[]; count: number };
 
-/** Savatni sotuvchilar bo'yicha guruhlab, narx va to'siqlarni hisoblaydi. */
-export async function getCart(buyerId: string): Promise<CartView> {
+/**
+ * Savatni sotuvchilar bo'yicha guruhlab, narx va to'siqlarni hisoblaydi.
+ * region — yetkazish viloyati (berilmasa — do'konning o'z viloyati): yetkazish narxi va minimal summa shunga qarab.
+ */
+export async function getCart(buyerId: string, region?: string): Promise<CartView> {
   await connectDb();
+  const where = region ?? (await User.findById(buyerId, { region: 1 }).lean())?.region;
   const cart = await Cart.findOne({ buyer: buyerId }).lean<CartDoc>();
   const items = cart?.items ?? [];
   if (!items.length) return { groups: [], count: 0 };
@@ -72,11 +87,16 @@ export async function getCart(buyerId: string): Promise<CartView> {
     let group = groups.get(sellerId);
     if (!group) {
       const profile = profileOf(seller);
+      const local = termsForRegion(profile, where);
       group = {
         seller: { id: sellerId, name: seller.name, verified: seller.verification === "verified" },
         terms: {
-          deliveryFee: profile.deliveryFee,
-          minOrderTotal: profile.minOrderTotal,
+          deliveryFee: local.fee,
+          minOrderTotal: local.minOrderTotal,
+          deliveryDays: profile.deliveryDays,
+          regionRules: profile.regionRules ?? [],
+          nextDelivery: nextDeliveryDay(local.days, profile.leadDays),
+          base: { deliveryFee: profile.deliveryFee, minOrderTotal: profile.minOrderTotal },
           paymentMethods: profile.paymentMethods.length ? profile.paymentMethods : (["cash"] as PaymentMethod[]),
           deliveryRegions: profile.deliveryRegions,
           leadDays: profile.leadDays,
@@ -87,7 +107,7 @@ export async function getCart(buyerId: string): Promise<CartView> {
         subtotal: 0,
         discountPercent: discountBy.get(sellerId) ?? 0,
         discount: 0,
-        deliveryFee: profile.deliveryFee,
+        deliveryFee: local.fee,
         total: 0,
         belowMinTotal: false,
         canOrder: true,

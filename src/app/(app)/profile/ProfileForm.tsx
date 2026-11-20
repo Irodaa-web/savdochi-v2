@@ -12,6 +12,7 @@ import { api } from "@/lib/apiClient";
 import { PROFILE_PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import type { ProfileView } from "@/server/profile";
+import { RegionRulesEditor, type RuleDraft } from "./RegionRulesEditor";
 
 function Chips<T extends string | number>({ label, options, value, onChange }: { label: string; options: { value: T; label: string }[]; value: T[]; onChange: (v: T[]) => void }) {
   return (
@@ -60,6 +61,9 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
   const [days, setDays] = useState<number[]>(p.deliveryDays);
   const [methods, setMethods] = useState<PaymentMethod[]>(p.paymentMethods);
   const [pickup, setPickup] = useState(p.pickup);
+  const [rules, setRules] = useState<RuleDraft[]>(
+    (p.regionRules ?? []).map((r) => ({ region: r.region, days: r.days, fee: r.fee == null ? "" : String(r.fee), minOrderTotal: r.minOrderTotal == null ? "" : String(r.minOrderTotal) })),
+  );
   const [point, setPoint] = useState<Point>(p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -72,7 +76,7 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
     setFields({});
     const res = await api("/api/v1/profile", {
       method: "PUT",
-      body: { ...form, pickup, deliveryRegions: regions, deliveryDays: days.sort(), paymentMethods: methods.length ? methods : ["cash"], lat: point?.lat ?? null, lng: point?.lng ?? null },
+      body: { ...form, pickup, regionRules: rules, deliveryRegions: regions, deliveryDays: days.sort(), paymentMethods: methods.length ? methods : ["cash"], lat: point?.lat ?? null, lng: point?.lng ?? null },
     });
     if (!res.ok) {
       if (res.fields) setFields(res.fields);
@@ -112,6 +116,8 @@ export function ProfileForm({ profile }: { profile: ProfileView }) {
             <TextField label={t.profile.deliveryFee} type="number" min={0} value={form.deliveryFee} onChange={set("deliveryFee")} error={fe("deliveryFee")} />
             <TextField label={t.profile.minOrderTotal} type="number" min={0} value={form.minOrderTotal} onChange={set("minOrderTotal")} error={fe("minOrderTotal")} />
           </div>
+          <RegionRulesEditor value={rules} onChange={setRules} base={{ days, fee: form.deliveryFee, minOrderTotal: form.minOrderTotal }} />
+          {fields.regionRules && <Alert>{fe("regionRules")}</Alert>}
           <Chips label={t.profile.paymentMethods} options={PROFILE_PAYMENT_METHODS.map((m) => ({ value: m, label: t.payment[m] }))} value={methods} onChange={setMethods} />
           <label className="flex cursor-pointer items-start gap-2.5 text-[14px]">
             <input type="checkbox" checked={pickup} onChange={(e) => setPickup(e.target.checked)} className="mt-0.5 size-4 accent-[var(--color-accent)]" />

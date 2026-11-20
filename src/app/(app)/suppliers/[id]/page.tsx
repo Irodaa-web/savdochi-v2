@@ -9,6 +9,7 @@ import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
+import { termsForRegion } from "@/lib/delivery";
 import { findPartnership } from "@/server/partners";
 import { getSellerHighlights, type RankedProduct } from "@/server/products";
 import { getSellerPublic } from "@/server/profile";
@@ -105,6 +106,44 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
           )}
         </Card>
       </div>
+
+      {(p.regionRules ?? []).length > 0 && (
+        <Card className="p-0">
+          <h2 className="flex items-center gap-2 px-5 pt-4 pb-3 font-semibold">
+            <CalendarDays size={17} className="text-accent" aria-hidden />
+            {t.delivery.scheduleTitle}
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] border-collapse text-left text-[14px]">
+              <thead>
+                <tr className="border-y border-line text-[13px] text-muted">
+                  <th className="px-5 py-2.5 font-medium">{t.delivery.colRegion}</th>
+                  <th className="px-3 py-2.5 font-medium">{t.delivery.colDays}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{t.delivery.colFee}</th>
+                  <th className="px-5 py-2.5 text-right font-medium">{t.delivery.colMin}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p.regionRules.map((r) => {
+                  const local = termsForRegion(p, r.region);
+                  const mine = user.role === "buyer" && user.region === r.region;
+                  return (
+                    <tr key={r.region} className={mine ? "border-b border-line bg-accent-soft/60 last:border-0" : "border-b border-line last:border-0"}>
+                      <td className="px-5 py-2.5 font-medium">
+                        {t.regions[r.region]}
+                        {mine && <span className="ml-1.5 text-[12px] font-normal text-accent">· {t.delivery.yourRegion}</span>}
+                      </td>
+                      <td className="px-3 py-2.5">{local.days.map((d) => t.weekdays[d - 1]).join(", ")}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{local.fee ? formatAmount(local.fee) : t.supplierPage.free}</td>
+                      <td className="px-5 py-2.5 text-right tabular-nums">{local.minOrderTotal ? formatAmount(local.minOrderTotal) : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {hasStats ? (
         <>

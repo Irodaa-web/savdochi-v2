@@ -1,3 +1,4 @@
+import type { RegionRule } from "@/lib/delivery";
 import mongoose, { Schema, type Model, type Types } from "mongoose";
 import { PROFILE_PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
@@ -18,6 +19,8 @@ export interface Profile {
   leadDays: number;
   deliveryFee: number;
   minOrderTotal: number;
+  /** Viloyatlar bo'yicha alohida yetkazish kunlari, narxi va minimal summasi. */
+  regionRules: RegionRule[];
   paymentMethods: PaymentMethod[];
   /** Do'kon buyurtmani kompaniya omboridan o'zi olib keta oladimi. */
   pickup: boolean;
@@ -75,6 +78,20 @@ const profileSchema = new Schema<Profile>(
     leadDays: { type: Number, default: 1, min: 0, max: 60 },
     deliveryFee: { type: Number, default: 0, min: 0 },
     minOrderTotal: { type: Number, default: 0, min: 0 },
+    regionRules: {
+      type: [
+        new Schema<RegionRule>(
+          {
+            region: { type: String, enum: REGION_CODES, required: true },
+            days: { type: [Number], default: [] },
+            fee: { type: Number, default: null, min: 0 },
+            minOrderTotal: { type: Number, default: null, min: 0 },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     paymentMethods: { type: [String], enum: PROFILE_PAYMENT_METHODS, default: ["cash"] },
     pickup: { type: Boolean, default: false },
     inn: { type: String, default: "", maxlength: 9 },

@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { AlertTriangle, BadgeCheck, Minus, Package, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CalendarClock, Minus, Package, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ import { SelectField, TextField } from "@/components/ui/Field";
 import { fmt, useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { refreshBadges } from "@/components/shell/useBadges";
+import { dayParts, nextDeliveryDay, termsForRegion } from "@/lib/delivery";
 import { formatAmount } from "@/lib/catalog";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import type { CartGroup, CartLine } from "@/server/cart";
@@ -55,6 +56,10 @@ function SellerGroup({ group: g, defaults }: { group: CartGroup; defaults: Defau
         {g.discount > 0 && <Row label={fmt(t.cart.discount, { n: g.discountPercent })} value={-g.discount} />}
         <Row label={t.cart.delivery} value={g.deliveryFee} />
         <Row label={t.cart.total} value={g.total} strong />
+        <p className="flex items-center gap-1.5 text-[13px] text-muted">
+          <CalendarClock size={14} aria-hidden />
+          {fmt(t.delivery.next, { day: dayLabel(g.terms.nextDelivery, t.delivery.weekdaysLong) })}
+        </p>
         {g.belowMinTotal && (
           <p className="flex items-center gap-1.5 text-[13px] text-danger">
             <AlertTriangle size={14} aria-hidden />
@@ -173,7 +178,12 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
   const [point, setPoint] = useState<Point>(defaults.point);
   const [method, setMethod] = useState<"delivery" | "pickup">("delivery");
   const pickup = method === "pickup";
-  const total = pickup ? g.total - g.deliveryFee : g.total;
+  // Tanlangan viloyat uchun shartlar (kompaniyaning viloyat jadvali bo'yicha) — server ham xuddi shunday hisoblaydi.
+  const local = termsForRegion({ deliveryDays: g.terms.deliveryDays, deliveryFee: g.terms.base.deliveryFee, minOrderTotal: g.terms.base.minOrderTotal, leadDays: g.terms.leadDays, regionRules: g.terms.regionRules }, form.region);
+  const fee = pickup ? 0 : local.fee;
+  const total = g.subtotal - g.discount + fee;
+  const belowMin = !pickup && g.subtotal < local.minOrderTotal;
+  const next = nextDeliveryDay(local.days, local.leadDays);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -248,9 +258,21 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
         options={g.terms.paymentMethods.map((m) => ({ value: m, label: t.payment[m] }))}
       />
       <TextField label={t.checkout.comment} value={form.comment} onChange={set("comment")} maxLength={1000} />
-      <p className="text-[13px] text-muted">{fmt(t.checkout.leadDays, { n: g.terms.leadDays })}</p>
+      {!pickup && (
+        <div className="flex flex-col gap-1 rounded-xl border border-line bg-surface-2/50 px-3 py-2.5 text-[13px]">
+          <span className="flex items-center gap-1.5 font-medium">
+            <CalendarClock size={15} className="text-accent" aria-hidden />
+            {fmt(t.delivery.next, { day: dayLabel(next, t.delivery.weekdaysLong) })}
+          </span>
+          <span className="text-muted">
+            {t.cart.delivery}: <b className="text-text">{fee ? `${formatAmount(fee)} ${t.common.sum}` : t.supplierPage.free}</b>
+            {local.days.length > 0 && local.days.length < 7 && <> · {fmt(t.delivery.daysOnly, { days: local.days.map((d) => t.weekdays[d - 1]).join(", ") })}</>}
+          </span>
+        </div>
+      )}
+      {belowMin && <Alert>{fmt(t.delivery.belowMinRegion, { sum: formatAmount(local.minOrderTotal), region: t.regions[form.region as RegionCode] })}</Alert>}
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" loading={busy}>
+        <Button type="submit" loading={busy} disabled={belowMin}>
           {fmt(t.checkout.submit, { sum: formatAmount(total) })}
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel}>
@@ -259,4 +281,10 @@ function CheckoutForm({ group: g, defaults, onCancel }: { group: CartGroup; defa
       </div>
     </form>
   );
+}
+
+/** "2026-11-24" → "Seshanba, 24.11" (Intl'siz — server va brauzerda bir xil chiqadi). */
+function dayLabel(day: string, names: string[]): string {
+  const { weekday, short } = dayParts(day);
+  return `${names[weekday - 1]}, ${short}`;
 }

@@ -123,6 +123,20 @@ export const profileSchema = z.object({
   leadDays: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(60, "numberInvalid").default(1),
   deliveryFee: money.default(0),
   minOrderTotal: money.default(0),
+  regionRules: z
+    .array(
+      z.object({
+        region: z.enum(REGION_CODES),
+        days: z.array(z.coerce.number().int().min(1).max(7)).max(7).default([]),
+        fee: z.preprocess((v) => (v === "" || v == null ? null : v), money.nullable()).default(null),
+        minOrderTotal: z.preprocess((v) => (v === "" || v == null ? null : v), money.nullable()).default(null),
+      }),
+    )
+    .max(REGION_CODES.length)
+    .default([])
+    .refine((rules) => new Set(rules.map((r) => r.region)).size === rules.length, "regionRuleDuplicate")
+    // Hech narsa o'zgartirilmagan qoida saqlanmaydi.
+    .transform((rules) => rules.filter((r) => r.days.length || r.fee != null || r.minOrderTotal != null)),
   paymentMethods: z.array(z.enum(PROFILE_PAYMENT_METHODS)).max(3).default(["cash"]),
   pickup: z.boolean().default(false),
   inn: z.string().trim().regex(/^(\d{9})?$/, "innFormat").default(""),

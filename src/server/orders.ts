@@ -156,7 +156,8 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
   const existing = await findByRequestId(user, input.requestId);
   if (existing) return existing;
 
-  const cart = await getCart(user.id);
+  // Yetkazish narxi va minimal summa buyurtmadagi viloyatga qarab (olib ketishda — farqi yo'q).
+  const cart = await getCart(user.id, input.method === "pickup" ? undefined : input.region);
   const group = cart.groups.find((g) => g.seller.id === input.sellerId);
   if (!group || !group.lines.length) throw new AppError("CART_EMPTY");
   if (group.lines.some((l) => l.problem === "unavailable")) throw new AppError("NOT_FOUND");
@@ -202,7 +203,7 @@ export async function checkout(user: SessionUser, input: CheckoutInput): Promise
             paymentMethod: input.paymentMethod,
             delivery: pickup
               ? { method: "pickup", phone: input.phone, region: input.region, address: "", lat: null, lng: null, date: null }
-              : { method: "delivery", phone: input.phone, region: input.region, address: input.address, lat: input.lat, lng: input.lng, date: null },
+              : { method: "delivery", phone: input.phone, region: input.region, address: input.address, lat: input.lat, lng: input.lng, date: new Date(`${group.terms.nextDelivery}T12:00:00+05:00`) },
             comment: input.comment,
             history: [{ status: "new", by: "buyer", at: new Date() }],
             ...(input.requestId ? { requestId: input.requestId } : {}),
