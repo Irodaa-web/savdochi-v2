@@ -286,6 +286,10 @@ body {
   outline: 2px solid var(--c-focus);
   outline-offset: 2px;
 }
+/* Maydon ichidagi input: fokus halqasi o'rab turgan ramkada (focus-within) ko'rinadi. */
+.focus-none:focus-visible {
+  outline: none;
+}
 
 /* ---------------------------------------------------------------- */
 /* Orqa fon: sekin suzib yuradigan ko'k nur dog'lari (aurora).        */
