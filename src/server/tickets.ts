@@ -34,6 +34,12 @@ export async function createTicket(userId: string, subject: string, message: str
   const open = await Ticket.countDocuments({ user: userId, status: { $ne: "resolved" } });
   if (open >= 10) throw new AppError("TOO_MANY_ATTEMPTS");
   await Ticket.create({ user: userId, subject, message });
+  // Administratorlarga darhol xabar: saytdagi qo'ng'iroqcha va (ulangan bo'lsa) Telegram.
+  const phones = (process.env.ADMIN_PHONES ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+  if (phones.length) {
+    const [admins, author] = await Promise.all([User.find({ phone: { $in: phones }, blocked: false }, { _id: 1 }).lean(), User.findById(userId, { name: 1 }).lean()]);
+    await Promise.all(admins.map((a) => notify(a._id, "ticketNew", { name: author?.name ?? "—", subject }, "/admin?tab=tickets")));
+  }
 }
 
 export async function listAllTickets(status?: TicketStatus): Promise<TicketView[]> {

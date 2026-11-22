@@ -1,29 +1,65 @@
 import "server-only";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { fmt } from "@/i18n/format";
 import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/server";
 import { connectDb } from "@/lib/db";
 import type { NotificationType } from "@/models/Notification";
 import { User } from "@/models/User";
+import { normalizePhone } from "@/lib/phone";
+import { hit } from "@/lib/rateLimit";
+import { storeOneTimeCode } from "./sms";
 
 /**
- * Telegram bildirishnomalari.
- * Sozlash: TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_USERNAME, TELEGRAM_WEBHOOK_SECRET, APP_URL.
+ * Telegram bot: bildirishnomalar va parolni tiklash.
+ * Sozlash uchun bitta o'zgaruvchi yetadi: TELEGRAM_BOT_TOKEN (BotFather'dan).
+ * Ixtiyoriy: TELEGRAM_BOT_USERNAME (berilmasa getMe'dan olinadi), TELEGRAM_WEBHOOK_SECRET (berilmasa tokendan
+ * hosil qilinadi), APP_URL (berilmasa Vercel'ning production manzili).
  * Foydalanuvchi Sozlamalarda "Ulash"ni bosadi → t.me/<bot>?start=<kod> → bot kodni tekshirib chatni bog'laydi.
  */
 export function telegramConfig() {
   const token = process.env.TELEGRAM_BOT_TOKEN ?? "";
-  const username = (process.env.TELEGRAM_BOT_USERNAME ?? "").replace(/^@/, "");
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "";
   return {
-    enabled: Boolean(token && username),
+    enabled: Boolean(token),
     token,
-    username,
-    secret: process.env.TELEGRAM_WEBHOOK_SECRET ?? "",
+    username: (process.env.TELEGRAM_BOT_USERNAME ?? "").replace(/^@/, ""),
+    // Webhook so'rovlari shu kalit bilan keladi; alohida berilmasa — tokendan (tashqariga chiqmaydigan) xesh.
+    secret: process.env.TELEGRAM_WEBHOOK_SECRET || (token ? createHash("sha256").update(`webhook:${token}`).digest("hex").slice(0, 48) : ""),
     // Sinov uchun almashtirsa bo'ladi; odatda https://api.telegram.org
     apiBase: (process.env.TELEGRAM_API_BASE ?? "https://api.telegram.org").replace(/\/$/, ""),
-    appUrl: (process.env.APP_URL ?? "").replace(/\/$/, ""),
+    appUrl: (process.env.APP_URL || vercelUrl).replace(/\/$/, ""),
   };
+}
+
+let cachedUsername: string | null = null;
+
+/** Bot nomi (@ siz): sozlamadan yoki bir marta getMe orqali. */
+export async function botUsername(): Promise<string | null> {
+  const cfg = telegramConfig();
+  if (!cfg.enabled) return null;
+  if (cfg.username) return cfg.username;
+  if (cachedUsername) return cachedUsername;
+  const me = await telegramApi<{ username?: string }>("getMe", {});
+  cachedUsername = me?.username ?? null;
+  return cachedUsername;
+}
+
+let webhookReady: Promise<void> | null = null;
+
+/**
+ * Webhook manzili va kalitini avtomatik o'rnatadi (faqat production'da): har server nusxasi
+ * bir marta setWebhook chaqiradi (takroriy chaqiruv zararsiz). Admin qo'lda hech narsa bosmaydi.
+ */
+export function ensureWebhook(): Promise<void> {
+  const cfg = telegramConfig();
+  if (!cfg.enabled || !cfg.appUrl) return Promise.resolve();
+  if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") return Promise.resolve(); // preview webhookni "o'g'irlamasin"
+  webhookReady ??= (async () => {
+    const ok = await telegramApi<boolean>("setWebhook", { url: `${cfg.appUrl}/api/v1/telegram/webhook`, allowed_updates: ["message"], secret_token: cfg.secret });
+    if (ok !== true) webhookReady = null; // keyingi safar qayta urinadi
+  })();
+  return webhookReady;
 }
 
 /** Bot API chaqiruvi. Xato bo'lsa null — asosiy amal to'xtamaydi. */
@@ -66,9 +102,11 @@ export async function createLink(userId: string, locale: Locale): Promise<string
   const cfg = telegramConfig();
   if (!cfg.enabled) return null;
   await connectDb();
+  const username = await botUsername();
+  if (!username) return null;
   const code = randomBytes(12).toString("base64url");
   await User.updateOne({ _id: userId }, { $set: { locale, "telegram.linkCode": code, "telegram.linkExpires": new Date(Date.now() + LINK_TTL_MS) } });
-  return `https://t.me/${cfg.username}?start=${code}`;
+  return `https://t.me/${username}?start=${code}`;
 }
 
 export async function unlink(userId: string): Promise<void> {
@@ -80,14 +118,76 @@ export async function unlink(userId: string): Promise<void> {
 
 const localeOf = (value: unknown): Locale => (isLocale(value) ? value : defaultLocale);
 
-type Update = { message?: { chat?: { id?: number; type?: string }; text?: string } };
+type Update = {
+  message?: {
+    chat?: { id?: number; type?: string };
+    from?: { id?: number; language_code?: string };
+    text?: string;
+    contact?: { phone_number?: string; user_id?: number };
+  };
+};
 
-/** Webhook: /start <kod> — chatni hisobga bog'laydi; /stop — uzadi. */
+const RESET_TTL_MS = 15 * 60 * 1000;
+
+/**
+ * Parolni tiklash: foydalanuvchi "Raqamimni yuborish" tugmasi bilan o'z kontaktini yuboradi.
+ * Telegram buni faqat egasining o'z raqami bo'lsa (contact.user_id === from.id) shunday yuboradi —
+ * shu bilan telefon egaligi tasdiqlanadi (SMS kodiga teng). Keyin 15 daqiqalik bir martalik havola beriladi.
+ */
+async function handleContact(chatId: number, fromId: number | undefined, contact: NonNullable<NonNullable<Update["message"]>["contact"]>, lang?: string): Promise<void> {
+  const base = getDictionary(isLocale(lang) ? lang : defaultLocale);
+  const removeKeyboard = { reply_markup: { remove_keyboard: true } };
+  if (!fromId || contact.user_id !== fromId) {
+    await telegramApi("sendMessage", { chat_id: chatId, text: base.telegram.resetNotOwn });
+    return;
+  }
+  if (!(await hit(`tgreset:${fromId}`, 5, 60 * 60 * 1000))) {
+    await telegramApi("sendMessage", { chat_id: chatId, text: base.telegram.resetTooMany, ...removeKeyboard });
+    return;
+  }
+  const phone = normalizePhone(contact.phone_number ?? "");
+  const user = phone ? await User.findOne({ phone, blocked: false }, { name: 1, locale: 1 }).lean() : null;
+  if (!phone || !user) {
+    await telegramApi("sendMessage", { chat_id: chatId, text: base.telegram.resetNotFound, ...removeKeyboard });
+    return;
+  }
+  const t = getDictionary(localeOf(user.locale));
+  const key = randomBytes(24).toString("base64url");
+  await storeOneTimeCode(phone, "tgreset", key, RESET_TTL_MS);
+  // Raqam tasdiqlandi — shu chat bildirishnomalar uchun ham hisobga ulanadi (bitta chat — bitta hisob).
+  await User.updateMany({ _id: { $ne: user._id }, "telegram.chatId": chatId }, { $set: { "telegram.chatId": null } });
+  await User.updateOne({ _id: user._id }, { $set: { "telegram.chatId": chatId } });
+  const url = `${telegramConfig().appUrl}/reset-password?p=${encodeURIComponent(phone)}&k=${key}`;
+  await telegramApi("sendMessage", { chat_id: chatId, text: fmt(t.telegram.resetFound, { name: user.name }), ...removeKeyboard });
+  await telegramApi("sendMessage", {
+    chat_id: chatId,
+    text: t.telegram.resetLink,
+    disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: [[{ text: t.telegram.resetButton, url }]] },
+  });
+}
+
+/** Webhook: /start <kod> — chatni hisobga bog'laydi; /start reset va kontakt — parolni tiklash; /stop — uzadi. */
 export async function handleUpdate(update: Update): Promise<void> {
   const chatId = update.message?.chat?.id;
   const text = update.message?.text?.trim() ?? "";
   if (!chatId || update.message?.chat?.type !== "private") return;
   await connectDb();
+
+  if (update.message?.contact) {
+    await handleContact(chatId, update.message.from?.id, update.message.contact, update.message.from?.language_code);
+    return;
+  }
+
+  if (text === "/start reset" || text === "/reset") {
+    const t = getDictionary(defaultLocale);
+    await telegramApi("sendMessage", {
+      chat_id: chatId,
+      text: t.telegram.resetStart,
+      reply_markup: { keyboard: [[{ text: t.telegram.resetShare, request_contact: true }]], resize_keyboard: true, one_time_keyboard: true },
+    });
+    return;
+  }
 
   if (text === "/stop") {
     const u = await User.findOneAndUpdate({ "telegram.chatId": chatId }, { $set: { "telegram.chatId": null } }).lean();

@@ -1,6 +1,7 @@
 import mongoose, { Schema, type Model } from "mongoose";
 
-export const SMS_PURPOSES = ["register", "reset", "reactivate"] as const;
+/** tgreset — Telegram orqali tasdiqlangan raqam uchun parolni tiklash havolasi. */
+export const SMS_PURPOSES = ["register", "reset", "reactivate", "tgreset"] as const;
 export type SmsPurpose = (typeof SMS_PURPOSES)[number];
 
 /** Bir martalik SMS kod. Kodning o'zi saqlanmaydi — faqat xeshi. Muddati o'tgach o'zi o'chadi (TTL). */

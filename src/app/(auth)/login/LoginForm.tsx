@@ -10,7 +10,8 @@ import { fmt, useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { errorText, safeNext } from "../authHelpers";
 
-export function LoginForm({ demo = false, sms = false }: { demo?: boolean; sms?: boolean }) {
+/** recover — "Parolni unutdim" ko'rinadimi (SMS yoki Telegram bot sozlangan bo'lsa). */
+export function LoginForm({ demo = false, sms = false, recover = sms }: { demo?: boolean; sms?: boolean; recover?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
   const params = useSearchParams();
@@ -129,7 +130,7 @@ export function LoginForm({ demo = false, sms = false }: { demo?: boolean; sms?:
         </button>
       )}
 
-      {sms && !inactive && (
+      {recover && !inactive && (
         <Link href="/forgot" className="-mt-2 w-fit text-[14px] font-semibold text-accent hover:underline">
           {t.auth.forgot}
         </Link>

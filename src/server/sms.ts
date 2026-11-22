@@ -77,6 +77,15 @@ export async function sendCode(phone: string, purpose: SmsPurpose, locale: strin
 }
 
 /**
+ * Bir martalik kalitni saqlaydi (faqat xeshi) — SMS yubormasdan. Masalan, Telegram orqali
+ * telefon tasdiqlangach beriladigan parolni tiklash havolasi uchun.
+ */
+export async function storeOneTimeCode(phone: string, purpose: SmsPurpose, code: string, ttlMs: number): Promise<void> {
+  const id = `${purpose}:${phone}`;
+  await SmsCode.updateOne({ _id: id }, { $set: { codeHash: hashCode(id, code), attempts: 0, expiresAt: new Date(Date.now() + ttlMs) } }, { upsert: true });
+}
+
+/**
  * Kodni tekshiradi. To'g'ri bo'lsa — kod o'chiriladi (bir martalik).
  * 5 ta xato urinishdan keyin kod bekor bo'ladi — yangisini so'rash kerak.
  */
