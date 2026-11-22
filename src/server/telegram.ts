@@ -48,16 +48,25 @@ export async function botUsername(): Promise<string | null> {
 let webhookReady: Promise<void> | null = null;
 
 /**
- * Webhook manzili va kalitini avtomatik o'rnatadi (faqat production'da): har server nusxasi
- * bir marta setWebhook chaqiradi (takroriy chaqiruv zararsiz). Admin qo'lda hech narsa bosmaydi.
+ * Webhookni avtomatik sozlaydi (faqat production'da). Har server nusxasi bir marta getWebhookInfo so'raydi
+ * va faqat kerak bo'lsa setWebhook chaqiradi: manzil boshqa bo'lsa yoki Telegram so'nggi yuborishda
+ * 401/403 olgan bo'lsa (kalit mos emas). Sahifa so'rovi ichida after() bilan chaqiriladi —
+ * Vercel ish tugaguncha kutadi (fondagi ish muzlatilib qolmaydi). Admin qo'lda hech narsa bosmaydi.
  */
 export function ensureWebhook(): Promise<void> {
   const cfg = telegramConfig();
   if (!cfg.enabled || !cfg.appUrl) return Promise.resolve();
   if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") return Promise.resolve(); // preview webhookni "o'g'irlamasin"
   webhookReady ??= (async () => {
-    const ok = await telegramApi<boolean>("setWebhook", { url: `${cfg.appUrl}/api/v1/telegram/webhook`, allowed_updates: ["message"], secret_token: cfg.secret });
-    if (ok !== true) webhookReady = null; // keyingi safar qayta urinadi
+    const url = `${cfg.appUrl}/api/v1/telegram/webhook`;
+    const info = await telegramApi<{ url?: string; last_error_message?: string }>("getWebhookInfo", {});
+    if (!info) {
+      webhookReady = null; // keyingi so'rovda qayta urinadi
+      return;
+    }
+    if (info.url === url && !/40[13]/.test(info.last_error_message ?? "")) return;
+    const ok = await telegramApi<boolean>("setWebhook", { url, allowed_updates: ["message"], secret_token: cfg.secret });
+    if (ok !== true) webhookReady = null;
   })();
   return webhookReady;
 }

@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { ensureWebhook } from "@/server/telegram";
 import { AppHeader } from "@/components/shell/AppHeader";
 import { AppSidebar } from "@/components/shell/AppSidebar";
 import { MobileTabs } from "@/components/shell/MobileTabs";
@@ -14,6 +16,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect("/api/v1/auth/reset");
   // Sidebar yig'ilganmi — cookie'dan: sahifa birinchi chizilishidanoq to'g'ri kenglikda chiqadi.
   const collapsed = (await cookies()).get("sidebar")?.value === "collapsed";
+  // Telegram bot webhooki: har server nusxasida bir marta tekshiriladi (javobni kutdirmaydi).
+  after(() => ensureWebhook());
 
   return (
     <div className="relative isolate flex min-h-dvh">
