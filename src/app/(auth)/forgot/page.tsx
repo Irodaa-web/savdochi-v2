@@ -4,7 +4,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { smsEnabled } from "@/server/sms";
-import { botUsername } from "@/server/telegram";
+import { after } from "next/server";
+import { botUsername, ensureWebhook } from "@/server/telegram";
 import { ForgotForm } from "./ForgotForm";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,6 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ForgotPage() {
   const sms = smsEnabled();
   const bot = await botUsername();
+  after(() => ensureWebhook());
   if (!sms && !bot) redirect("/login");
   const t = getDictionary(await getLocale());
   return (
