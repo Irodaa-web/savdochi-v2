@@ -268,6 +268,8 @@ export const adminNav: SideGroup[] = [
           { href: "/admin/users?status=blocked", Icon: Ban, label: (t) => t.admin.blocked },
         ],
       },
+      { href: "/admin/products", Icon: Package, label: (t) => t.adminNav.products },
+      { href: "/admin/orders", Icon: ClipboardList, label: (t) => t.adminNav.orders },
       { href: "/admin/tickets", Icon: LifeBuoy, label: (t) => t.adminNav.tickets, badge: "tickets" },
       { href: "/admin/audit", Icon: ScrollText, label: (t) => t.adminNav.audit },
     ],

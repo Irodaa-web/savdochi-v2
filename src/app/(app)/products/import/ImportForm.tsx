@@ -71,7 +71,7 @@ export function ImportForm() {
       <section className="flex flex-col gap-3 glass-card rounded-2xl p-5">
         <p className="leading-relaxed">{t.products.importIntro}</p>
         <p className="text-[13px] text-muted">{t.products.importRequired}</p>
-        <a href="/api/v1/products/import/template" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
+        <a download href="/api/v1/products/import/template" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
           <Download size={15} aria-hidden />
           {t.products.importTemplate}
         </a>

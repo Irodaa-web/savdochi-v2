@@ -291,6 +291,12 @@ body {
   outline: none;
 }
 
+/* Grid ustunlari mazmunidan torroq qisqara olsin: ichida keng jadval yoki uzun matn bo'lsa,
+   butun sahifa telefonda yon tomonga kengayib ketmaydi (jadvallar o'z ichida aylanadi). */
+:where(.grid) > * {
+  min-width: 0;
+}
+
 /* ---------------------------------------------------------------- */
 /* Orqa fon: sekin suzib yuradigan ko'k nur dog'lari (aurora).        */
 /* Faqat transform animatsiyasi (tez); harakat kamaytirilsa — to'xtaydi. */

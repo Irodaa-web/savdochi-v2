@@ -1,4 +1,4 @@
-import { CircleCheck, FileSpreadsheet, FileText, ImageOff, Layers, Package, PackageX, Plus, ShoppingCart, Sparkles, TrendingUp, type LucideIcon } from "lucide-react";
+import { CircleCheck, Download, FileSpreadsheet, FileText, ImageOff, Layers, Package, PackageX, Plus, ShoppingCart, Sparkles, TrendingUp, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { TopProductsList } from "@/components/dashboard/TopProductsList";
 import { PageTitle, Stat } from "@/components/ui/Card";
@@ -45,6 +45,14 @@ export default async function ProductsPage() {
         <FileSpreadsheet size={16} aria-hidden />
         {t.products.importButton}
       </LinkButton>
+      <a
+        href="/api/v1/products/export"
+        download
+        className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-[var(--c-glass-strong)] px-4 text-[14px] font-semibold hover:border-accent"
+      >
+        <Download size={16} aria-hidden />
+        {t.products.exportButton}
+      </a>
       <LinkButton href="/products/new">
         <Plus size={16} aria-hidden />
         {t.products.add}
@@ -106,6 +114,9 @@ export default async function ProductsPage() {
                         {p.name}
                       </Link>
                       <div className="text-[12px] text-muted">{t.categories[p.category]}</div>
+                      {p.moderation.hidden && (
+                        <div className="mt-1 max-w-xs rounded-md bg-danger-soft px-2 py-1 text-[12px] text-danger">{fmt(t.moderation.sellerNote, { reason: p.moderation.note || "—" })}</div>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-right tabular-nums">
                       {p.sale ? (

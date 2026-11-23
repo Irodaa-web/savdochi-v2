@@ -1,0 +1,13 @@
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { FlatCompat } from "@eslint/eslintrc";
+
+const compat = new FlatCompat({ baseDirectory: dirname(fileURLToPath(import.meta.url)) });
+
+/** Next.js standart qoidalari (React, hooks, Core Web Vitals) + TypeScript. */
+const config = [
+  { ignores: [".next/**", "node_modules/**", "next-env.d.ts", "tests/**/*.mjs"] },
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+];
+
+export default config;

@@ -35,7 +35,7 @@ export default async function ImportProductsPage() {
                 </li>
               ))}
             </ol>
-            <a href="/api/v1/products/import/template" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
+            <a download href="/api/v1/products/import/template" className="inline-flex w-fit items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline">
               <Download size={15} aria-hidden />
               {p.importTemplate}
             </a>

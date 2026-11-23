@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
-import type { SessionUser } from "@/lib/auth/session";
+import { getSessionUser, type SessionUser } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
 import { Notification } from "@/models/Notification";
 import { User } from "@/models/User";
@@ -24,6 +24,8 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   if (!demoEnabled()) return NextResponse.json({ ok: false }, { status: 404 });
+  // Har chaqiruv o'nlab og'ir so'rov bajaradi — faqat administrator uchun (aks holda yuklama hujumi uchun qulay).
+  if (!(await getSessionUser())?.isAdmin) return NextResponse.json({ ok: false }, { status: 404 });
   const t0 = Date.now();
   await connectDb();
   const connectMs = Date.now() - t0;

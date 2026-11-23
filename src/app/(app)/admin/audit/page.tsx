@@ -84,6 +84,10 @@ function describe(r: AuditView, t: Dictionary): string {
     }
     case "admin.ticket.answer":
       return a.ticketAnswered;
+    case "admin.product.hide":
+      return fmt(a.productHidden, { name: String(d.name ?? ""), reason: String(d.reason ?? "—") });
+    case "admin.product.show":
+      return fmt(a.productShown, { name: String(d.name ?? "") });
     case "auth.password.change":
       return a.passwordChanged;
     case "staff.add":

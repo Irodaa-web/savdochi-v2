@@ -29,7 +29,8 @@ export function staffPageAllowed(role: StaffRole, path: string): boolean {
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type Rule = [pattern: RegExp, methods: Method[], roles: StaffRole[]];
 const ALL: StaffRole[] = ["manager", "agent", "warehouse"];
-const ID = "[^/]+";
+// Faqat MongoDB ObjectId: "export", "import" kabi so‘zlar ID qoidasiga tushib qolmasin.
+const ID = "[a-f0-9]{24}";
 
 /**
  * API qoidalari (/api/v1 dan keyingi yo'l). Ro'yxatda yo'q yo'l — xodim uchun yopiq.
@@ -53,6 +54,7 @@ const API: Rule[] = [
   [new RegExp(`^/products/${ID}$`), ["PATCH", "DELETE"], ["manager"]],
   [new RegExp(`^/products/${ID}/stock$`), ["PATCH"], ["manager", "warehouse"]],
   [/^\/products\/import(\/template)?$/, ["GET", "POST"], ["manager"]],
+  [/^\/products\/export$/, ["GET"], ["manager"]],
   [/^\/uploads$/, ["POST"], ["manager"]],
   [/^\/reports$/, ["GET"], ["manager"]],
   [/^\/chats(\/[^/]+)?$/, ["GET", "POST"], ["manager", "agent"]],
