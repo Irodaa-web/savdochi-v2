@@ -63,6 +63,10 @@ export interface UserDoc {
   /** Kompaniya obunasi shu sanagacha amal qiladi. null — cheklovsiz (eski hisoblar). */
   subscriptionUntil: Date | null;
   demo: boolean;
+  /** Administrator kompaniyani katalogdan yashirgan (masalan, demo yoki tekshiruvdagi). */
+  hidden: boolean;
+  /** Tasdiqlash rad etilganda administrator yozgan sabab (foydalanuvchiga ko'rinadi). */
+  verificationNote: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -133,6 +137,8 @@ const userSchema = new Schema<UserDoc>(
     favorites: { type: [Schema.Types.ObjectId], ref: "Product", default: [] },
     subscriptionUntil: { type: Date, default: null },
     demo: { type: Boolean, default: false },
+    hidden: { type: Boolean, default: false },
+    verificationNote: { type: String, default: "", maxlength: 500 },
   },
   { timestamps: true },
 );

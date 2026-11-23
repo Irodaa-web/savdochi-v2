@@ -240,15 +240,3 @@ export async function notifyTelegram(userId: unknown, type: NotificationType, pa
   });
 }
 
-/** Admin: webhook manzilini Telegram'ga ro'yxatdan o'tkazadi. */
-export async function setWebhook(origin: string): Promise<boolean> {
-  const cfg = telegramConfig();
-  if (!cfg.enabled) return false;
-  const base = cfg.appUrl || origin;
-  const ok = await telegramApi<boolean>("setWebhook", {
-    url: `${base}/api/v1/telegram/webhook`,
-    allowed_updates: ["message"],
-    ...(cfg.secret ? { secret_token: cfg.secret } : {}),
-  });
-  return ok === true;
-}

@@ -1,17 +1,120 @@
 import "server-only";
-import { forgetSessionUser } from "@/lib/auth/session";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import { AppError } from "@/lib/api";
+import { forgetSessionUser } from "@/lib/auth/session";
+import { fillDays, periodStart } from "@/lib/chart";
 import { connectDb } from "@/lib/db";
+import type { OrderStatus } from "@/lib/orders";
 import type { RegionCode } from "@/lib/regions";
+import { TIME_ZONE } from "@/i18n/format";
 import { AuditLog } from "@/models/AuditLog";
 import { Order } from "@/models/Order";
+import { Partnership } from "@/models/Partnership";
 import { Product } from "@/models/Product";
+import { Staff } from "@/models/Staff";
 import { Ticket } from "@/models/Ticket";
 import { User, type Verification } from "@/models/User";
 import { audit, notify } from "./notify";
+import { smsEnabled } from "./sms";
+import { telegramConfig } from "./telegram";
 
-export type AdminUserView = {
+const DAY = 86_400_000;
+
+export function adminPhones(): string[] {
+  return (process.env.ADMIN_PHONES ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+}
+
+/* ------------------------------------------------------------------ */
+/* Bosh panel                                                          */
+/* ------------------------------------------------------------------ */
+
+export type AdminOverview = {
+  sellers: number;
+  buyers: number;
+  newToday: number;
+  newWeek: number;
+  pending: number;
+  openTickets: number;
+  blocked: number;
+  inactive: number;
+  activeProducts: number;
+  orders: { today: { n: number; value: number }; week: { n: number; value: number }; month: { n: number; value: number } };
+  /** So'nggi 30 kunda buyurtma olgan kompaniyalar. */
+  activeSellers: number;
+  trend: { day: string; value: number; orders: number }[];
+  expiring: { id: string; name: string; until: string }[];
+  expired: number;
+  recentUsers: { id: string; name: string; role: "buyer" | "seller"; createdAt: string; verification: Verification }[];
+  system: { telegram: boolean; sms: boolean; cron: boolean; demo: boolean; admins: number };
+};
+
+export async function adminOverview(): Promise<AdminOverview> {
+  await connectDb();
+  const now = Date.now();
+  const today = periodStart(now, 1);
+  const week = periodStart(now, 7);
+  const month = periodStart(now, 30);
+  const live = { status: { $ne: "cancelled" } };
+  const sum = async (since: Date) => {
+    const [r] = await Order.aggregate<{ n: number; value: number }>([{ $match: { ...live, createdAt: { $gte: since } } }, { $group: { _id: null, n: { $sum: 1 }, value: { $sum: "$total" } } }]);
+    return { n: r?.n ?? 0, value: r?.value ?? 0 };
+  };
+  const [sellers, buyers, newToday, newWeek, pending, openTickets, blocked, inactive, activeProducts, oToday, oWeek, oMonth, activeSellers, daily, expiring, expired, recent] = await Promise.all([
+    User.countDocuments({ role: "seller" }),
+    User.countDocuments({ role: "buyer" }),
+    User.countDocuments({ createdAt: { $gte: today } }),
+    User.countDocuments({ createdAt: { $gte: week } }),
+    User.countDocuments({ verification: "pending" }),
+    Ticket.countDocuments({ status: "open" }),
+    User.countDocuments({ blocked: true }),
+    User.countDocuments({ inactive: true }),
+    Product.countDocuments({ active: true }),
+    sum(today),
+    sum(week),
+    sum(month),
+    Order.distinct("seller", { ...live, createdAt: { $gte: month } }).then((ids) => ids.length),
+    Order.aggregate<{ _id: string; value: number; orders: number }>([
+      { $match: { ...live, createdAt: { $gte: month } } },
+      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: TIME_ZONE } }, value: { $sum: "$total" }, orders: { $sum: 1 } } },
+    ]),
+    User.find({ role: "seller", blocked: false, subscriptionUntil: { $gt: new Date(now), $lt: new Date(now + 7 * DAY) } }, { name: 1, subscriptionUntil: 1 }).sort({ subscriptionUntil: 1 }).limit(10).lean(),
+    User.countDocuments({ role: "seller", subscriptionUntil: { $ne: null, $lt: new Date(now) } }),
+    User.find({}, { name: 1, role: 1, createdAt: 1, verification: 1 }).sort({ createdAt: -1 }).limit(6).lean(),
+  ]);
+  return {
+    sellers,
+    buyers,
+    newToday,
+    newWeek,
+    pending,
+    openTickets,
+    blocked,
+    inactive,
+    activeProducts,
+    orders: { today: oToday, week: oWeek, month: oMonth },
+    activeSellers,
+    trend: fillDays(month, 30, daily),
+    expiring: expiring.map((u) => ({ id: String(u._id), name: u.name, until: u.subscriptionUntil!.toISOString() })),
+    expired,
+    recentUsers: recent.map((u) => ({ id: String(u._id), name: u.name, role: u.role, createdAt: u.createdAt.toISOString(), verification: u.verification })),
+    system: {
+      telegram: telegramConfig().enabled,
+      sms: smsEnabled(),
+      cron: Boolean(process.env.CRON_SECRET),
+      demo: process.env.DEMO_MODE === "1",
+      admins: adminPhones().length,
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Foydalanuvchilar                                                    */
+/* ------------------------------------------------------------------ */
+
+export const USER_STATUSES = ["pending", "verified", "rejected", "unverified", "blocked", "inactive", "hidden", "demo"] as const;
+export type UserStatusFilter = (typeof USER_STATUSES)[number];
+
+export type AdminUserRow = {
   id: string;
   role: "buyer" | "seller";
   name: string;
@@ -19,64 +122,160 @@ export type AdminUserView = {
   region: RegionCode;
   verification: Verification;
   blocked: boolean;
+  inactive: boolean;
+  hidden: boolean;
   demo: boolean;
+  isAdmin: boolean;
   subscriptionUntil: string | null;
-  address: string;
+  lastActiveAt: string | null;
   createdAt: string;
 };
 
-export async function adminStats() {
-  await connectDb();
-  const [sellers, buyers, pending, products, orders, openTickets] = await Promise.all([
-    User.countDocuments({ role: "seller" }),
-    User.countDocuments({ role: "buyer" }),
-    User.countDocuments({ verification: "pending" }),
-    Product.countDocuments({ active: true }),
-    Order.countDocuments({}),
-    Ticket.countDocuments({ status: { $ne: "resolved" } }),
-  ]);
-  return { sellers, buyers, pending, products, orders, openTickets };
-}
+const PAGE = 30;
 
-export async function listUsers(opts: { q?: string; role?: "buyer" | "seller"; verification?: Verification }): Promise<AdminUserView[]> {
+export async function listUsers(opts: { q?: string; role?: "buyer" | "seller"; status?: UserStatusFilter; page?: number }): Promise<{ items: AdminUserRow[]; total: number; page: number; pages: number }> {
   await connectDb();
   const filter: Record<string, unknown> = {};
   if (opts.role) filter.role = opts.role;
-  if (opts.verification) filter.verification = opts.verification;
+  switch (opts.status) {
+    case "pending":
+    case "verified":
+    case "rejected":
+    case "unverified":
+      filter.verification = opts.status;
+      break;
+    case "blocked":
+      filter.blocked = true;
+      break;
+    case "inactive":
+      filter.inactive = true;
+      break;
+    case "hidden":
+      filter.hidden = true;
+      break;
+    case "demo":
+      filter.demo = true;
+      break;
+  }
   const q = opts.q?.trim();
   if (q) {
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 60);
-    filter.$or = [{ name: { $regex: escaped, $options: "i" } }, { phone: { $regex: escaped.replace(/\D/g, "") || escaped } }];
+    const digits = q.replace(/\D/g, "");
+    filter.$or = [{ name: { $regex: escaped, $options: "i" } }, ...(digits.length >= 3 ? [{ phone: { $regex: digits } }] : [])];
   }
-  const docs = await User.find(filter).sort({ verification: 1, createdAt: -1 }).limit(200).lean();
-  return docs.map((u) => ({
-    id: String(u._id),
+  const page = Math.max(1, opts.page ?? 1);
+  const admins = new Set(adminPhones());
+  const [docs, total] = await Promise.all([
+    User.find(filter).sort({ createdAt: -1 }).skip((page - 1) * PAGE).limit(PAGE).lean(),
+    User.countDocuments(filter),
+  ]);
+  return {
+    items: docs.map((u) => ({
+      id: String(u._id),
+      role: u.role,
+      name: u.name,
+      phone: u.phone,
+      region: u.region,
+      verification: u.verification,
+      blocked: u.blocked,
+      inactive: Boolean(u.inactive),
+      hidden: Boolean(u.hidden),
+      demo: Boolean(u.demo),
+      isAdmin: admins.has(u.phone),
+      subscriptionUntil: u.subscriptionUntil ? u.subscriptionUntil.toISOString() : null,
+      lastActiveAt: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : null,
+      createdAt: u.createdAt.toISOString(),
+    })),
+    total,
+    page,
+    pages: Math.max(1, Math.ceil(total / PAGE)),
+  };
+}
+
+export type AdminUserDetail = AdminUserRow & {
+  verificationNote: string;
+  telegram: boolean;
+  profile: { address: string; about: string; inn: string; bankName: string; bankAccount: string; mfo: string };
+  stats: { orders: number; value: number; products: number; partners: number; staff: number; openTickets: number };
+  orders: { id: string; number: number; party: string; total: number; status: OrderStatus; createdAt: string }[];
+  products: { id: string; name: string; price: number; stock: number; active: boolean }[];
+  staff: { name: string; phone: string; role: string; blocked: boolean }[];
+};
+
+export async function getUserDetail(id: string): Promise<AdminUserDetail | null> {
+  if (!isValidObjectId(id)) return null;
+  await connectDb();
+  const u = await User.findById(id).lean();
+  if (!u) return null;
+  const oid = new Types.ObjectId(id);
+  const side = u.role === "seller" ? "seller" : "buyer";
+  const [[totals], orders, products, productCount, partners, staff, openTickets] = await Promise.all([
+    Order.aggregate<{ n: number; value: number }>([{ $match: { [side]: oid, status: { $ne: "cancelled" } } }, { $group: { _id: null, n: { $sum: 1 }, value: { $sum: "$total" } } }]),
+    Order.find({ [side]: oid }, { number: 1, buyer: 1, seller: 1, total: 1, status: 1, createdAt: 1 }).sort({ createdAt: -1 }).limit(10).lean(),
+    u.role === "seller" ? Product.find({ seller: oid }, { name: 1, price: 1, stock: 1, active: 1 }).sort({ active: -1, updatedAt: -1 }).limit(12).lean() : Promise.resolve([]),
+    u.role === "seller" ? Product.countDocuments({ seller: oid, active: true }) : Promise.resolve(0),
+    Partnership.countDocuments({ [side]: oid, status: "active" }),
+    u.role === "seller" ? Staff.find({ company: oid }, { name: 1, phone: 1, role: 1, blocked: 1 }).lean() : Promise.resolve([]),
+    Ticket.countDocuments({ user: oid, status: { $ne: "resolved" } }),
+  ]);
+  const parties = await User.find({ _id: { $in: orders.map((o) => (side === "seller" ? o.buyer : o.seller)) } }, { name: 1 }).lean();
+  const partyName = new Map(parties.map((p) => [String(p._id), p.name]));
+  const p = u.profile ?? ({} as Partial<NonNullable<typeof u.profile>>);
+  return {
+    id,
     role: u.role,
     name: u.name,
     phone: u.phone,
     region: u.region,
     verification: u.verification,
+    verificationNote: u.verificationNote ?? "",
     blocked: u.blocked,
+    inactive: Boolean(u.inactive),
+    hidden: Boolean(u.hidden),
     demo: Boolean(u.demo),
+    isAdmin: adminPhones().includes(u.phone),
     subscriptionUntil: u.subscriptionUntil ? u.subscriptionUntil.toISOString() : null,
-    address: u.profile?.address ?? "",
+    lastActiveAt: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : null,
     createdAt: u.createdAt.toISOString(),
-  }));
+    telegram: Boolean(u.telegram?.chatId),
+    profile: { address: p.address ?? "", about: p.about ?? "", inn: p.inn ?? "", bankName: p.bankName ?? "", bankAccount: p.bankAccount ?? "", mfo: p.mfo ?? "" },
+    stats: { orders: totals?.n ?? 0, value: totals?.value ?? 0, products: productCount, partners, staff: staff.length, openTickets },
+    orders: orders.map((o) => ({ id: String(o._id), number: o.number, party: partyName.get(String(side === "seller" ? o.buyer : o.seller)) ?? "—", total: o.total, status: o.status, createdAt: o.createdAt.toISOString() })),
+    products: products.map((x) => ({ id: String(x._id), name: x.name, price: x.price, stock: x.stock, active: x.active })),
+    staff: staff.map((s) => ({ name: s.name, phone: s.phone, role: s.role, blocked: s.blocked })),
+  };
 }
 
-export async function adminUpdateUser(adminId: string, id: string, input: { verification?: Verification; blocked?: boolean; extendMonths?: number }, ip: string): Promise<void> {
+export type AdminUserInput = { verification?: Verification; reason?: string; blocked?: boolean; extendMonths?: number; hidden?: boolean; reactivate?: boolean };
+
+/**
+ * Administrator amallari. Himoya: o'zini va boshqa administratorni bloklab bo'lmaydi.
+ * Rad etishda sabab foydalanuvchiga bildirishnoma bilan yuboriladi.
+ */
+export async function adminUpdateUser(adminId: string, id: string, input: AdminUserInput, ip: string): Promise<void> {
   if (!isValidObjectId(id)) throw new AppError("NOT_FOUND");
   await connectDb();
   const u = await User.findById(id);
   if (!u) throw new AppError("NOT_FOUND");
+  if (input.blocked && (id === adminId || adminPhones().includes(u.phone))) throw new AppError("INVALID_INPUT", { blocked: "adminSelfBlock" });
+
   if (input.verification && input.verification !== u.verification) {
     u.verification = input.verification;
+    u.verificationNote = input.verification === "rejected" ? (input.reason ?? "").trim() : "";
     if (input.verification === "verified") await notify(u._id, "verified", {}, "/profile");
+    if (input.verification === "rejected") await notify(u._id, "verificationRejected", { reason: u.verificationNote || "—" }, "/profile");
   }
   if (input.blocked !== undefined && input.blocked !== u.blocked) {
     u.blocked = input.blocked;
     // Bloklansa — barcha sessiyalar bekor bo'ladi.
     if (input.blocked) u.authVersion += 1;
+  }
+  if (input.hidden !== undefined) u.hidden = input.hidden;
+  if (input.reactivate && u.inactive) {
+    u.inactive = false;
+    u.inactiveAt = null;
+    u.lastActiveAt = new Date();
+    u.inactivity = { warned12At: null, warned14At: null };
   }
   if (input.extendMonths === -1) {
     u.subscriptionUntil = new Date(Date.now() - 1000);
@@ -87,23 +286,61 @@ export async function adminUpdateUser(adminId: string, id: string, input: { veri
   }
   await u.save();
   forgetSessionUser(id);
-  await audit(adminId, "admin.user.update", `user:${id}`, input, ip);
+  await audit(adminId, "admin.user.update", `user:${id}`, input as Record<string, unknown>, ip);
 }
 
-export type AuditView = { id: string; actor: string; action: string; target: string; details: string; ip: string; createdAt: string };
+/* ------------------------------------------------------------------ */
+/* Jurnal                                                              */
+/* ------------------------------------------------------------------ */
 
-export async function listAudit(): Promise<AuditView[]> {
+export type AuditView = { id: string; actor: string; action: string; target: string; targetName: string | null; details: Record<string, unknown>; ip: string; createdAt: string };
+
+/** Turkumlar: jurnal filtri uchun (amal nomining boshlanishi bo'yicha). */
+export const AUDIT_KINDS = ["admin", "auth", "staff", "inactivity", "pay"] as const;
+export type AuditKind = (typeof AUDIT_KINDS)[number];
+
+export async function listAudit(opts: { kind?: AuditKind; page?: number } = {}): Promise<{ items: AuditView[]; pages: number; page: number }> {
   await connectDb();
-  const docs = await AuditLog.find().sort({ createdAt: -1 }).limit(100).lean();
-  const users = await User.find({ _id: { $in: docs.map((d) => d.actor).filter(Boolean) } }, { name: 1 }).lean();
-  const name = new Map(users.map((u) => [String(u._id), u.name]));
-  return docs.map((d) => ({
-    id: String(d._id),
-    actor: d.actor ? (name.get(String(d.actor)) ?? String(d.actor)) : "system",
-    action: d.action,
-    target: d.target,
-    details: JSON.stringify(d.details ?? {}),
-    ip: d.ip,
-    createdAt: d.createdAt.toISOString(),
-  }));
+  const filter = opts.kind ? { action: { $regex: `^${opts.kind}\\.` } } : {};
+  const page = Math.max(1, opts.page ?? 1);
+  const PER = 50;
+  const [docs, total] = await Promise.all([AuditLog.find(filter).sort({ createdAt: -1 }).skip((page - 1) * PER).limit(PER).lean(), AuditLog.countDocuments(filter)]);
+  // Kim va kimga nisbatan — ID o'rniga ismlar.
+  const userIds = new Set<string>();
+  for (const d of docs) {
+    if (d.actor) userIds.add(String(d.actor));
+    const m = /^user:([a-f0-9]{24})$/.exec(d.target ?? "");
+    if (m) userIds.add(m[1]!);
+    else if (/^[a-f0-9]{24}$/.test(d.target ?? "")) userIds.add(d.target);
+  }
+  const staffIds = docs.map((d) => /^staff:([a-f0-9]{24})$/.exec(d.target ?? "")?.[1]).filter((x): x is string => Boolean(x));
+  const [users, staff] = await Promise.all([
+    User.find({ _id: { $in: [...userIds] } }, { name: 1 }).lean(),
+    Staff.find({ _id: { $in: staffIds } }, { name: 1 }).lean(),
+  ]);
+  const names = new Map([...users, ...staff].map((u) => [String(u._id), u.name]));
+  return {
+    page,
+    pages: Math.max(1, Math.ceil(total / PER)),
+    items: docs.map((d) => {
+      const targetId = /^(?:user|staff):([a-f0-9]{24})$/.exec(d.target ?? "")?.[1] ?? (/^[a-f0-9]{24}$/.test(d.target ?? "") ? d.target : null);
+      return {
+        id: String(d._id),
+        // "" — tizim; "?" — o'chirilgan foydalanuvchi.
+        actor: d.actor ? (names.get(String(d.actor)) ?? "?") : "",
+        action: d.action,
+        target: d.target,
+        targetName: targetId ? (names.get(targetId) ?? null) : null,
+        details: (d.details ?? {}) as Record<string, unknown>,
+        ip: d.ip,
+        createdAt: d.createdAt.toISOString(),
+      };
+    }),
+  };
+}
+
+/** Eski admin sahifasi uchun (sidebar belgisi va h.k.). */
+export async function adminStats() {
+  const o = await adminOverview();
+  return { sellers: o.sellers, buyers: o.buyers, pending: o.pending, products: o.activeProducts, orders: o.orders.month.n, openTickets: o.openTickets };
 }

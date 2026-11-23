@@ -3,11 +3,13 @@ import Link from "next/link";
 import { Card, PageTitle, Pill } from "@/components/ui/Card";
 import { LinkList, type LinkListItem } from "@/components/ui/LinkList";
 import { SideCard } from "@/components/ui/SideCard";
-import { fmt, formatDateTime } from "@/i18n/format";
+import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { listMyTickets } from "@/server/tickets";
 import { TicketForm } from "./TicketForm";
+import { TicketFollowUp } from "./TicketFollowUp";
+import { Thread } from "@/components/tickets/Thread";
 
 export const metadata = { title: "Yordam" };
 
@@ -66,14 +68,8 @@ export default async function HelpPage() {
                 <b>{tk.subject}</b>
                 <Pill tone={tk.status === "resolved" ? "success" : "accent"}>{t.ticketStatus[tk.status]}</Pill>
               </div>
-              <p className="text-[14px] whitespace-pre-line text-muted">{tk.message}</p>
-              {tk.reply && (
-                <p className="rounded-lg bg-accent-soft p-3 text-[14px] whitespace-pre-line">
-                  <b>{t.help.reply}: </b>
-                  {tk.reply}
-                </p>
-              )}
-              <span className="text-[12px] text-muted">{formatDateTime(tk.createdAt, locale)}</span>
+              <Thread items={tk.thread} viewer="user" locale={locale} t={t} />
+              <TicketFollowUp id={tk.id} />
             </Card>
           ))}
         </div>

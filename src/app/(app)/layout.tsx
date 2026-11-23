@@ -1,4 +1,5 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { adminPageAllowed } from "@/lib/adminNav";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { ensureWebhook } from "@/server/telegram";
@@ -14,6 +15,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getSessionUser();
   // Token imzosi to'g'ri, lekin hisob o'chirilgan/bloklangan yoki paroli o'zgargan.
   if (!user) redirect("/api/v1/auth/reset");
+  // Administrator savdo qilmaydi: faqat admin bo'limlari (qolgan sahifalardan — admin bosh paneliga).
+  if (user.isAdmin && !adminPageAllowed((await headers()).get("x-pathname") ?? "/")) redirect("/admin");
   // Sidebar yig'ilganmi — cookie'dan: sahifa birinchi chizilishidanoq to'g'ri kenglikda chiqadi.
   const collapsed = (await cookies()).get("sidebar")?.value === "collapsed";
   // Telegram bot webhooki: har server nusxasida bir marta tekshiriladi (javobni kutdirmaydi).

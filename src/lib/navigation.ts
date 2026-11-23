@@ -1,5 +1,7 @@
 import {
   Apple,
+  BadgeCheck,
+  Ban,
   BrickWall,
   Building2,
   ChartColumn,
@@ -15,17 +17,20 @@ import {
   Home,
   LayoutDashboard,
   LayoutGrid,
+  LifeBuoy,
   ListChecks,
   List,
   MessageSquare,
   Package,
   PackageCheck,
   PackagePlus,
+  ScrollText,
   Search,
   Shapes,
   ShoppingCart,
   Sparkles,
   SprayCan,
+  Store,
   Truck,
   Users,
   Wallet,
@@ -162,7 +167,7 @@ export const mainNav: Record<Role, NavItem[]> = {
 };
 
 /** Sidebar bandi: belgi, nom, raqamli belgi (savat/chat/buyurtmalar) va ochiladigan ichki sahifalar. */
-export type SideItem = { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; badge?: "cart" | "chats" | "orders"; children?: NavLink[] };
+export type SideItem = { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; badge?: "cart" | "chats" | "orders" | "tickets"; children?: NavLink[]; exact?: boolean };
 export type SideGroup = { title: (t: Dictionary) => string; items: SideItem[] };
 
 const menuLinks = (role: Role, href: string): NavLink[] => mainNav[role].find((i) => i.href === href)?.menu?.flatMap((s) => s.links) ?? [];
@@ -245,3 +250,34 @@ export const mobileTabs: Record<Role, NavItem[]> = {
 };
 
 export const homePath: Record<Role, string> = { buyer: "/catalog", seller: "/dashboard" };
+
+/** Administrator menyusi: faqat boshqaruv (admin savdo qilmaydi). */
+export const adminNav: SideGroup[] = [
+  {
+    title: (t) => t.adminNav.group,
+    items: [
+      { href: "/admin", Icon: LayoutDashboard, label: (t) => t.adminNav.overview, exact: true },
+      {
+        href: "/admin/users",
+        Icon: Users,
+        label: (t) => t.adminNav.users,
+        children: [
+          { href: "/admin/users?role=seller", Icon: Building2, label: (t) => t.admin.sellers },
+          { href: "/admin/users?role=buyer", Icon: Store, label: (t) => t.admin.buyers },
+          { href: "/admin/users?status=pending", Icon: BadgeCheck, label: (t) => t.admin.pending },
+          { href: "/admin/users?status=blocked", Icon: Ban, label: (t) => t.admin.blocked },
+        ],
+      },
+      { href: "/admin/tickets", Icon: LifeBuoy, label: (t) => t.adminNav.tickets, badge: "tickets" },
+      { href: "/admin/audit", Icon: ScrollText, label: (t) => t.adminNav.audit },
+    ],
+  },
+];
+
+/** Telefondagi pastki panel — administrator uchun. */
+export const adminTabs: { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; badge?: "tickets" }[] = [
+  { href: "/admin", Icon: LayoutDashboard, label: (t) => t.adminNav.overview },
+  { href: "/admin/users", Icon: Users, label: (t) => t.adminNav.users },
+  { href: "/admin/tickets", Icon: LifeBuoy, label: (t) => t.adminNav.tickets, badge: "tickets" },
+  { href: "/admin/audit", Icon: ScrollText, label: (t) => t.adminNav.audit },
+];
