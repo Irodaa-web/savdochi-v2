@@ -1,7 +1,18 @@
 "use client";
 
 import clsx from "clsx";
-import { ChevronDown, CircleHelp, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldCheck, UserRound, UsersRound, X, type LucideIcon } from "lucide-react";
+import {
+  ChevronDown,
+  CircleHelp,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Settings,
+  UserRound,
+  UsersRound,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -9,13 +20,22 @@ import { LanguageSwitch, ThemeToggle } from "@/components/Preferences";
 import { Logo } from "@/components/ui/Logo";
 import { fmt, useI18n } from "@/i18n/client";
 import type { SessionUser } from "@/lib/auth/session";
-import { homePath, sidebarNav, type SideItem } from "@/lib/navigation";
+import {
+  adminNav,
+  homePath,
+  sidebarNav,
+  type SideItem,
+} from "@/lib/navigation";
 import { staffHome, staffPageAllowed } from "@/lib/staff";
 import { LogoutButton } from "./LogoutButton";
 import { useShell } from "./Shell";
 import { useBadges } from "./useBadges";
 
-const isActive = (pathname: string, href: string) => (href === "/" ? pathname === "/" : !href.includes("#") && (pathname === href || pathname.startsWith(`${href}/`)));
+const isActive = (pathname: string, href: string, exact = false) =>
+  href === "/" || exact
+    ? pathname === href
+    : !href.includes("#") &&
+      (pathname === href || pathname.startsWith(`${href}/`));
 
 /**
  * Asosiy navigatsiya — sidebar.
@@ -31,20 +51,41 @@ export function AppSidebar({ user }: { user: SessionUser }) {
   // Kompyuterda yig'ilgan holat faqat lg dan katta ekranda amal qiladi; telefondagi panel doim to'liq.
   const mini = collapsed;
 
-  const footer: { href: string; Icon: LucideIcon; label: string }[] = [
-    ...(user.staff ? [] : [{ href: "/profile", Icon: UserRound, label: t.header.profile }]),
-    ...(user.role === "seller" && !user.staff ? [{ href: "/staff", Icon: UsersRound, label: t.navMenu.staff }] : []),
-    { href: "/settings", Icon: Settings, label: t.header.settings },
-    { href: "/help", Icon: CircleHelp, label: t.header.help },
-    ...(user.isAdmin ? [{ href: "/admin", Icon: ShieldCheck, label: t.admin.title }] : []),
-  ];
+  const footer: { href: string; Icon: LucideIcon; label: string }[] =
+    user.isAdmin
+      ? [{ href: "/settings", Icon: Settings, label: t.header.settings }]
+      : [
+          ...(user.staff
+            ? []
+            : [{ href: "/profile", Icon: UserRound, label: t.header.profile }]),
+          ...(user.role === "seller" && !user.staff
+            ? [{ href: "/staff", Icon: UsersRound, label: t.navMenu.staff }]
+            : []),
+          { href: "/settings", Icon: Settings, label: t.header.settings },
+          { href: "/help", Icon: CircleHelp, label: t.header.help },
+        ];
 
   // Tezkor amal faqat kompaniyada (do'kon uchun savat ro'yxatning o'zida, belgi bilan).
-  const quick = user.role === "seller" && (!user.staff || user.staff.role === "manager") ? { href: "/products/new", Icon: Plus, label: t.products.add } : null;
+  const quick =
+    !user.isAdmin &&
+    user.role === "seller" &&
+    (!user.staff || user.staff.role === "manager")
+      ? { href: "/products/new", Icon: Plus, label: t.products.add }
+      : null;
   // Xodim: faqat roliga ochiq bo'limlar (ichki sahifalari bilan).
-  const can = (href: string) => !user.staff || staffPageAllowed(user.staff.role, href.split(/[?#]/)[0]!);
-  const groups = sidebarNav[user.role]
-    .map((g) => ({ ...g, items: g.items.filter((i) => can(i.href)).map((i) => ({ ...i, children: i.children?.filter((c) => can(c.href)) })) }))
+  const can = (href: string) =>
+    !user.staff || staffPageAllowed(user.staff.role, href.split(/[?#]/)[0]!);
+  // Administrator: faqat boshqaruv bo'limlari (savdo menyusi yo'q).
+  const groups = (user.isAdmin ? adminNav : sidebarNav[user.role])
+    .map((g) => ({
+      ...g,
+      items: g.items
+        .filter((i) => can(i.href))
+        .map((i) => ({
+          ...i,
+          children: i.children?.filter((c) => can(c.href)),
+        })),
+    }))
     .filter((g) => g.items.length);
 
   return (
@@ -53,7 +94,10 @@ export function AppSidebar({ user }: { user: SessionUser }) {
       <div
         aria-hidden
         onClick={() => setDrawer(false)}
-        className={clsx("fixed inset-0 z-40 bg-[rgb(7_13_26/0.45)] backdrop-blur-sm transition-opacity duration-300 lg:hidden", drawer ? "opacity-100" : "pointer-events-none opacity-0")}
+        className={clsx(
+          "fixed inset-0 z-40 bg-[rgb(7_13_26/0.45)] backdrop-blur-sm transition-opacity duration-300 lg:hidden",
+          drawer ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
       />
       <aside
         aria-label={t.navMenu.label}
@@ -65,8 +109,23 @@ export function AppSidebar({ user }: { user: SessionUser }) {
         )}
       >
         {/* Logotip va yig'ish tugmasi */}
-        <div className={clsx("flex h-16 shrink-0 items-center gap-2 border-b border-line/70 px-4", mini && "lg:justify-center lg:px-2")}>
-          <Link href={user.staff ? staffHome[user.staff.role] : homePath[user.role]} aria-label="Savdochi" className={clsx("min-w-0 flex-1", mini && "lg:flex-none")}>
+        <div
+          className={clsx(
+            "flex h-16 shrink-0 items-center gap-2 border-b border-line/70 px-4",
+            mini && "lg:justify-center lg:px-2",
+          )}
+        >
+          <Link
+            href={
+              user.isAdmin
+                ? "/admin"
+                : user.staff
+                  ? staffHome[user.staff.role]
+                  : homePath[user.role]
+            }
+            aria-label="Savdochi"
+            className={clsx("min-w-0 flex-1", mini && "lg:flex-none")}
+          >
             <span className={clsx(mini && "lg:hidden")}>
               <Logo />
             </span>
@@ -79,11 +138,19 @@ export function AppSidebar({ user }: { user: SessionUser }) {
             onClick={toggleCollapsed}
             aria-label={mini ? t.navMenu.expand : t.navMenu.collapse}
             title={mini ? t.navMenu.expand : t.navMenu.collapse}
-            className={clsx("hidden size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-2 hover:text-accent lg:flex", mini && "lg:hidden")}
+            className={clsx(
+              "hidden size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-2 hover:text-accent lg:flex",
+              mini && "lg:hidden",
+            )}
           >
             <PanelLeftClose size={18} aria-hidden />
           </button>
-          <button type="button" onClick={() => setDrawer(false)} aria-label={t.navMenu.closeMenu} className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted hover:bg-surface-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setDrawer(false)}
+            aria-label={t.navMenu.closeMenu}
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted hover:bg-surface-2 lg:hidden"
+          >
             <X size={18} aria-hidden />
           </button>
         </div>
@@ -91,22 +158,43 @@ export function AppSidebar({ user }: { user: SessionUser }) {
         <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-4 [scrollbar-width:thin] [&>*]:shrink-0">
           {/* Tezkor amal: kompaniya — yangi mahsulot, do'kon — savat */}
           {quick && (
-          <Link
-            href={quick.href}
-            title={mini ? quick.label : undefined}
-            className={clsx("btn-primary sheen flex h-10 items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-all hover:brightness-110", mini && "lg:px-0")}
-          >
-            <quick.Icon size={17} aria-hidden />
-            <span className={clsx(mini && "lg:sr-only")}>{quick.label}</span>
-          </Link>
+            <Link
+              href={quick.href}
+              title={mini ? quick.label : undefined}
+              className={clsx(
+                "btn-primary sheen flex h-10 items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-all hover:brightness-110",
+                mini && "lg:px-0",
+              )}
+            >
+              <quick.Icon size={17} aria-hidden />
+              <span className={clsx(mini && "lg:sr-only")}>{quick.label}</span>
+            </Link>
           )}
 
           {groups.map((group) => (
             <div key={group.title(t)} className="flex flex-col gap-0.5">
-              <p className={clsx("px-3 pb-1 text-[11px] font-semibold tracking-wider text-muted uppercase", mini && "lg:sr-only")}>{group.title(t)}</p>
-              {mini && <span aria-hidden className="mx-auto mb-1 hidden h-px w-8 bg-line lg:block" />}
+              <p
+                className={clsx(
+                  "px-3 pb-1 text-[11px] font-semibold tracking-wider text-muted uppercase",
+                  mini && "lg:sr-only",
+                )}
+              >
+                {group.title(t)}
+              </p>
+              {mini && (
+                <span
+                  aria-hidden
+                  className="mx-auto mb-1 hidden h-px w-8 bg-line lg:block"
+                />
+              )}
               {group.items.map((item) => (
-                <SideLink key={item.href} item={item} pathname={pathname} mini={mini} count={item.badge ? badges[item.badge] : 0} />
+                <SideLink
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                  mini={mini}
+                  count={item.badge ? badges[item.badge] : 0}
+                />
               ))}
             </div>
           ))}
@@ -125,17 +213,26 @@ export function AppSidebar({ user }: { user: SessionUser }) {
                   aria-current={active ? "page" : undefined}
                   className={clsx(
                     "flex h-8 items-center gap-3 rounded-xl px-3 text-[13.5px] transition-colors",
-                    active ? "bg-accent-soft font-semibold text-accent" : "text-muted hover:bg-surface-2/80 hover:text-text",
+                    active
+                      ? "bg-accent-soft font-semibold text-accent"
+                      : "text-muted hover:bg-surface-2/80 hover:text-text",
                     mini && "lg:justify-center lg:px-0",
                   )}
                 >
                   <Icon size={17} aria-hidden className="shrink-0" />
-                  <span className={clsx("truncate", mini && "lg:sr-only")}>{label}</span>
+                  <span className={clsx("truncate", mini && "lg:sr-only")}>
+                    {label}
+                  </span>
                 </Link>
               );
             })}
           </div>
-          <div className={clsx("mt-2 flex items-center gap-1 rounded-2xl border border-line/70 bg-surface-2/50 py-1 pr-1 pl-2", mini && "lg:hidden")}>
+          <div
+            className={clsx(
+              "mt-2 flex items-center gap-1 rounded-2xl border border-line/70 bg-surface-2/50 py-1 pr-1 pl-2",
+              mini && "lg:hidden",
+            )}
+          >
             <div className="min-w-0 flex-1">
               <LanguageSwitch />
             </div>
@@ -160,9 +257,19 @@ export function AppSidebar({ user }: { user: SessionUser }) {
 }
 
 /** Bitta band: havola + (bo'lsa) ichki sahifalarni ochuvchi ▾ tugmasi. Joriy bo'limning ichki sahifalari ochiq turadi. */
-function SideLink({ item, pathname, mini, count }: { item: SideItem; pathname: string; mini: boolean; count: number }) {
+function SideLink({
+  item,
+  pathname,
+  mini,
+  count,
+}: {
+  item: SideItem;
+  pathname: string;
+  mini: boolean;
+  count: number;
+}) {
   const { t } = useI18n();
-  const active = isActive(pathname, item.href);
+  const active = isActive(pathname, item.href, item.exact);
   const [open, setOpen] = useState(active);
   // Ichki sahifa manzili so'rov qismi bilan solishtiriladi: /catalog va /catalog?view=products alohida.
   const search = useSearchParams().toString();
@@ -176,23 +283,52 @@ function SideLink({ item, pathname, mini, count }: { item: SideItem; pathname: s
       <div
         className={clsx(
           "relative flex items-center rounded-xl transition-colors duration-200",
-          active ? "bg-accent-soft text-accent shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--c-accent)_18%,transparent)]" : "text-text hover:bg-surface-2/80",
+          active
+            ? "bg-accent-soft text-accent shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--c-accent)_18%,transparent)]"
+            : "text-text hover:bg-surface-2/80",
         )}
       >
-        {active && <span aria-hidden className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r-full bg-accent" />}
+        {active && (
+          <span
+            aria-hidden
+            className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r-full bg-accent"
+          />
+        )}
         <Link
           href={item.href}
           title={mini ? name : undefined}
           aria-current={active ? "page" : undefined}
-          className={clsx("flex h-10 min-w-0 flex-1 items-center gap-3 px-3 text-[14px]", active ? "font-semibold" : "font-medium", mini && "lg:justify-center lg:px-0")}
+          className={clsx(
+            "flex h-10 min-w-0 flex-1 items-center gap-3 px-3 text-[14px]",
+            active ? "font-semibold" : "font-medium",
+            mini && "lg:justify-center lg:px-0",
+          )}
         >
           <span className="relative shrink-0">
-            <item.Icon size={18} aria-hidden className={active ? "" : "text-muted"} />
-            {count > 0 && mini && <span aria-hidden className="absolute -top-1 -right-1 hidden size-2 rounded-full bg-danger ring-2 ring-surface lg:block" />}
+            <item.Icon
+              size={18}
+              aria-hidden
+              className={active ? "" : "text-muted"}
+            />
+            {count > 0 && mini && (
+              <span
+                aria-hidden
+                className="absolute -top-1 -right-1 hidden size-2 rounded-full bg-danger ring-2 ring-surface lg:block"
+              />
+            )}
           </span>
-          <span className={clsx("min-w-0 flex-1 truncate", mini && "lg:sr-only")}>{name}</span>
+          <span
+            className={clsx("min-w-0 flex-1 truncate", mini && "lg:sr-only")}
+          >
+            {name}
+          </span>
           {count > 0 && (
-            <span className={clsx("min-w-5 rounded-full bg-accent px-1.5 text-center text-[11px] leading-5 font-bold text-accent-fg", mini && "lg:hidden")}>
+            <span
+              className={clsx(
+                "min-w-5 rounded-full bg-accent px-1.5 text-center text-[11px] leading-5 font-bold text-accent-fg",
+                mini && "lg:hidden",
+              )}
+            >
               {count > 99 ? "99+" : count}
             </span>
           )}
@@ -203,15 +339,33 @@ function SideLink({ item, pathname, mini, count }: { item: SideItem; pathname: s
             onClick={() => setOpen((v) => !v)}
             aria-expanded={expanded}
             aria-label={fmt(t.navMenu.subPages, { name })}
-            className={clsx("mr-1 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-black/5 hover:text-text dark:hover:bg-white/10", mini && "lg:hidden")}
+            className={clsx(
+              "mr-1 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-black/5 hover:text-text dark:hover:bg-white/10",
+              mini && "lg:hidden",
+            )}
           >
-            <ChevronDown size={15} aria-hidden className={clsx("transition-transform duration-300", expanded && "rotate-180")} />
+            <ChevronDown
+              size={15}
+              aria-hidden
+              className={clsx(
+                "transition-transform duration-300",
+                expanded && "rotate-180",
+              )}
+            />
           </button>
         )}
       </div>
       {hasChildren && (
         // Silliq ochilish: grid-rows 0fr → 1fr.
-        <div className={clsx("grid transition-[grid-template-rows,opacity] duration-300 ease-out", expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0", mini && "lg:hidden")}>
+        <div
+          className={clsx(
+            "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
+            expanded
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0",
+            mini && "lg:hidden",
+          )}
+        >
           <ul className="min-h-0 overflow-hidden">
             <li className="relative ml-[22px] flex flex-col gap-0.5 border-l border-line py-1 pl-3">
               {item.children!.map((child) => {
@@ -223,7 +377,9 @@ function SideLink({ item, pathname, mini, count }: { item: SideItem; pathname: s
                     tabIndex={expanded ? undefined : -1}
                     className={clsx(
                       "flex h-8 items-center gap-2 rounded-lg px-2.5 text-[13px] transition-colors",
-                      current ? "bg-accent-soft font-semibold text-accent" : "text-muted hover:bg-surface-2/80 hover:text-text",
+                      current
+                        ? "bg-accent-soft font-semibold text-accent"
+                        : "text-muted hover:bg-surface-2/80 hover:text-text",
                     )}
                   >
                     <child.Icon size={14} aria-hidden className="shrink-0" />

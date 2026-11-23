@@ -42,7 +42,7 @@ type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification
 let hiddenCache: { at: number; ids: unknown[] } | null = null;
 async function hiddenSellers(): Promise<unknown[]> {
   if (hiddenCache && Date.now() - hiddenCache.at < 60_000) return hiddenCache.ids;
-  const rows = await User.find({ role: "seller", $or: [{ blocked: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean();
+  const rows = await User.find({ role: "seller", $or: [{ blocked: true }, { hidden: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean();
   hiddenCache = { at: Date.now(), ids: rows.map((r) => r._id) };
   return hiddenCache.ids;
 }
@@ -239,7 +239,7 @@ export type SupplierQuery = { region?: RegionCode; q?: string };
 /** Kompaniyalar ro'yxati va qidiruvi: nomi bo'yicha (?q=) va viloyat bo'yicha (?region=). */
 export async function listSuppliers(query: SupplierQuery = {}): Promise<SupplierView[]> {
   await connectDb();
-  const filter: Record<string, unknown> = { role: "seller", blocked: false, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
+  const filter: Record<string, unknown> = { role: "seller", blocked: false, hidden: { $ne: true }, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
   const and: Record<string, unknown>[] = [];
   // Viloyat: kompaniya shu yerda joylashgan yoki shu yerga yetkazib beradi.
   if (query.region) and.push({ $or: [{ region: query.region }, { "profile.deliveryRegions": query.region }] });

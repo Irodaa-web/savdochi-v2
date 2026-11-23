@@ -83,7 +83,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               </div>
             )}
 
-            {user.role === "buyer" && (
+            {user.role === "buyer" && !user.isAdmin && (
               <BuyBox productId={p.id} price={p.price} salePrice={p.sale?.price ?? null} tiers={p.priceTiers} minOrder={p.minOrder} stock={p.stock} unit={unit} saved={await isFavorite(user.id, p.id)} />
             )}
           </div>
@@ -109,7 +109,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <Link href={`/catalog?seller=${p.seller.id}`} className="text-[13px] font-semibold text-accent hover:underline">
               {t.catalog.sellerProducts}
             </Link>
-            {user.role === "buyer" && <StartChatButton partnerId={p.seller.id} className="mt-2" />}
+            {user.role === "buyer" && !user.isAdmin && <StartChatButton partnerId={p.seller.id} className="mt-2" />}
           </div>
         </aside>
       </div>

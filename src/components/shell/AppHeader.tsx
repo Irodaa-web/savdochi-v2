@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Menu, MessageSquare, ShoppingCart } from "lucide-react";
+import { Menu, MessageSquare, Search, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ThemeToggle } from "@/components/Preferences";
@@ -46,12 +46,19 @@ export function AppHeader({ user }: { user: SessionUser }) {
         >
           <Menu size={21} aria-hidden />
         </button>
-        <Link href={homePath[user.role]} aria-label="Savdochi" className="hidden shrink-0 sm:block lg:hidden">
+        <Link href={user.isAdmin ? "/admin" : homePath[user.role]} aria-label="Savdochi" className="hidden shrink-0 sm:block lg:hidden">
           <Logo markOnly />
         </Link>
 
-        {/* Omborchi katalog (narxlar)ni ko'rmaydi — qidiruv ham yo'q. */}
-        {user.staff?.role === "warehouse" ? (
+        {/* Administrator — foydalanuvchilarni qidiradi; omborchi katalog (narxlar)ni ko'rmaydi — qidiruv yo'q. */}
+        {user.isAdmin ? (
+          <form action="/admin/users" role="search" className="min-w-0 flex-1 lg:max-w-xl">
+            <label className="flex h-10 items-center gap-2 rounded-xl border border-[var(--c-glass-border)] bg-[var(--c-glass-strong)] px-3 text-muted transition-all focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/15 hover:border-accent/40">
+              <Search size={16} className="shrink-0" aria-hidden />
+              <input name="q" type="search" placeholder={t.adminNav.searchUsers} aria-label={t.adminNav.searchUsers} className="focus-none min-w-0 flex-1 bg-transparent text-[14px] text-text outline-none placeholder:text-muted" />
+            </label>
+          </form>
+        ) : user.staff?.role === "warehouse" ? (
           <div className="min-w-0 flex-1" />
         ) : (
           <Suspense fallback={<div className="h-10 min-w-0 flex-1 rounded-xl border border-[var(--c-glass-border)] bg-[var(--c-glass-strong)] lg:max-w-xl" />}>
@@ -60,14 +67,14 @@ export function AppHeader({ user }: { user: SessionUser }) {
         )}
 
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
-          {(!user.staff || staffPageAllowed(user.staff.role, "/chat")) && (
+          {!user.isAdmin && (!user.staff || staffPageAllowed(user.staff.role, "/chat")) && (
             <Link href="/chat" aria-label={t.header.chat} title={t.header.chat} className={clsx(headerIconClass, "relative hidden md:flex")}>
               <MessageSquare size={20} aria-hidden />
               <CountBadge count={badges.chats} />
             </Link>
           )}
           <NotificationsMenu count={badges.notifications} onChange={refreshBadges} />
-          {user.role === "buyer" && (
+          {user.role === "buyer" && !user.isAdmin && (
             <Link href="/cart" aria-label={t.header.cart} title={t.header.cart} className={clsx(headerIconClass, "relative hidden md:flex")}>
               <ShoppingCart size={20} aria-hidden />
               <CountBadge count={badges.cart} />

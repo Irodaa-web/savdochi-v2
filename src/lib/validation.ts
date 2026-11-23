@@ -268,6 +268,8 @@ export const ticketSchema = z.object({
   message: z.string().trim().min(5, "messageEmpty").max(3000),
 });
 
+export const ticketMessageSchema = z.object({ text: z.string().trim().min(1, "messageEmpty").max(3000) });
+
 export const ticketReplySchema = z.object({
   status: z.enum(TICKET_STATUSES),
   reply: z.string().trim().max(3000).default(""),
@@ -275,7 +277,13 @@ export const ticketReplySchema = z.object({
 
 export const adminUserSchema = z.object({
   verification: z.enum(["unverified", "pending", "verified", "rejected"]).optional(),
+  /** Rad etish sababi — foydalanuvchiga yuboriladi. */
+  reason: z.string().trim().max(500).optional(),
   blocked: z.boolean().optional(),
+  /** Kompaniyani katalogdan yashirish / qaytarish. */
+  hidden: z.boolean().optional(),
+  /** 15 kunlik nofaollikdan keyin hisobni qo'lda tiklash. */
+  reactivate: z.boolean().optional(),
   /** Obunani shuncha oyga uzaytirish (0 — o'zgarmaydi, -1 — to'xtatish). */
   extendMonths: z.coerce.number().int().min(-1).max(24).optional(),
 });

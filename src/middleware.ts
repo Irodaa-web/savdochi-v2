@@ -7,11 +7,13 @@ import { staffHome, staffPageAllowed } from "@/lib/staff";
  * Bu yerda faqat token imzosi tekshiriladi; bloklangan hisob va hokazo
  * sahifa ichida getSessionUser() orqali tekshiriladi.
  */
-const AUTH_PAGES = ["/login", "/register", "/forgot", "/reset-password"];
+const AUTH_PAGES = ["/login", "/register", "/forgot"];
 /** Kirmaganlar uchun ochiq sahifa (landing). */
 const PUBLIC_PAGES = ["/welcome"];
 /** Hamma uchun ochiq (kirgan va kirmagan): ommaviy oferta va maxfiylik siyosati. */
-const OPEN_PAGES = ["/terms", "/privacy"];
+// /reset-password ham shu yerda: Telegram havolasi saytga allaqachon kirilgan (masalan, demo) brauzerda
+// ochilsa ham yangi parol formasi ko'rinsin — saqlangach sessiya yangi hisobga almashadi.
+const OPEN_PAGES = ["/terms", "/privacy", "/reset-password"];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -34,7 +36,10 @@ export async function middleware(request: NextRequest) {
     const home = staffHome[session.sr];
     if (pathname !== home && (pathname === "/" || !staffPageAllowed(session.sr, pathname))) return NextResponse.redirect(new URL(home, request.url));
   }
-  return NextResponse.next();
+  // Joriy yo'l sahifalar uchun (masalan, administratorni faqat admin bo'limlarida ushlab turish — (app)/layout).
+  const headers = new Headers(request.headers);
+  headers.set("x-pathname", pathname);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {

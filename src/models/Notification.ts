@@ -19,6 +19,8 @@ export const NOTIFICATION_TYPES = [
   "reviewNew",
   "ticketReply",
   "ticketNew",
+  "ticketMessage",
+  "verificationRejected",
   "verified",
   "inactivityWarning",
   "inactivityFinal",

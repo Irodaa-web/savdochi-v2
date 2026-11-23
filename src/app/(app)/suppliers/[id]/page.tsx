@@ -87,7 +87,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
           <Link href={`/catalog?seller=${s.id}`} className="font-semibold text-accent hover:underline">
             {fmt(t.suppliers.products, { n: s.productCount })} →
           </Link>
-          {user.role === "buyer" && (
+          {user.role === "buyer" && !user.isAdmin && (
             <>
               {partnership?.status === "active" ? (
                 <div className="flex flex-col gap-1">
