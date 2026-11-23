@@ -290,6 +290,99 @@ export async function adminUpdateUser(adminId: string, id: string, input: AdminU
 }
 
 /* ------------------------------------------------------------------ */
+/* Mahsulotlar moderatsiyasi va buyurtmalar monitoringi                */
+/* ------------------------------------------------------------------ */
+
+export type AdminProductRow = { id: string; name: string; price: number; stock: number; active: boolean; hidden: boolean; note: string; seller: { id: string; name: string }; updatedAt: string };
+
+export async function listProductsAdmin(opts: { q?: string; filter?: "hidden" | "archived"; page?: number }): Promise<{ items: AdminProductRow[]; total: number; page: number; pages: number }> {
+  await connectDb();
+  const filter: Record<string, unknown> = {};
+  if (opts.filter === "hidden") filter.hiddenByAdmin = true;
+  if (opts.filter === "archived") filter.active = false;
+  const q = opts.q?.trim();
+  if (q) filter.name = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 60), $options: "i" };
+  const page = Math.max(1, opts.page ?? 1);
+  const [docs, total] = await Promise.all([
+    Product.find(filter, { name: 1, price: 1, stock: 1, active: 1, hiddenByAdmin: 1, adminNote: 1, seller: 1, updatedAt: 1 }).sort({ updatedAt: -1 }).skip((page - 1) * PAGE).limit(PAGE).lean(),
+    Product.countDocuments(filter),
+  ]);
+  const sellers = await User.find({ _id: { $in: docs.map((d) => d.seller) } }, { name: 1 }).lean();
+  const name = new Map(sellers.map((s) => [String(s._id), s.name]));
+  return {
+    items: docs.map((d) => ({
+      id: String(d._id),
+      name: d.name,
+      price: d.price,
+      stock: d.stock,
+      active: d.active,
+      hidden: Boolean(d.hiddenByAdmin),
+      note: d.adminNote ?? "",
+      seller: { id: String(d.seller), name: name.get(String(d.seller)) ?? "—" },
+      updatedAt: new Date(d.updatedAt).toISOString(),
+    })),
+    total,
+    page,
+    pages: Math.max(1, Math.ceil(total / PAGE)),
+  };
+}
+
+/** Mahsulotni sabab bilan yashirish yoki qaytarish; kompaniyaga bildirishnoma boradi. */
+export async function moderateProduct(adminId: string, id: string, input: { hidden: boolean; note?: string }, ip: string): Promise<void> {
+  if (!isValidObjectId(id)) throw new AppError("NOT_FOUND");
+  await connectDb();
+  const note = input.hidden ? (input.note ?? "").trim() : "";
+  const p = await Product.findByIdAndUpdate(id, { $set: { hiddenByAdmin: input.hidden, adminNote: note } }, { new: true }).lean();
+  if (!p) throw new AppError("NOT_FOUND");
+  await notify(p.seller, input.hidden ? "productHidden" : "productRestored", { product: p.name, reason: note || "—" }, "/products");
+  await audit(adminId, input.hidden ? "admin.product.hide" : "admin.product.show", `product:${id}`, { name: p.name, ...(note ? { reason: note } : {}) }, ip);
+}
+
+export type AdminOrderRow = { id: string; number: number; buyer: string; seller: string; total: number; paid: number; status: OrderStatus; paymentStatus: string; items: number; createdAt: string };
+
+export async function listOrdersAdmin(opts: { q?: string; status?: OrderStatus; page?: number }): Promise<{ items: AdminOrderRow[]; total: number; page: number; pages: number; value: number }> {
+  await connectDb();
+  const filter: Record<string, unknown> = {};
+  if (opts.status) filter.status = opts.status;
+  const q = opts.q?.trim();
+  if (q) {
+    const n = Number(q.replace(/\D/g, ""));
+    if (n && /^\D*\d+$/.test(q)) filter.number = n;
+    else {
+      const users = await User.find({ name: { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").slice(0, 60), $options: "i" } }, { _id: 1 }).limit(50).lean();
+      const ids = users.map((u) => u._id);
+      filter.$or = [{ buyer: { $in: ids } }, { seller: { $in: ids } }];
+    }
+  }
+  const page = Math.max(1, opts.page ?? 1);
+  const [docs, total, [sum]] = await Promise.all([
+    Order.find(filter, { number: 1, buyer: 1, seller: 1, total: 1, paidAmount: 1, status: 1, paymentStatus: 1, items: 1, createdAt: 1 }).sort({ createdAt: -1 }).skip((page - 1) * PAGE).limit(PAGE).lean(),
+    Order.countDocuments(filter),
+    Order.aggregate<{ value: number }>([{ $match: { ...filter, status: opts.status ?? { $ne: "cancelled" } } }, { $group: { _id: null, value: { $sum: "$total" } } }]),
+  ]);
+  const parties = await User.find({ _id: { $in: docs.flatMap((d) => [d.buyer, d.seller]) } }, { name: 1 }).lean();
+  const name = new Map(parties.map((u) => [String(u._id), u.name]));
+  return {
+    items: docs.map((d) => ({
+      id: String(d._id),
+      number: d.number,
+      buyer: name.get(String(d.buyer)) ?? "—",
+      seller: name.get(String(d.seller)) ?? "—",
+      total: d.total,
+      paid: d.paidAmount ?? 0,
+      status: d.status,
+      paymentStatus: d.paymentStatus,
+      items: d.items?.length ?? 0,
+      createdAt: d.createdAt.toISOString(),
+    })),
+    total,
+    page,
+    pages: Math.max(1, Math.ceil(total / PAGE)),
+    value: sum?.value ?? 0,
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Jurnal                                                              */
 /* ------------------------------------------------------------------ */
 

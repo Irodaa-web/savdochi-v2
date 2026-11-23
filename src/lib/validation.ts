@@ -268,6 +268,9 @@ export const ticketSchema = z.object({
   message: z.string().trim().min(5, "messageEmpty").max(3000),
 });
 
+/** Administrator: mahsulotni sabab bilan yashirish yoki qaytarish. */
+export const adminProductSchema = z.object({ hidden: z.boolean(), note: z.string().trim().max(500).default("") }).refine((v) => !v.hidden || v.note.length >= 3, { path: ["note"], message: "reasonRequired" });
+
 export const ticketMessageSchema = z.object({ text: z.string().trim().min(1, "messageEmpty").max(3000) });
 
 export const ticketReplySchema = z.object({

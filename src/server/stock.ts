@@ -114,7 +114,8 @@ export async function setStock(buyer: { id: string; name: string }, productId: s
 export async function removeStock(buyerId: string, id: string): Promise<void> {
   if (!isValidObjectId(id)) throw new AppError("NOT_FOUND");
   await connectDb();
-  await StoreStock.deleteOne({ _id: id, buyer: buyerId });
+  const res = await StoreStock.deleteOne({ _id: id, buyer: buyerId });
+  if (!res.deletedCount) throw new AppError("NOT_FOUND");
 }
 
 /**

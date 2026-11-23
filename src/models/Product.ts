@@ -21,6 +21,10 @@ export interface ProductDoc {
   /** Aksiya narxi (asosiy narxdan arzon) va tugash vaqti. Muddati o'tsa avtomatik amal qilmaydi. */
   salePrice: number | null;
   saleUntil: Date | null;
+  /** Administrator qoidaga zid deb yashirgan: katalogda ko'rinmaydi, buyurtma qilib bo'lmaydi. */
+  hiddenByAdmin: boolean;
+  /** Yashirish sababi — kompaniya o'z mahsulotlari ro'yxatida ko'radi. */
+  adminNote: string;
   /** Arxivlangan mahsulot katalogda ko'rinmaydi, lekin eski buyurtmalarda qoladi. */
   active: boolean;
   createdAt: Date;
@@ -45,6 +49,8 @@ const productSchema = new Schema<ProductDoc>(
     salePrice: { type: Number, default: null, min: 1 },
     saleUntil: { type: Date, default: null, index: true },
     active: { type: Boolean, default: true, index: true },
+    hiddenByAdmin: { type: Boolean, default: false },
+    adminNote: { type: String, default: "", maxlength: 500 },
   },
   { timestamps: true },
 );

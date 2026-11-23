@@ -23,6 +23,8 @@ export type ProductView = {
   priceTiers: PriceTier[];
   /** Amaldagi aksiya (muddati o'tganlari ko'rsatilmaydi). */
   sale: { price: number; until: string; percent: number } | null;
+  /** Administrator yashirgan bo'lsa — sababi bilan (katalogda ko'rinmaydi). */
+  moderation: { hidden: boolean; note: string };
   minOrder: number;
   stock: number;
   packSize: number;
@@ -61,6 +63,7 @@ function toView(p: ProductDoc, seller: SellerInfo | undefined): ProductView {
     price: p.price,
     priceTiers: (p.priceTiers ?? []).map((t) => ({ min: t.min, price: t.price })),
     sale: saleOf(p),
+    moderation: { hidden: Boolean(p.hiddenByAdmin), note: p.hiddenByAdmin ? (p.adminNote ?? "") : "" },
     minOrder: p.minOrder,
     stock: p.stock,
     packSize: p.packSize,
@@ -91,7 +94,8 @@ export const PAGE_SIZE = 24;
 /** Katalog: faqat faol mahsulotlar, bloklanmagan sotuvchilardan. */
 export async function listCatalog(query: CatalogQuery): Promise<{ items: ProductView[]; total: number; page: number; pages: number }> {
   await connectDb();
-  const filter: FilterQuery<ProductDoc> = { active: true };
+  // Katalog: faol va administrator yashirmagan mahsulotlar.
+  const filter: FilterQuery<ProductDoc> = { active: true, hiddenByAdmin: { $ne: true } };
   if (query.category) filter.category = query.category;
   if (query.seller && isValidObjectId(query.seller)) filter.seller = query.seller;
   if (query.ids) filter._id = { $in: query.ids.filter((id) => isValidObjectId(id)) };
@@ -123,7 +127,7 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
 export async function categoryCounts(): Promise<Record<CategoryCode, number>> {
   await connectDb();
   const hidden = await hiddenSellers();
-  const match: Record<string, unknown> = { active: true };
+  const match: Record<string, unknown> = { active: true, hiddenByAdmin: { $ne: true } };
   if (hidden.length) match.seller = { $nin: hidden };
   const rows = await Product.aggregate<{ _id: CategoryCode; n: number }>([{ $match: match }, { $group: { _id: "$category", n: { $sum: 1 } } }]);
   const counts = Object.fromEntries(CATEGORY_CODES.map((c) => [c, 0])) as Record<CategoryCode, number>;
@@ -248,7 +252,7 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
   if (and.length) filter.$and = and;
   const sellers = await User.find(filter, { name: 1, region: 1, verification: 1 }).sort({ verification: -1, name: 1 }).limit(200).lean<SellerInfo[]>();
   const [counts, ratings] = await Promise.all([
-    Product.aggregate<{ _id: unknown; n: number }>([{ $match: { active: true, seller: { $in: sellers.map((s) => s._id) } } }, { $group: { _id: "$seller", n: { $sum: 1 } } }]),
+    Product.aggregate<{ _id: unknown; n: number }>([{ $match: { active: true, hiddenByAdmin: { $ne: true }, seller: { $in: sellers.map((s) => s._id) } } }, { $group: { _id: "$seller", n: { $sum: 1 } } }]),
     ratingsFor(sellers.map((s) => String(s._id))),
   ]);
   const countBy = new Map(counts.map((c) => [String(c._id), c.n]));

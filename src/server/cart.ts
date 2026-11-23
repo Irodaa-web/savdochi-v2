@@ -118,7 +118,7 @@ export async function getCart(buyerId: string, region?: string): Promise<CartVie
     const sellerOk = !seller.blocked && subscriptionActive(seller.subscriptionUntil);
     const salePrice = activeSalePrice(p);
     const unitPrice = unitPriceFor(item.quantity, p.price, p.priceTiers ?? [], salePrice);
-    const problem: CartLine["problem"] = !p.active || !sellerOk ? "unavailable" : item.quantity < p.minOrder ? "belowMin" : item.quantity > p.stock ? "outOfStock" : null;
+    const problem: CartLine["problem"] = !p.active || p.hiddenByAdmin || !sellerOk ? "unavailable" : item.quantity < p.minOrder ? "belowMin" : item.quantity > p.stock ? "outOfStock" : null;
     group.lines.push({
       productId: String(p._id),
       name: p.name,
@@ -162,7 +162,7 @@ export async function cartCount(buyerId: string): Promise<number> {
 export async function setCartItem(buyerId: string, productId: string, quantity: number, add = false): Promise<number> {
   if (!isValidObjectId(productId)) throw new AppError("NOT_FOUND");
   await connectDb();
-  const product = await Product.findOne({ _id: productId, active: true }, { minOrder: 1 }).lean();
+  const product = await Product.findOne({ _id: productId, active: true, hiddenByAdmin: { $ne: true } }, { minOrder: 1 }).lean();
   if (!product && quantity > 0) throw new AppError("NOT_FOUND");
 
   const cart = (await Cart.findOne({ buyer: buyerId })) ?? new Cart({ buyer: buyerId, items: [] });
@@ -190,7 +190,7 @@ export type BulkAddResult = { added: { name: string; quantity: number }[]; skipp
 export async function addManyToCart(buyerId: string, items: { productId: string; quantity: number }[]): Promise<BulkAddResult> {
   await connectDb();
   const ids = items.map((i) => i.productId).filter((id) => isValidObjectId(id));
-  const products = await Product.find({ _id: { $in: ids } }, { name: 1, active: 1, minOrder: 1, stock: 1, seller: 1 }).lean();
+  const products = await Product.find({ _id: { $in: ids } }, { name: 1, active: 1, hiddenByAdmin: 1, minOrder: 1, stock: 1, seller: 1 }).lean();
   const blocked = new Set(
     (await User.find({ _id: { $in: products.map((p) => p.seller) }, $or: [{ blocked: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean()).map((u) => String(u._id)),
   );
@@ -200,7 +200,7 @@ export async function addManyToCart(buyerId: string, items: { productId: string;
   for (const item of items) {
     const p = byId.get(item.productId);
     if (!p) continue;
-    if (!p.active || blocked.has(String(p.seller))) {
+    if (!p.active || p.hiddenByAdmin || blocked.has(String(p.seller))) {
       result.skipped.push({ name: p.name, reason: "unavailable" });
       continue;
     }

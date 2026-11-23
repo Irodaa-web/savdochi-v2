@@ -89,7 +89,7 @@ export async function changePassword(userId: string, current: string, next: stri
 /** Kompaniyaning ommaviy sahifasi uchun: profil + mahsulotlar soni. */
 export async function getSellerPublic(sellerId: string): Promise<(ProfileView & { productCount: number }) | null> {
   if (!isValidObjectId(sellerId)) return null;
-  const [view, productCount] = await Promise.all([getProfile(sellerId), Product.countDocuments({ seller: sellerId, active: true })]);
+  const [view, productCount] = await Promise.all([getProfile(sellerId), Product.countDocuments({ seller: sellerId, active: true, hiddenByAdmin: { $ne: true } })]);
   if (!view || view.role !== "seller") return null;
   return { ...view, productCount };
 }

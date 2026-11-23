@@ -131,7 +131,7 @@ type StockLine = { productId: string; quantity: number };
 /** Omborni kamaytiradi; birortasi yetmasa xato tashlaydi (tranzaksiya hammasini bekor qiladi). */
 async function takeStock(items: StockLine[], session: ClientSession): Promise<void> {
   for (const item of items) {
-    const res = await Product.updateOne({ _id: item.productId, active: true, stock: { $gte: item.quantity } }, { $inc: { stock: -item.quantity } }, { session });
+    const res = await Product.updateOne({ _id: item.productId, active: true, hiddenByAdmin: { $ne: true }, stock: { $gte: item.quantity } }, { $inc: { stock: -item.quantity } }, { session });
     if (res.modifiedCount !== 1) throw new AppError("OUT_OF_STOCK");
   }
 }
