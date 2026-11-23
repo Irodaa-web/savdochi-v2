@@ -16,7 +16,7 @@ export default function LoginPage() {
   after(() => ensureWebhook());
   return (
     <Suspense>
-      <LoginForm demo={process.env.DEMO_MODE === "1"} sms={smsEnabled()} recover={smsEnabled() || telegramConfig().enabled} />
+      <LoginForm sms={smsEnabled()} recover={smsEnabled() || telegramConfig().enabled} />
     </Suspense>
   );
 }

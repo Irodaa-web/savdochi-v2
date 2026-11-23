@@ -32,7 +32,6 @@ export default async function AdminHome() {
     { ok: o.system.telegram, title: a.sysTelegram, text: o.system.telegram ? a.sysTelegramOn : a.sysTelegramOff },
     { ok: o.system.sms, title: a.sysSms, text: o.system.sms ? a.sysSmsOn : a.sysSmsOff },
     { ok: o.system.cron, title: a.sysCron, text: o.system.cron ? a.sysCronOn : a.sysCronOff },
-    { ok: !o.system.demo, title: a.sysDemo, text: o.system.demo ? a.sysDemoOn : a.sysDemoOff },
   ];
 
   return (

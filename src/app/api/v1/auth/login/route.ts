@@ -7,7 +7,6 @@ import { hit, reset } from "@/lib/rateLimit";
 import { fieldErrors, loginSchema } from "@/lib/validation";
 import { Staff } from "@/models/Staff";
 import { User } from "@/models/User";
-import { demoPasswordLogin } from "@/server/demo";
 import { reactivateAccount, touchActivity } from "@/server/inactivity";
 import { sendCode, smsEnabled, verifyCode } from "@/server/sms";
 
@@ -25,14 +24,6 @@ export async function POST(request: Request) {
     const [phoneOk, ipOk] = await Promise.all([hit(phoneKey, 8, WINDOW), hit(ipKey, 40, WINDOW)]);
     if (!phoneOk || !ipOk) return fail("TOO_MANY_ATTEMPTS");
 
-    // Demo hisoblar: DEMO_PASSWORD sozlangan bo'lsa, shu parol bilan ham kiriladi.
-    const demo = await demoPasswordLogin(phone, password);
-    if (demo) {
-      await reset(phoneKey);
-      const token = await startSession({ id: String(demo._id), role: demo.role, authVersion: demo.authVersion });
-      return ok({ token, user: { id: String(demo._id), role: demo.role, name: demo.name } });
-    }
-
     const user = await User.findOne({ phone }).select("+passwordHash");
     if (!user) {
       // Kompaniya xodimi: o'z paroli bilan, kompaniya hisobi nomidan.
@@ -41,8 +32,8 @@ export async function POST(request: Request) {
         await burnTime(password);
         return fail("INVALID_CREDENTIALS");
       }
-      const company = await User.findById(staff.company, { role: 1, name: 1, blocked: 1, inactive: 1 }).lean();
-      if (staff.blocked || !company || company.blocked || !(await verifyPassword(password, staff.passwordHash))) return fail("INVALID_CREDENTIALS");
+      const company = await User.findById(staff.company, { role: 1, name: 1, blocked: 1, inactive: 1, demo: 1 }).lean();
+      if (staff.blocked || !company || company.blocked || company.demo || !(await verifyPassword(password, staff.passwordHash))) return fail("INVALID_CREDENTIALS");
       // Kompaniya hisobi nofaol (egasi 15 kun kirmagan) bo'lsa — ega SMS bilan qayta faollashtirishi kerak.
       if (company.inactive) return fail("COMPANY_INACTIVE");
       await reset(phoneKey);
@@ -51,7 +42,8 @@ export async function POST(request: Request) {
       return ok({ token, user: { id: String(company._id), role: "seller", name: company.name, staff: { name: staff.name, role: staff.role } } });
     }
     // Admin bloklagan hisob kirmaydi va nofaollik mexanizmi orqali ham ochilmaydi.
-    if (user.blocked || !(await verifyPassword(password, user.passwordHash))) return fail("INVALID_CREDENTIALS");
+    // Demo hisoblar vaqtincha o'chirilgan (kod "demo-saqlangan" branchida saqlanadi).
+    if (user.blocked || user.demo || !(await verifyPassword(password, user.passwordHash))) return fail("INVALID_CREDENTIALS");
 
     if (user.inactive) {
       // 15 kun kirilmagan hisob: parol to'g'ri, endi shaxsni SMS kod bilan qayta tasdiqlash kerak.

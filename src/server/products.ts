@@ -38,13 +38,13 @@ type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification
 
 /** Katalogda ko'rinmaydigan sotuvchilar: bloklangan yoki obunasi tugagan. */
 /**
- * Katalogdan yashiriladigan sotuvchilar (bloklangan yoki obunasi tugagan).
+ * Katalogdan yashiriladigan sotuvchilar (bloklangan, yashirilgan, demo yoki obunasi tugagan).
  * Har katalog so'rovida bazaga bormaslik uchun server xotirasida 60 soniya saqlanadi.
  */
 let hiddenCache: { at: number; ids: unknown[] } | null = null;
 async function hiddenSellers(): Promise<unknown[]> {
   if (hiddenCache && Date.now() - hiddenCache.at < 60_000) return hiddenCache.ids;
-  const rows = await User.find({ role: "seller", $or: [{ blocked: true }, { hidden: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean();
+  const rows = await User.find({ role: "seller", $or: [{ blocked: true }, { hidden: true }, { demo: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean();
   hiddenCache = { at: Date.now(), ids: rows.map((r) => r._id) };
   return hiddenCache.ids;
 }
@@ -243,7 +243,7 @@ export type SupplierQuery = { region?: RegionCode; q?: string };
 /** Kompaniyalar ro'yxati va qidiruvi: nomi bo'yicha (?q=) va viloyat bo'yicha (?region=). */
 export async function listSuppliers(query: SupplierQuery = {}): Promise<SupplierView[]> {
   await connectDb();
-  const filter: Record<string, unknown> = { role: "seller", blocked: false, hidden: { $ne: true }, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
+  const filter: Record<string, unknown> = { role: "seller", blocked: false, hidden: { $ne: true }, demo: { $ne: true }, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
   const and: Record<string, unknown>[] = [];
   // Viloyat: kompaniya shu yerda joylashgan yoki shu yerga yetkazib beradi.
   if (query.region) and.push({ $or: [{ region: query.region }, { "profile.deliveryRegions": query.region }] });

@@ -45,7 +45,7 @@ export type AdminOverview = {
   expiring: { id: string; name: string; until: string }[];
   expired: number;
   recentUsers: { id: string; name: string; role: "buyer" | "seller"; createdAt: string; verification: Verification }[];
-  system: { telegram: boolean; sms: boolean; cron: boolean; demo: boolean; admins: number };
+  system: { telegram: boolean; sms: boolean; cron: boolean; admins: number };
 };
 
 export async function adminOverview(): Promise<AdminOverview> {
@@ -101,7 +101,6 @@ export async function adminOverview(): Promise<AdminOverview> {
       telegram: telegramConfig().enabled,
       sms: smsEnabled(),
       cron: Boolean(process.env.CRON_SECRET),
-      demo: process.env.DEMO_MODE === "1",
       admins: adminPhones().length,
     },
   };

@@ -9,8 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:integration": "node tests/integration.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "@vercel/blob": "^1.1.1",
