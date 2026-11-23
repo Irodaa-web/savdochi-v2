@@ -89,8 +89,13 @@ export async function changePassword(userId: string, current: string, next: stri
 /** Kompaniyaning ommaviy sahifasi uchun: profil + mahsulotlar soni. */
 export async function getSellerPublic(sellerId: string): Promise<(ProfileView & { productCount: number }) | null> {
   if (!isValidObjectId(sellerId)) return null;
-  const [view, productCount] = await Promise.all([getProfile(sellerId), Product.countDocuments({ seller: sellerId, active: true, hiddenByAdmin: { $ne: true } })]);
-  if (!view || view.role !== "seller") return null;
+  const [view, productCount, demo] = await Promise.all([
+    getProfile(sellerId),
+    Product.countDocuments({ seller: sellerId, active: true, hiddenByAdmin: { $ne: true } }),
+    User.exists({ _id: sellerId, demo: true }),
+  ]);
+  // Demo kompaniyalar vaqtincha ko'rsatilmaydi.
+  if (!view || view.role !== "seller" || demo) return null;
   return { ...view, productCount };
 }
 

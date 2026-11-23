@@ -4,7 +4,6 @@ import { LanguageSwitch, ThemeToggle } from "@/components/Preferences";
 import { Aurora } from "@/components/ui/Aurora";
 import { Logo } from "@/components/ui/Logo";
 import { getDictionary, getLocale } from "@/i18n/server";
-import { DemoButtons } from "./DemoButtons";
 import { LiveDemo } from "./LiveDemo";
 import { Reveal } from "./Reveal";
 
@@ -26,7 +25,6 @@ const REVEAL_BOOT = `document.documentElement.classList.add("reveal-on");setTime
 export default async function WelcomePage() {
   const t = getDictionary(await getLocale());
   const l = t.landing;
-  const demo = process.env.DEMO_MODE === "1";
   const delay = (i: number) => ({ "--reveal-delay": `${i * 90}ms` }) as React.CSSProperties;
 
   return (
@@ -94,11 +92,6 @@ export default async function WelcomePage() {
                 </li>
               ))}
             </ul>
-            {demo && (
-              <div className="land-in" style={{ animationDelay: "400ms" }}>
-                <DemoButtons />
-              </div>
-            )}
           </div>
           <LiveDemo l={l} />
         </section>

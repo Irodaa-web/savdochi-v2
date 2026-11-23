@@ -57,8 +57,8 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   ]);
   // Xodim: kompaniya hisobi faol bo'lishi, xodim bloklanmagan va sessiyasi eskirmagan bo'lishi kerak.
   const valid = payload.st
-    ? user && user.role === "seller" && !user.blocked && !user.inactive && staff && !staff.blocked && staff.authVersion === payload.v
-    : user && !user.blocked && !user.inactive && user.authVersion === payload.v;
+    ? user && user.role === "seller" && !user.blocked && !user.inactive && !user.demo && staff && !staff.blocked && staff.authVersion === payload.v
+    : user && !user.blocked && !user.inactive && !user.demo && user.authVersion === payload.v;
   if (!user || !valid) {
     sessionCache.delete(key);
     return null;

@@ -71,7 +71,7 @@ export async function getCart(buyerId: string, region?: string): Promise<CartVie
   const productBy = new Map(products.map((p) => [String(p._id), p]));
   const sellerIds = [...new Set(products.map((p) => String(p.seller)))];
   const [sellers, partnerships] = await Promise.all([
-    User.find({ _id: { $in: sellerIds } }, { name: 1, verification: 1, profile: 1, blocked: 1, subscriptionUntil: 1 }).lean(),
+    User.find({ _id: { $in: sellerIds } }, { name: 1, verification: 1, profile: 1, blocked: 1, demo: 1, subscriptionUntil: 1 }).lean(),
     Partnership.find({ buyer: buyerId, seller: { $in: sellerIds }, status: "active" }, { seller: 1, discount: 1 }).lean(),
   ]);
   const sellerBy = new Map(sellers.map((s) => [String(s._id), s]));
@@ -115,7 +115,7 @@ export async function getCart(buyerId: string, region?: string): Promise<CartVie
       };
       groups.set(sellerId, group);
     }
-    const sellerOk = !seller.blocked && subscriptionActive(seller.subscriptionUntil);
+    const sellerOk = !seller.blocked && !seller.demo && subscriptionActive(seller.subscriptionUntil);
     const salePrice = activeSalePrice(p);
     const unitPrice = unitPriceFor(item.quantity, p.price, p.priceTiers ?? [], salePrice);
     const problem: CartLine["problem"] = !p.active || p.hiddenByAdmin || !sellerOk ? "unavailable" : item.quantity < p.minOrder ? "belowMin" : item.quantity > p.stock ? "outOfStock" : null;
@@ -192,7 +192,7 @@ export async function addManyToCart(buyerId: string, items: { productId: string;
   const ids = items.map((i) => i.productId).filter((id) => isValidObjectId(id));
   const products = await Product.find({ _id: { $in: ids } }, { name: 1, active: 1, hiddenByAdmin: 1, minOrder: 1, stock: 1, seller: 1 }).lean();
   const blocked = new Set(
-    (await User.find({ _id: { $in: products.map((p) => p.seller) }, $or: [{ blocked: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean()).map((u) => String(u._id)),
+    (await User.find({ _id: { $in: products.map((p) => p.seller) }, $or: [{ blocked: true }, { demo: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean()).map((u) => String(u._id)),
   );
   const byId = new Map(products.map((p) => [String(p._id), p]));
   const cart = (await Cart.findOne({ buyer: buyerId })) ?? new Cart({ buyer: buyerId, items: [] });
