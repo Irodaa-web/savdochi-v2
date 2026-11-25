@@ -38,15 +38,32 @@ type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification
 
 /** Katalogda ko'rinmaydigan sotuvchilar: bloklangan yoki obunasi tugagan. */
 /**
- * Katalogdan yashiriladigan sotuvchilar (bloklangan, yashirilgan, demo yoki obunasi tugagan).
- * Har katalog so'rovida bazaga bormaslik uchun server xotirasida 60 soniya saqlanadi.
+ * Sota oladigan kompaniya: administrator tasdiqlagan, bloklanmagan, yashirilmagan, demo emas va obunasi amalda.
+ * Tasdiqlanmagan (yangi, tekshiruvdagi yoki rad etilgan) kompaniya katalogda ko'rinmaydi va buyurtma olmaydi.
  */
-let hiddenCache: { at: number; ids: unknown[] } | null = null;
-async function hiddenSellers(): Promise<unknown[]> {
-  if (hiddenCache && Date.now() - hiddenCache.at < 60_000) return hiddenCache.ids;
-  const rows = await User.find({ role: "seller", $or: [{ blocked: true }, { hidden: true }, { demo: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean();
-  hiddenCache = { at: Date.now(), ids: rows.map((r) => r._id) };
-  return hiddenCache.ids;
+export function sellingFilter(): Record<string, unknown> {
+  return { role: "seller", verification: "verified", blocked: { $ne: true }, hidden: { $ne: true }, demo: { $ne: true }, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
+}
+
+/** Kompaniya hozir sota oladimi (savatga qo'shishda — keshsiz, aniq tekshiruv). */
+export async function sellerCanSell(sellerId: unknown): Promise<boolean> {
+  return Boolean(await User.exists({ _id: sellerId, ...sellingFilter() }));
+}
+
+/**
+ * Katalog uchun sota oladigan kompaniyalar ro'yxati — server xotirasida 60 soniya saqlanadi.
+ * Ruxsat ro'yxati: yangi ro'yxatdan o'tgan kompaniya keshda yo'q, demak avtomatik yashirin qoladi.
+ */
+let sellingCache: { at: number; ids: unknown[] } | null = null;
+/** Admin kompaniya holatini o'zgartirganda — katalog darhol yangilansin. */
+export function forgetHiddenSellers(): void {
+  sellingCache = null;
+}
+async function sellingSellers(): Promise<unknown[]> {
+  if (sellingCache && Date.now() - sellingCache.at < 60_000) return sellingCache.ids;
+  const rows = await User.find(sellingFilter(), { _id: 1 }).lean();
+  sellingCache = { at: Date.now(), ids: rows.map((r) => r._id) };
+  return sellingCache.ids;
 }
 
 function saleOf(p: ProductDoc): ProductView["sale"] {
@@ -108,8 +125,7 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
   if (query.inStock) filter.$expr = { $gte: ["$stock", "$minOrder"] };
   // Faqat amaldagi aksiyalar.
   if (query.onSale) Object.assign(filter, { salePrice: { $ne: null }, saleUntil: { $gt: new Date() } });
-  const hidden = await hiddenSellers();
-  if (hidden.length) filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $nin: hidden };
+  filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $in: await sellingSellers() };
 
   const page = Math.max(1, query.page ?? 1);
   const [docs, total] = await Promise.all([
@@ -126,9 +142,7 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
 /** Katalogdagi faol mahsulotlar soni kategoriyalar bo'yicha (bloklangan / obunasi tugagan kompaniyalarsiz). */
 export async function categoryCounts(): Promise<Record<CategoryCode, number>> {
   await connectDb();
-  const hidden = await hiddenSellers();
-  const match: Record<string, unknown> = { active: true, hiddenByAdmin: { $ne: true } };
-  if (hidden.length) match.seller = { $nin: hidden };
+  const match: Record<string, unknown> = { active: true, hiddenByAdmin: { $ne: true }, seller: { $in: await sellingSellers() } };
   const rows = await Product.aggregate<{ _id: CategoryCode; n: number }>([{ $match: match }, { $group: { _id: "$category", n: { $sum: 1 } } }]);
   const counts = Object.fromEntries(CATEGORY_CODES.map((c) => [c, 0])) as Record<CategoryCode, number>;
   for (const row of rows) if (row._id in counts) counts[row._id] = row.n;
@@ -243,7 +257,7 @@ export type SupplierQuery = { region?: RegionCode; q?: string };
 /** Kompaniyalar ro'yxati va qidiruvi: nomi bo'yicha (?q=) va viloyat bo'yicha (?region=). */
 export async function listSuppliers(query: SupplierQuery = {}): Promise<SupplierView[]> {
   await connectDb();
-  const filter: Record<string, unknown> = { role: "seller", blocked: false, hidden: { $ne: true }, demo: { $ne: true }, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
+  const filter: Record<string, unknown> = sellingFilter();
   const and: Record<string, unknown>[] = [];
   // Viloyat: kompaniya shu yerda joylashgan yoki shu yerga yetkazib beradi.
   if (query.region) and.push({ $or: [{ region: query.region }, { "profile.deliveryRegions": query.region }] });

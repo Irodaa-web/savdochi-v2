@@ -9,6 +9,7 @@ import type { RegionCode } from "@/lib/regions";
 import type { ProfileInput } from "@/lib/validation";
 import { Product } from "@/models/Product";
 import { User, type Profile, type UserDoc } from "@/models/User";
+import { notifyAdmins } from "./notify";
 
 export type ProfileView = {
   id: string;
@@ -72,8 +73,16 @@ export async function updateProfile(userId: string, input: ProfileInput): Promis
   const u = await User.findByIdAndUpdate(userId, { $set: { name, region, profile } }, { new: true, runValidators: true }).lean<UserDoc>();
   if (!u) throw new AppError("NOT_FOUND");
   forgetSessionUser(userId);
-  // Hisob ma'lumotlari to'ldirilsa — tekshiruvga navbatga qo'yiladi.
-  if (u.verification === "unverified" && profile.address) await User.updateOne({ _id: userId }, { $set: { verification: "pending" } });
+  // Hisob ma'lumotlari to'ldirilsa — tekshiruvga navbatga qo'yiladi. Rad etilgan hisob ma'lumotini
+  // tuzatib saqlasa — qayta tekshiruvga tushadi (aks holda "rad etilgan"ligicha qolib ketardi).
+  if ((u.verification === "unverified" || u.verification === "rejected") && profile.address) {
+    const res = await User.updateOne({ _id: userId, verification: u.verification }, { $set: { verification: "pending" } });
+    if (res.modifiedCount === 1) {
+      forgetSessionUser(userId);
+      await notifyAdmins("verificationPending", { name: u.name }, "/admin/users?status=pending");
+      return toView({ ...u, verification: "pending" as const });
+    }
+  }
   return toView(u);
 }
 
@@ -87,15 +96,20 @@ export async function changePassword(userId: string, current: string, next: stri
 }
 
 /** Kompaniyaning ommaviy sahifasi uchun: profil + mahsulotlar soni. */
-export async function getSellerPublic(sellerId: string): Promise<(ProfileView & { productCount: number }) | null> {
+/**
+ * Kompaniyaning ochiq sahifasi. Tasdiqlanmagan yoki demo kompaniya boshqalarga ko'rinmaydi —
+ * faqat o'zi (qanday ko'rinishini tekshirish uchun) va administrator ko'radi.
+ */
+export async function getSellerPublic(sellerId: string, viewer?: { id: string; isAdmin: boolean }): Promise<(ProfileView & { productCount: number }) | null> {
   if (!isValidObjectId(sellerId)) return null;
   const [view, productCount, demo] = await Promise.all([
     getProfile(sellerId),
     Product.countDocuments({ seller: sellerId, active: true, hiddenByAdmin: { $ne: true } }),
     User.exists({ _id: sellerId, demo: true }),
   ]);
-  // Demo kompaniyalar vaqtincha ko'rsatilmaydi.
-  if (!view || view.role !== "seller" || demo) return null;
+  if (!view || view.role !== "seller") return null;
+  const privileged = viewer && (viewer.isAdmin || viewer.id === sellerId);
+  if (!privileged && (demo || !view.verified)) return null;
   return { ...view, productCount };
 }
 

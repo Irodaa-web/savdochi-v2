@@ -8,6 +8,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
+import { VerifyBanner } from "@/components/seller/VerifyBanner";
 import { WarehouseStock } from "./WarehouseStock";
 import { formatAmount, saleDay } from "@/lib/catalog";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
@@ -66,6 +67,7 @@ export default async function ProductsPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t.products.title}</h1>
         {products.length > 0 && addButton}
       </div>
+      <VerifyBanner user={user} t={t} />
 
       {carts.shops > 0 && (
         <div className="flex items-start gap-3 rounded-xl border border-line bg-accent-soft px-4 py-3">

@@ -11,6 +11,7 @@ import { Partnership } from "@/models/Partnership";
 import { Product, type ProductDoc } from "@/models/Product";
 import { User, type Profile } from "@/models/User";
 import { creditInfo } from "./debts";
+import { sellerCanSell } from "./products";
 import { profileOf, subscriptionActive } from "./profile";
 
 export type CartLine = {
@@ -115,7 +116,7 @@ export async function getCart(buyerId: string, region?: string): Promise<CartVie
       };
       groups.set(sellerId, group);
     }
-    const sellerOk = !seller.blocked && !seller.demo && subscriptionActive(seller.subscriptionUntil);
+    const sellerOk = !seller.blocked && !seller.demo && seller.verification === "verified" && subscriptionActive(seller.subscriptionUntil);
     const salePrice = activeSalePrice(p);
     const unitPrice = unitPriceFor(item.quantity, p.price, p.priceTiers ?? [], salePrice);
     const problem: CartLine["problem"] = !p.active || p.hiddenByAdmin || !sellerOk ? "unavailable" : item.quantity < p.minOrder ? "belowMin" : item.quantity > p.stock ? "outOfStock" : null;
@@ -162,8 +163,10 @@ export async function cartCount(buyerId: string): Promise<number> {
 export async function setCartItem(buyerId: string, productId: string, quantity: number, add = false): Promise<number> {
   if (!isValidObjectId(productId)) throw new AppError("NOT_FOUND");
   await connectDb();
-  const product = await Product.findOne({ _id: productId, active: true, hiddenByAdmin: { $ne: true } }, { minOrder: 1 }).lean();
+  const product = await Product.findOne({ _id: productId, active: true, hiddenByAdmin: { $ne: true } }, { minOrder: 1, seller: 1 }).lean();
   if (!product && quantity > 0) throw new AppError("NOT_FOUND");
+  // Sotuvchi sotolmaydi (tasdiqlanmagan, bloklangan, yashirilgan, obunasi tugagan) — savatga ham qo'shilmaydi.
+  if (product && quantity > 0 && !(await sellerCanSell(product.seller))) throw new AppError("NOT_FOUND");
 
   const cart = (await Cart.findOne({ buyer: buyerId })) ?? new Cart({ buyer: buyerId, items: [] });
   const existing = cart.items.find((i) => String(i.product) === productId);
@@ -192,7 +195,7 @@ export async function addManyToCart(buyerId: string, items: { productId: string;
   const ids = items.map((i) => i.productId).filter((id) => isValidObjectId(id));
   const products = await Product.find({ _id: { $in: ids } }, { name: 1, active: 1, hiddenByAdmin: 1, minOrder: 1, stock: 1, seller: 1 }).lean();
   const blocked = new Set(
-    (await User.find({ _id: { $in: products.map((p) => p.seller) }, $or: [{ blocked: true }, { demo: true }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean()).map((u) => String(u._id)),
+    (await User.find({ _id: { $in: products.map((p) => p.seller) }, $or: [{ blocked: true }, { demo: true }, { verification: { $ne: "verified" } }, { subscriptionUntil: { $ne: null, $lt: new Date() } }] }, { _id: 1 }).lean()).map((u) => String(u._id)),
   );
   const byId = new Map(products.map((p) => [String(p._id), p]));
   const cart = (await Cart.findOne({ buyer: buyerId })) ?? new Cart({ buyer: buyerId, items: [] });

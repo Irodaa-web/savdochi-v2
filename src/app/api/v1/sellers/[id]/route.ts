@@ -3,7 +3,7 @@ import { withUser, type IdCtx } from "@/server/handler";
 import { getSellerPublic } from "@/server/profile";
 
 /** Kompaniya sahifasi: profil va yetkazish shartlari. */
-export const GET = withUser<IdCtx>(null, async (_user, _request, { params }) => {
-  const seller = await getSellerPublic((await params).id);
+export const GET = withUser<IdCtx>(null, async (user, _request, { params }) => {
+  const seller = await getSellerPublic((await params).id, user);
   return seller ? ok({ ...seller, phone: undefined }) : fail("NOT_FOUND");
 });

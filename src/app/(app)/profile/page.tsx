@@ -14,6 +14,7 @@ import { getProfile, subscriptionActive } from "@/server/profile";
 import { getOnlinePaySettings } from "@/server/onlinePay";
 import { OnlinePayForm } from "./OnlinePayForm";
 import { ProfileForm } from "./ProfileForm";
+import { VerifyBanner } from "@/components/seller/VerifyBanner";
 
 export const metadata = { title: "Profil" };
 
@@ -66,7 +67,7 @@ export default async function ProfilePage() {
       </div>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="flex min-w-0 flex-col gap-5">
-      {!profile.verified && <Alert tone="info">{t.home.verifyNote}</Alert>}
+      {user.role === "seller" ? <VerifyBanner user={user} t={t} profileLink={false} /> : !profile.verified && <Alert tone="info">{t.home.verifyNote}</Alert>}
       {user.role === "seller" && (
         <div className="flex items-start gap-3 glass-card rounded-2xl p-4">
           <CreditCard size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden />
