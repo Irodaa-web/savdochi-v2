@@ -26,7 +26,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
   const id = (await params).id;
   // So'rovlar parallel — bazaga bir "aylanish".
   const [s, partnership, highlights, reviews] = await Promise.all([
-    getSellerPublic(id),
+    getSellerPublic(id, user),
     user.role === "buyer" ? findPartnership(id, user.id) : null,
     getSellerHighlights(id),
     sellerReviews(id),

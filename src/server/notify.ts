@@ -2,6 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import { AuditLog } from "@/models/AuditLog";
 import { Notification, type NotificationType } from "@/models/Notification";
+import { User } from "@/models/User";
 import { notifyTelegram } from "./telegram";
 
 /** Bildirishnoma yaratadi. Xato bo'lsa asosiy amalni to'xtatmaydi. */
@@ -18,6 +19,14 @@ export async function notify(user: unknown, type: NotificationType, params: Reco
   } catch {
     await send(); // so'rovdan tashqarida (masalan, skriptda) — darhol
   }
+}
+
+/** Administratorlarga xabar (saytda va ulangan bo'lsa Telegram'da). Adminlar — ADMIN_PHONES ro'yxati. */
+export async function notifyAdmins(type: NotificationType, params: Record<string, string | number>, link: string): Promise<void> {
+  const phones = (process.env.ADMIN_PHONES ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+  if (!phones.length) return;
+  const admins = await User.find({ phone: { $in: phones }, blocked: false }, { _id: 1 }).lean();
+  await Promise.all(admins.map((a) => notify(a._id, type, params, link)));
 }
 
 /** Audit jurnaliga yozadi. */

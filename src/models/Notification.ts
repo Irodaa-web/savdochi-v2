@@ -23,6 +23,7 @@ export const NOTIFICATION_TYPES = [
   "productRestored",
   "ticketMessage",
   "verificationRejected",
+  "verificationPending",
   "verified",
   "inactivityWarning",
   "inactivityFinal",

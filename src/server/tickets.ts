@@ -5,7 +5,7 @@ import { connectDb } from "@/lib/db";
 import type { TicketStatus } from "@/lib/tickets";
 import { Ticket, type TicketDoc } from "@/models/Ticket";
 import { User } from "@/models/User";
-import { notify } from "./notify";
+import { notify, notifyAdmins } from "./notify";
 
 export type TicketThreadItem = { from: "user" | "admin"; text: string; at: string };
 export type TicketView = {
@@ -42,18 +42,6 @@ async function toViews(docs: TicketDoc[]): Promise<TicketView[]> {
   });
 }
 
-function adminPhones(): string[] {
-  return (process.env.ADMIN_PHONES ?? "").split(",").map((p) => p.trim()).filter(Boolean);
-}
-
-/** Administratorlarga xabar (saytda va ulangan bo'lsa Telegram'da). */
-async function notifyAdmins(type: "ticketNew" | "ticketMessage", params: Record<string, string>): Promise<void> {
-  const phones = adminPhones();
-  if (!phones.length) return;
-  const admins = await User.find({ phone: { $in: phones }, blocked: false }, { _id: 1 }).lean();
-  await Promise.all(admins.map((a) => notify(a._id, type, params, "/admin/tickets")));
-}
-
 export async function listMyTickets(userId: string): Promise<TicketView[]> {
   await connectDb();
   return toViews(await Ticket.find({ user: userId }).sort({ updatedAt: -1 }).limit(50).lean<TicketDoc[]>());
@@ -65,7 +53,7 @@ export async function createTicket(userId: string, subject: string, message: str
   if (open >= 10) throw new AppError("TOO_MANY_ATTEMPTS");
   await Ticket.create({ user: userId, subject, message });
   const author = await User.findById(userId, { name: 1 }).lean();
-  await notifyAdmins("ticketNew", { name: author?.name ?? "—", subject });
+  await notifyAdmins("ticketNew", { name: author?.name ?? "—", subject }, "/admin/tickets");
 }
 
 /** Foydalanuvchi o'z murojaatiga qo'shimcha yozadi — murojaat yana "ochiq" bo'ladi, adminlarga xabar boradi. */
@@ -79,7 +67,7 @@ export async function addUserMessage(userId: string, id: string, text: string): 
   ).lean<TicketDoc>();
   if (!t) throw new AppError("NOT_FOUND");
   const author = await User.findById(userId, { name: 1 }).lean();
-  await notifyAdmins("ticketMessage", { name: author?.name ?? "—", subject: t.subject });
+  await notifyAdmins("ticketMessage", { name: author?.name ?? "—", subject: t.subject }, "/admin/tickets");
 }
 
 export type TicketFilter = TicketStatus | "all";

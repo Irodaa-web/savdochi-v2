@@ -15,6 +15,7 @@ import { Staff } from "@/models/Staff";
 import { Ticket } from "@/models/Ticket";
 import { User, type Verification } from "@/models/User";
 import { audit, notify } from "./notify";
+import { forgetHiddenSellers } from "./products";
 import { smsEnabled } from "./sms";
 import { telegramConfig } from "./telegram";
 
@@ -261,7 +262,7 @@ export async function adminUpdateUser(adminId: string, id: string, input: AdminU
   if (input.verification && input.verification !== u.verification) {
     u.verification = input.verification;
     u.verificationNote = input.verification === "rejected" ? (input.reason ?? "").trim() : "";
-    if (input.verification === "verified") await notify(u._id, "verified", {}, "/profile");
+    if (input.verification === "verified") await notify(u._id, "verified", {}, u.role === "seller" ? "/products" : "/profile");
     if (input.verification === "rejected") await notify(u._id, "verificationRejected", { reason: u.verificationNote || "—" }, "/profile");
   }
   if (input.blocked !== undefined && input.blocked !== u.blocked) {
@@ -285,6 +286,7 @@ export async function adminUpdateUser(adminId: string, id: string, input: AdminU
   }
   await u.save();
   forgetSessionUser(id);
+  forgetHiddenSellers();
   await audit(adminId, "admin.user.update", `user:${id}`, input as Record<string, unknown>, ip);
 }
 

@@ -11,6 +11,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { fmt, formatDateTime, formatDay } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
+import { VerifyBanner } from "@/components/seller/VerifyBanner";
 import { formatAmount } from "@/lib/catalog";
 import { listDebts } from "@/server/debts";
 import { sellerOnlineMethods } from "@/server/onlinePay";
@@ -44,6 +45,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   return (
     <div className="flex flex-col gap-5">
       <Welcome user={user} />
+      <VerifyBanner user={user} t={t} />
       {!subscriptionActive(user.subscriptionUntil) && <Alert>{t.subscription.expiredNote}</Alert>}
       {onlineMethods.length === 0 && (
         <Alert tone="info">

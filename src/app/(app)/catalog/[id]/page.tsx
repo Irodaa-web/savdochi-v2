@@ -18,7 +18,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const p = await getProduct((await params).id);
   if (!p || !p.active) notFound();
   // Administrator yashirgan mahsulot — faqat egasi va administrator ko'radi.
-  if (p.moderation.hidden && p.seller.id !== user.id && !user.isAdmin) notFound();
+  // Yashirilgan mahsulot yoki tasdiqlanmagan kompaniya mahsuloti — faqat egasi va administratorga.
+  if ((p.moderation.hidden || !p.seller.verified) && p.seller.id !== user.id && !user.isAdmin) notFound();
   const sellerRating = (await ratingsFor([p.seller.id])).get(p.seller.id) ?? null;
   const unit = t.units[p.unit];
 
