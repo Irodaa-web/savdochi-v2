@@ -264,7 +264,7 @@ export async function getUserDetail(id: string): Promise<AdminUserDetail | null>
   };
 }
 
-export type AdminUserInput = { verification?: Verification; reason?: string; blocked?: boolean; extendMonths?: number; plan?: PlanCode; hidden?: boolean; reactivate?: boolean };
+export type AdminUserInput = { verification?: Verification; reason?: string; blocked?: boolean; extendMonths?: number; plan?: PlanCode; gift?: boolean; hidden?: boolean; reactivate?: boolean };
 
 /**
  * Administrator amallari. Himoya: o'zini va boshqa administratorni bloklab bo'lmaydi.
@@ -313,10 +313,19 @@ export async function adminUpdateUser(adminId: string, id: string, input: AdminU
   if (input.verification === "verified" && u.role === "seller") await rewardReferral(u._id);
   // To'lovlar jurnali: administrator to'g'ridan-to'g'ri yoqqan tarif — narx bo'yicha to'langan deb yoziladi.
   if (planNote && planNote.plan !== "free" && input.extendMonths && input.extendMonths > 0)
-    await recordPlanOrder({ company: u._id, plan: planNote.plan, months: input.extendMonths, paidAmount: PLANS[planNote.plan].price * input.extendMonths, source: "admin", adminId });
+    await recordPlanOrder({
+      company: u._id,
+      plan: planNote.plan,
+      months: input.extendMonths,
+      // Sovg'a — to'lovsiz (daromadga qo'shilmaydi); oddiy yoqish — narx bo'yicha to'langan deb yoziladi.
+      paidAmount: input.gift ? 0 : PLANS[planNote.plan].price * input.extendMonths,
+      source: input.gift ? "gift" : "admin",
+      adminId,
+    });
   forgetSessionUser(id);
   forgetHiddenSellers();
-  if (planNote) await notify(u._id, "planChanged", { plan: planNote.plan, until: planNote.until ? planNote.until.toISOString().slice(0, 10) : "" }, "/billing");
+  if (planNote && input.gift && planNote.plan !== "free") await notify(u._id, "planGift", { plan: planNote.plan, months: input.extendMonths ?? 0 }, "/billing");
+  else if (planNote) await notify(u._id, "planChanged", { plan: planNote.plan, until: planNote.until ? planNote.until.toISOString().slice(0, 10) : "" }, "/billing");
   await audit(adminId, "admin.user.update", `user:${id}`, input as Record<string, unknown>, ip);
 }
 

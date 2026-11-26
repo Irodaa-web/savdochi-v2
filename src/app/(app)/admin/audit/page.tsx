@@ -75,8 +75,9 @@ function describe(r: AuditView, t: Dictionary): string {
       if (d.verification === "pending" || d.verification === "unverified") parts.push(a.verificationReset);
       if (d.blocked === true) parts.push(a.blocked);
       if (d.blocked === false) parts.push(a.unblocked);
-      if (d.extendMonths === -1) parts.push(a.subscriptionStopped);
-      else if (typeof d.extendMonths === "number" && d.extendMonths > 0) parts.push(fmt(a.subscriptionExtended, { n: d.extendMonths }));
+      if (d.extendMonths === -1 || d.plan === "free") parts.push(a.subscriptionStopped);
+      else if (typeof d.extendMonths === "number" && d.extendMonths > 0)
+        parts.push(d.gift ? fmt(a.planGift, { plan: t.plans.names[d.plan as "standard" | "premium"] ?? "", n: d.extendMonths }) : fmt(a.subscriptionExtended, { n: d.extendMonths }));
       if (d.hidden === true) parts.push(a.hidden);
       if (d.hidden === false) parts.push(a.shown);
       if (d.reactivate) parts.push(a.reactivated);

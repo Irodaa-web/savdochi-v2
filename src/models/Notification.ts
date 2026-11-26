@@ -25,6 +25,7 @@ export const NOTIFICATION_TYPES = [
   "verificationRejected",
   "verificationPending",
   "planChanged",
+  "planGift",
   "planRequest",
   "planRequestRejected",
   "referralReward",
