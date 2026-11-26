@@ -10,6 +10,8 @@ import type { Dictionary } from "@/i18n/dictionaries/uz";
 import { fmt, formatDateTime, formatDay, formatMonth } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
+import { planHas } from "@/lib/plans";
+import { PlanLocked } from "@/components/plans/PlanLocked";
 import { formatAmount } from "@/lib/catalog";
 import { buyerAnalytics, change, PERIODS, periodOf, sellerAnalytics, type Period, type TrendPoint } from "@/server/analytics";
 
@@ -39,6 +41,15 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
       <PeriodSwitch period={period} t={t} />
     </>
   );
+
+  // Kompaniya analitikasi — Standart va Premium tariflarda (do'kon uchun bepul).
+  if (user.role === "seller" && !planHas(user.plan, "analytics"))
+    return (
+      <section className="flex flex-col gap-5">
+        <PageTitle lead={a.leadSeller}>{a.titleSeller}</PageTitle>
+        <PlanLocked feature="analytics" t={t} owner={!user.staff} />
+      </section>
+    );
 
   if (user.role === "buyer") {
     const r = await buyerAnalytics(user.id, period);

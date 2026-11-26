@@ -8,6 +8,7 @@ import { MAX_STAFF, type StaffRole } from "@/lib/staff";
 import { Staff, type StaffDoc } from "@/models/Staff";
 import { User } from "@/models/User";
 import { audit } from "./notify";
+import { assertStaffRoom } from "./plans";
 
 export type StaffView = { id: string; name: string; phone: string; role: StaffRole; blocked: boolean; lastActiveAt: string | null; createdAt: string };
 
@@ -38,6 +39,7 @@ export async function addStaff(user: SessionUser, input: { name: string; phone: 
   const company = owner(user);
   await connectDb();
   if ((await Staff.countDocuments({ company })) >= MAX_STAFF) throw new AppError("INVALID_INPUT", { phone: "staffLimit" });
+  await assertStaffRoom(company, user.plan); // tarif: Bepul — 0, Standart — 2, Premium — cheksiz
   // Telefon butun tizimda bitta: na kompaniya/do'kon, na boshqa xodim bo'lmasligi kerak.
   if ((await User.exists({ phone: input.phone })) || (await Staff.exists({ phone: input.phone }))) throw new AppError("INVALID_INPUT", { phone: "staffPhoneTaken" });
   try {
@@ -66,6 +68,7 @@ export async function updateStaff(user: SessionUser, id: string, input: { name?:
     staff.role = input.role;
     revoke = true;
   }
+  if (input.blocked === false && staff.blocked) await assertStaffRoom(company, user.plan);
   if (input.blocked !== undefined && input.blocked !== staff.blocked) {
     staff.blocked = input.blocked;
     revoke = true;

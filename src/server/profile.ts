@@ -10,6 +10,7 @@ import type { ProfileInput } from "@/lib/validation";
 import { Product } from "@/models/Product";
 import { User, type Profile, type UserDoc } from "@/models/User";
 import { notifyAdmins } from "./notify";
+import { effectivePlan } from "@/lib/plans";
 
 export type ProfileView = {
   id: string;
@@ -18,6 +19,8 @@ export type ProfileView = {
   phone: string;
   region: RegionCode;
   verified: boolean;
+  /** Premium tarifdagi kompaniya (katalogda belgi bilan ko'rinadi). */
+  premium: boolean;
   profile: Profile;
   subscriptionUntil: string | null;
   createdAt: string;
@@ -54,6 +57,7 @@ function toView(u: UserDoc): ProfileView {
     phone: u.phone,
     region: u.region,
     verified: u.verification === "verified",
+    premium: u.role === "seller" && effectivePlan(u) === "premium",
     profile: profileOf(u),
     subscriptionUntil: u.subscriptionUntil ? u.subscriptionUntil.toISOString() : null,
     createdAt: u.createdAt.toISOString(),
@@ -111,10 +115,4 @@ export async function getSellerPublic(sellerId: string, viewer?: { id: string; i
   const privileged = viewer && (viewer.isAdmin || viewer.id === sellerId);
   if (!privileged && (demo || !view.verified)) return null;
   return { ...view, productCount };
-}
-
-/** Obuna faolmi: null — cheklovsiz, aks holda sana kelajakda bo'lishi kerak. */
-export function subscriptionActive(until: Date | string | null | undefined): boolean {
-  if (!until) return true;
-  return new Date(until).getTime() > Date.now();
 }

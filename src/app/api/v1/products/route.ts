@@ -3,7 +3,7 @@ import { CATEGORY_CODES, type CategoryCode } from "@/lib/catalog";
 import { fieldErrors, productSchema } from "@/lib/validation";
 import { withUser } from "@/server/handler";
 import { createProduct, listCatalog } from "@/server/products";
-import { subscriptionActive } from "@/server/profile";
+import { assertProductRoom, requireFeature } from "@/server/plans";
 
 /** Katalog: ?q=&category=&seller=&page= */
 export const GET = withUser(null, async (_user, request) => {
@@ -20,8 +20,10 @@ export const GET = withUser(null, async (_user, request) => {
 
 /** Yangi mahsulot — faqat sotuvchi. */
 export const POST = withUser("seller", async (user, request) => {
-  if (!subscriptionActive(user.subscriptionUntil)) return fail("SUBSCRIPTION_EXPIRED");
   const parsed = productSchema.safeParse(await readJson(request));
   if (!parsed.success) return fail("INVALID_INPUT", fieldErrors(parsed.error));
+  // Tarif: mahsulotlar soni chegarasi; aksiya — faqat Premium.
+  await assertProductRoom(user.id, user.plan);
+  if (parsed.data.salePrice != null) requireFeature(user, "sale");
   return ok(await createProduct(user.id, parsed.data), { status: 201 });
 });

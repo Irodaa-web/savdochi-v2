@@ -5,6 +5,7 @@ import { REGION_CODES } from "./regions";
 import { CATEGORY_CODES, UNIT_CODES } from "./catalog";
 import { DELIVERY_METHODS, ORDER_STATUSES, PAYMENT_METHODS, PAYMENT_STATUSES, PROFILE_PAYMENT_METHODS } from "./orders";
 import { TICKET_STATUSES } from "./tickets";
+import { PLAN_CODES } from "@/lib/plans";
 
 /**
  * Server va mijoz ikkalasi ishlatadigan sxemalar.
@@ -287,8 +288,10 @@ export const adminUserSchema = z.object({
   hidden: z.boolean().optional(),
   /** 15 kunlik nofaollikdan keyin hisobni qo'lda tiklash. */
   reactivate: z.boolean().optional(),
-  /** Obunani shuncha oyga uzaytirish (0 — o'zgarmaydi, -1 — to'xtatish). */
+  /** Tarifni shuncha oyga yoqish/uzaytirish (-1 — Bepul tarifga o'tkazish). */
   extendMonths: z.coerce.number().int().min(-1).max(24).optional(),
+  /** Qaysi tarif (extendMonths bilan). "free" — Bepulga o'tkazish. */
+  plan: z.enum(PLAN_CODES).optional(),
 });
 
 const merchantId = z.string().trim().min(3, "numberInvalid").max(64, "numberInvalid");

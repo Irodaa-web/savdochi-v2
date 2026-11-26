@@ -1,9 +1,11 @@
 import writeXlsxFile from "write-excel-file/node";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { withUser } from "@/server/handler";
+import { requireFeature } from "@/server/plans";
 
 /** Tayyor Excel shablon: joriy tildagi sarlavhalar va 2 ta namuna qator. */
-export const GET = withUser("seller", async () => {
+export const GET = withUser("seller", async (user) => {
+  requireFeature(user, "excel"); // Excel — Premium tarif imkoniyati (do'konlarga tegmaydi)
   const t = getDictionary(await getLocale());
   const p = t.products;
   const header = [p.name, p.category, p.unit, p.price, p.minOrder, p.stock, p.packSize, p.description, p.importImagesCol].map((value) => ({

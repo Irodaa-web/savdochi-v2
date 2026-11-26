@@ -10,7 +10,7 @@ import { fmt, formatDateTime } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { formatPhone } from "@/lib/phone";
-import { getProfile, subscriptionActive } from "@/server/profile";
+import { getProfile } from "@/server/profile";
 import { getOnlinePaySettings } from "@/server/onlinePay";
 import { OnlinePayForm } from "./OnlinePayForm";
 import { ProfileForm } from "./ProfileForm";
@@ -24,7 +24,6 @@ export default async function ProfilePage() {
   const t = getDictionary(locale);
   const [profile, onlinePay] = await Promise.all([getProfile(user.id), user.role === "seller" ? getOnlinePaySettings(user.id) : null]);
   if (!profile) notFound();
-  const active = subscriptionActive(profile.subscriptionUntil);
   const isSeller = user.role === "seller";
   const p = profile.profile;
   // Profil to'liqligi: har bir band — sahifadagi haqiqiy ma'lumot asosida.
@@ -72,13 +71,18 @@ export default async function ProfilePage() {
         <div className="flex items-start gap-3 glass-card rounded-2xl p-4">
           <CreditCard size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden />
           <div className="text-[14px]">
-            <b>{t.subscription.title}: </b>
-            {profile.subscriptionUntil ? (
-              <span className={active ? "text-success" : "text-danger"}>{fmt(active ? t.subscription.until : t.subscription.expired, { date: formatDateTime(profile.subscriptionUntil, locale, false) })}</span>
-            ) : (
-              <span className="text-success">{t.subscription.unlimited}</span>
+            <b>{t.plans.title}: </b>
+            <span className="font-semibold">{t.plans.names[user.plan]}</span>
+            {user.plan !== "free" && (
+              <span className="text-muted"> · {profile.subscriptionUntil ? fmt(t.plans.until, { date: formatDateTime(profile.subscriptionUntil, locale, false) }) : t.plans.unlimited}</span>
             )}
-            <p className="mt-1 text-muted">{t.subscription.how}</p>
+            {!user.staff && (
+              <p className="mt-1">
+                <Link href="/billing" className="font-semibold text-accent hover:underline">
+                  {t.plans.lockedCta}
+                </Link>
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import writeXlsxFile from "write-excel-file/node";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { withUser } from "@/server/handler";
+import { requireFeature } from "@/server/plans";
 import { listSellerProducts } from "@/server/products";
 
 /**
@@ -8,6 +9,7 @@ import { listSellerProducts } from "@/server/products";
  * fayl tahrirlanib qayta yuklanishi mumkin (nomi bo'yicha yangilanadi).
  */
 export const GET = withUser("seller", async (user) => {
+  requireFeature(user, "excel"); // Excel — Premium tarif imkoniyati (do'konlarga tegmaydi)
   const t = getDictionary(await getLocale());
   const p = t.products;
   const products = await listSellerProducts(user.id);

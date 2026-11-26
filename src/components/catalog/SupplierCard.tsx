@@ -4,6 +4,7 @@ import type { Dictionary } from "@/i18n/dictionaries/uz";
 import { fmt } from "@/i18n/format";
 import type { SupplierView } from "@/server/products";
 import { RatingBadge } from "@/components/reviews/Stars";
+import { PremiumBadge } from "./PremiumBadge";
 
 /** Nomidan bosh harflar: "Demo Oziq-ovqat MChJ" → "DO". */
 function initials(name: string): string {
@@ -21,6 +22,7 @@ export function SupplierCard({ supplier: s, t }: { supplier: SupplierView; t: Di
           <Link href={`/catalog?seller=${s.id}`} className="flex items-center gap-1.5 font-semibold outline-none after:absolute after:inset-0 after:rounded-2xl">
             <span className="truncate">{s.name}</span>
             {s.verified && <BadgeCheck size={16} className="shrink-0 text-accent" aria-label={t.catalog.verified} />}
+            {s.premium && <PremiumBadge label={t.plans.names.premium} />}
           </Link>
           <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
             <span className="flex items-center gap-1.5">

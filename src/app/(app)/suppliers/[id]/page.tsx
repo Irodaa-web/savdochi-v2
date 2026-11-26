@@ -17,6 +17,7 @@ import { sellerReviews } from "@/server/reviews";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { Stars } from "@/components/reviews/Stars";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
+import { PremiumBadge } from "@/components/catalog/PremiumBadge";
 
 /** Kompaniya sahifasi: kim, qayerga, qanday shartlarda yetkazadi. */
 export default async function SupplierPage({ params }: { params: Promise<{ id: string }> }) {
@@ -56,6 +57,7 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
           {s.name}
           {s.verified && <BadgeCheck size={20} className="text-sky-300" aria-label={t.catalog.verified} />}
+          {s.premium && <PremiumBadge label={t.plans.names.premium} onDark />}
         </h1>
         {reviews.rating.count > 0 && (
           <a href="#reviews" className="flex w-fit items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-[13px] text-white backdrop-blur-sm hover:bg-white/20">

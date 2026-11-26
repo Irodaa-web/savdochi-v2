@@ -3,12 +3,26 @@ import Link from "next/link";
 import { SideCard } from "@/components/ui/SideCard";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
+import { planHas } from "@/lib/plans";
+import { PlanLocked } from "@/components/plans/PlanLocked";
 import { ImportForm } from "./ImportForm";
 
 export default async function ImportProductsPage() {
-  await requireUser("seller", { staff: ["manager"] });
+  const user = await requireUser("seller", { staff: ["manager"] });
   const t = getDictionary(await getLocale());
   const p = t.products;
+  // Excel'dan yuklash — Premium tarif imkoniyati.
+  if (!planHas(user.plan, "excel"))
+    return (
+      <section className="flex flex-col gap-5">
+        <Link href="/products" className="inline-flex w-fit items-center gap-1.5 text-muted hover:text-text">
+          <ArrowLeft size={16} aria-hidden />
+          {p.title}
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight">{p.importTitle}</h1>
+        <PlanLocked feature="excel" t={t} owner={!user.staff} />
+      </section>
+    );
   // Ustunlar tartibi importdagi maydonlar bilan bir xil; birinchi uchtasi majburiy.
   const columns = [p.name, p.unit, p.price, p.category, p.stock, p.minOrder, p.packSize, p.description, p.importImagesCol];
 

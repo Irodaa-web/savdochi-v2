@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
+import { planHas } from "@/lib/plans";
 import { getProduct } from "@/server/products";
 import { ProductForm } from "../../ProductForm";
 
@@ -12,7 +13,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   return (
     <section className="flex flex-col gap-5">
       <h1 className="text-2xl font-bold tracking-tight">{t.products.editTitle}</h1>
-      <ProductForm product={product} />
+      <ProductForm product={product} canSale={planHas(user.plan, "sale")} owner={!user.staff} />
     </section>
   );
 }

@@ -3,6 +3,7 @@ import { isValidObjectId, Types, type FilterQuery } from "mongoose";
 import { AppError } from "@/lib/api";
 import { connectDb } from "@/lib/db";
 import { activeSalePrice, CATEGORY_CODES, saleDay, salePercent, type CategoryCode, type PriceTier, type UnitCode } from "@/lib/catalog";
+import { effectivePlan } from "@/lib/plans";
 import type { RegionCode } from "@/lib/regions";
 import type { ProductInput } from "@/lib/validation";
 import { notify } from "@/server/notify";
@@ -34,15 +35,15 @@ export type ProductView = {
   seller: { id: string; name: string; region: RegionCode; verified: boolean };
 };
 
-type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification: string };
+type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification: string; role?: string; plan?: string; subscriptionUntil?: Date | null };
 
-/** Katalogda ko'rinmaydigan sotuvchilar: bloklangan yoki obunasi tugagan. */
 /**
- * Sota oladigan kompaniya: administrator tasdiqlagan, bloklanmagan, yashirilmagan, demo emas va obunasi amalda.
+ * Sota oladigan kompaniya: administrator tasdiqlagan, bloklanmagan, yashirilmagan va demo emas.
+ * Tarif sotishni to'xtatmaydi — Bepul tarif ham sotadi (faqat chegara va imkoniyatlar kamroq).
  * Tasdiqlanmagan (yangi, tekshiruvdagi yoki rad etilgan) kompaniya katalogda ko'rinmaydi va buyurtma olmaydi.
  */
 export function sellingFilter(): Record<string, unknown> {
-  return { role: "seller", verification: "verified", blocked: { $ne: true }, hidden: { $ne: true }, demo: { $ne: true }, $or: [{ subscriptionUntil: null }, { subscriptionUntil: { $gt: new Date() } }] };
+  return { role: "seller", verification: "verified", blocked: { $ne: true }, hidden: { $ne: true }, demo: { $ne: true } };
 }
 
 /** Kompaniya hozir sota oladimi (savatga qo'shishda — keshsiz, aniq tekshiruv). */
@@ -54,16 +55,17 @@ export async function sellerCanSell(sellerId: unknown): Promise<boolean> {
  * Katalog uchun sota oladigan kompaniyalar ro'yxati — server xotirasida 60 soniya saqlanadi.
  * Ruxsat ro'yxati: yangi ro'yxatdan o'tgan kompaniya keshda yo'q, demak avtomatik yashirin qoladi.
  */
-let sellingCache: { at: number; ids: unknown[] } | null = null;
-/** Admin kompaniya holatini o'zgartirganda — katalog darhol yangilansin. */
+let sellingCache: { at: number; ids: unknown[]; premium: unknown[] } | null = null;
+/** Admin kompaniya holatini yoki tarifini o'zgartirganda — katalog darhol yangilansin. */
 export function forgetHiddenSellers(): void {
   sellingCache = null;
 }
-async function sellingSellers(): Promise<unknown[]> {
-  if (sellingCache && Date.now() - sellingCache.at < 60_000) return sellingCache.ids;
-  const rows = await User.find(sellingFilter(), { _id: 1 }).lean();
-  sellingCache = { at: Date.now(), ids: rows.map((r) => r._id) };
-  return sellingCache.ids;
+/** ids — sota oladiganlar; premium — ulardan Premium tarifdagilari (katalogda birinchi chiqadi). */
+async function sellingSellers(): Promise<{ ids: unknown[]; premium: unknown[] }> {
+  if (sellingCache && Date.now() - sellingCache.at < 60_000) return sellingCache;
+  const rows = await User.find(sellingFilter(), { _id: 1, role: 1, plan: 1, subscriptionUntil: 1 }).lean();
+  sellingCache = { at: Date.now(), ids: rows.map((r) => r._id), premium: rows.filter((r) => effectivePlan(r) === "premium").map((r) => r._id) };
+  return sellingCache;
 }
 
 function saleOf(p: ProductDoc): ProductView["sale"] {
@@ -125,15 +127,28 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
   if (query.inStock) filter.$expr = { $gte: ["$stock", "$minOrder"] };
   // Faqat amaldagi aksiyalar.
   if (query.onSale) Object.assign(filter, { salePrice: { $ne: null }, saleUntil: { $gt: new Date() } });
-  filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $in: await sellingSellers() };
+  const selling = await sellingSellers();
+  filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $in: selling.ids };
 
   const page = Math.max(1, query.page ?? 1);
+  const sort = query.sort ?? "new";
+  // Standart tartibda Premium kompaniyalar mahsulotlari birinchi (tarif imkoniyati), keyin — yangilari.
+  const boost = sort === "new" && selling.premium.length > 0;
   const [docs, total] = await Promise.all([
-    Product.find(filter)
-      .sort(SORTS[query.sort ?? "new"])
-      .skip((page - 1) * PAGE_SIZE)
-      .limit(PAGE_SIZE)
-      .lean<ProductDoc[]>(),
+    boost
+      ? Product.aggregate<ProductDoc>([
+          { $match: Product.find().cast(Product, filter) },
+          { $addFields: { _boost: { $cond: [{ $in: ["$seller", selling.premium] }, 1, 0] } } },
+          { $sort: { _boost: -1, ...SORTS.new } },
+          { $skip: (page - 1) * PAGE_SIZE },
+          { $limit: PAGE_SIZE },
+          { $project: { _boost: 0 } },
+        ])
+      : Product.find(filter)
+          .sort(SORTS[sort])
+          .skip((page - 1) * PAGE_SIZE)
+          .limit(PAGE_SIZE)
+          .lean<ProductDoc[]>(),
     Product.countDocuments(filter),
   ]);
   return { items: await withSellers(docs), total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
@@ -142,7 +157,7 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
 /** Katalogdagi faol mahsulotlar soni kategoriyalar bo'yicha (bloklangan / obunasi tugagan kompaniyalarsiz). */
 export async function categoryCounts(): Promise<Record<CategoryCode, number>> {
   await connectDb();
-  const match: Record<string, unknown> = { active: true, hiddenByAdmin: { $ne: true }, seller: { $in: await sellingSellers() } };
+  const match: Record<string, unknown> = { active: true, hiddenByAdmin: { $ne: true }, seller: { $in: (await sellingSellers()).ids } };
   const rows = await Product.aggregate<{ _id: CategoryCode; n: number }>([{ $match: match }, { $group: { _id: "$category", n: { $sum: 1 } } }]);
   const counts = Object.fromEntries(CATEGORY_CODES.map((c) => [c, 0])) as Record<CategoryCode, number>;
   for (const row of rows) if (row._id in counts) counts[row._id] = row.n;
@@ -197,11 +212,15 @@ export async function setProductStock(sellerId: string, id: string, stock: numbe
 }
 
 /** Faqat egasi o'zgartira oladi. Topilmasa yoki egasi boshqa bo'lsa — null. */
-export async function updateProduct(sellerId: string, id: string, input: ProductInput): Promise<ProductView | null> {
+/** allowSale — tarifda aksiya bormi: yo'q bo'lsa yangi aksiya qo'yib/o'zgartirib bo'lmaydi (olib tashlash mumkin). */
+export async function updateProduct(sellerId: string, id: string, input: ProductInput, allowSale = true): Promise<ProductView | null> {
   if (!isValidObjectId(id)) return null;
   await connectDb();
   const prev = await Product.findOne({ _id: id, seller: sellerId, active: true }).lean<ProductDoc>();
   if (!prev) return null;
+  const time = (d: unknown) => (d ? new Date(d as string).getTime() : null);
+  const saleChanged = input.salePrice != null && (input.salePrice !== (prev.salePrice ?? null) || time(input.saleUntil) !== time(prev.saleUntil));
+  if (saleChanged && !allowSale) throw new AppError("PLAN_FEATURE");
   const doc = await Product.findOneAndUpdate({ _id: id, seller: sellerId, active: true }, { $set: input }, { new: true, runValidators: true }).lean<ProductDoc>();
   if (!doc) return null;
   const [view] = await withSellers([doc]);
@@ -250,7 +269,7 @@ export async function getProductSeller(sellerId: string): Promise<string | null>
   return seller?.name ?? null;
 }
 
-export type SupplierView = { id: string; name: string; region: RegionCode; verified: boolean; productCount: number; rating: Rating };
+export type SupplierView = { id: string; name: string; region: RegionCode; verified: boolean; premium: boolean; productCount: number; rating: Rating };
 
 export type SupplierQuery = { region?: RegionCode; q?: string };
 
@@ -264,7 +283,9 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
   const q = query.q?.trim();
   if (q) and.push({ name: { $regex: q.slice(0, 80).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } });
   if (and.length) filter.$and = and;
-  const sellers = await User.find(filter, { name: 1, region: 1, verification: 1 }).sort({ verification: -1, name: 1 }).limit(200).lean<SellerInfo[]>();
+  const found = await User.find(filter, { name: 1, region: 1, verification: 1, role: 1, plan: 1, subscriptionUntil: 1 }).sort({ name: 1 }).limit(200).lean<SellerInfo[]>();
+  // Premium kompaniyalar ro'yxatda birinchi (tartib barqaror: keyin — nomi bo'yicha).
+  const sellers = [...found.filter((s) => effectivePlan(s) === "premium"), ...found.filter((s) => effectivePlan(s) !== "premium")];
   const [counts, ratings] = await Promise.all([
     Product.aggregate<{ _id: unknown; n: number }>([{ $match: { active: true, hiddenByAdmin: { $ne: true }, seller: { $in: sellers.map((s) => s._id) } } }, { $group: { _id: "$seller", n: { $sum: 1 } } }]),
     ratingsFor(sellers.map((s) => String(s._id))),
@@ -275,6 +296,7 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
     name: s.name,
     region: s.region,
     verified: s.verification === "verified",
+    premium: effectivePlan(s) === "premium",
     productCount: countBy.get(String(s._id)) ?? 0,
     rating: ratings.get(String(s._id)) ?? { average: 0, count: 0 },
   }));

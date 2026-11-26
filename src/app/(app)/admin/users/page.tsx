@@ -8,7 +8,6 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireAdmin } from "@/lib/auth/guard";
 import { formatPhone } from "@/lib/phone";
 import { listUsers, USER_STATUSES, type UserStatusFilter } from "@/server/admin";
-import { subscriptionActive } from "@/server/profile";
 import { UserStatusPills } from "./UserStatusPills";
 
 export const metadata = { title: "Foydalanuvchilar" };
@@ -82,12 +81,8 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 </span>
                 {u.role === "seller" && (
                   <span className="text-[12px] text-muted">
-                    {t.subscription.title}:{" "}
-                    {u.subscriptionUntil ? (
-                      <b className={subscriptionActive(u.subscriptionUntil) ? "text-success" : "text-danger"}>{formatDateTime(u.subscriptionUntil, locale, false)}</b>
-                    ) : (
-                      <b className="text-success">{t.subscription.unlimited}</b>
-                    )}
+                    {t.plans.title}: <b className={u.plan === "free" ? "text-muted" : "text-success"}>{t.plans.names[u.plan]}</b>
+                    {u.plan !== "free" && u.subscriptionUntil && ` · ${fmt(t.plans.until, { date: formatDateTime(u.subscriptionUntil, locale, false) })}`}
                   </span>
                 )}
                 <ChevronRight size={18} className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5" aria-hidden />
