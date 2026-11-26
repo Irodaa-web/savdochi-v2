@@ -208,7 +208,8 @@ export const sidebarNav: Record<Role, SideGroup[]> = {
       title: (t) => t.navMenu.groupMain,
       items: [
         { href: "/", Icon: Home, label: (t) => t.nav.dashboard },
-        { href: "/catalog", Icon: LayoutGrid, label: (t) => t.nav.catalog, children: menuLinks("buyer", "/catalog").filter((l) => l.href !== "/favorites") },
+        // Katalog — oddiy havola: kompaniya/mahsulot ko'rinishi va kategoriyalar katalog sahifasining o'zida tanlanadi.
+        { href: "/catalog", Icon: LayoutGrid, label: (t) => t.nav.catalog },
         { href: "/cart", Icon: ShoppingCart, label: (t) => t.nav.cart, badge: "cart" },
         { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders", children: orderStatuses.links },
         { href: "/lists", Icon: ListChecks, label: (t) => t.navMenu.lists },
