@@ -27,7 +27,7 @@ export default async function BillingPage() {
   const [usage, orders, referral] = await Promise.all([planUsage(user.id), myPlanOrders(user.id), myReferral(user.id)]);
   const b = t.billing;
   const statusText = { paid: b.statusPaid, rejected: b.statusRejected, pending: b.statusPending, cancelled: b.statusCancelled } as const;
-  const sourceText = { request: b.sourceRequest, admin: b.sourceAdmin, referral: b.sourceReferral } as const;
+  const sourceText = { request: b.sourceRequest, admin: b.sourceAdmin, referral: b.sourceReferral, gift: b.sourceGift } as const;
   const spec = PLANS[user.plan];
   const left = daysLeft(user);
   const until = user.plan !== "free" && user.subscriptionUntil ? fmt(p.until, { date: formatDateTime(user.subscriptionUntil, locale, false) }) : user.plan !== "free" ? p.unlimited : null;

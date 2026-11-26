@@ -3,8 +3,8 @@ import { PLAN_CODES, type PlanCode } from "@/lib/plans";
 
 export const PLAN_ORDER_STATUSES = ["pending", "paid", "rejected", "cancelled"] as const;
 export type PlanOrderStatus = (typeof PLAN_ORDER_STATUSES)[number];
-/** Qayerdan: kompaniya so'rovi, administrator to'g'ridan-to'g'ri yoqqan, taklif (referal) sovg'asi. */
-export const PLAN_ORDER_SOURCES = ["request", "admin", "referral"] as const;
+/** Qayerdan: kompaniya so'rovi, administrator yoqqan (to'langan), taklif (referal) sovg'asi, administrator sovg'asi. */
+export const PLAN_ORDER_SOURCES = ["request", "admin", "referral", "gift"] as const;
 export type PlanOrderSource = (typeof PLAN_ORDER_SOURCES)[number];
 
 /**

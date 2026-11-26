@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, CalendarPlus, CalendarX, Eye, EyeOff, Lock, LockOpen, RotateCcw, XCircle } from "lucide-react";
+import { BadgeCheck, CalendarPlus, CalendarX, Eye, EyeOff, Gift, Lock, LockOpen, RotateCcw, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert } from "@/components/ui/Alert";
@@ -118,6 +118,28 @@ export function UserActions({ id, role, verification, blocked, inactive, hidden,
               <CalendarX size={16} aria-hidden />
               {a.stopSubscription}
             </Button>
+          </div>
+          {/* Sovg'a: tanlangan tarif to'lovsiz yoqiladi (daromadga qo'shilmaydi), kompaniyaga sovg'a xabari boradi. */}
+          <div className="flex flex-col gap-2 rounded-xl border border-amber-300/60 bg-amber-50/70 p-3 dark:border-amber-300/25 dark:bg-amber-400/10">
+            <span className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-800 dark:text-amber-200">
+              <Gift size={15} aria-hidden />
+              {t.plans.giftTitle}: {t.plans.names[plan]}
+            </span>
+            <span className="text-[12px] text-muted">{t.plans.giftHint}</span>
+            <div className="flex flex-wrap gap-2">
+              {[1, 3, 6, 12].map((n) => (
+                <Button
+                  key={n}
+                  type="button"
+                  variant="secondary"
+                  onClick={() => act(`g${n}`, { plan, extendMonths: n, gift: true }, t.plans.giftDone, fmt(t.plans.giftConfirm, { plan: t.plans.names[plan], n }))}
+                  loading={busy === `g${n}`}
+                >
+                  <Gift size={16} aria-hidden />
+                  {fmt(t.plans.giftBtn, { n })}
+                </Button>
+              ))}
+            </div>
           </div>
           <span className={title}>{a.catalogTitle}</span>
           <div className="flex flex-wrap items-center gap-2">

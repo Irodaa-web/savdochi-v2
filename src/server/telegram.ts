@@ -222,7 +222,7 @@ export async function handleUpdate(update: Update): Promise<void> {
 }
 
 /** Hisob haqidagi xizmat xabarlari — tarifdan qat'i nazar Telegram va telefonga (push) boradi. */
-export const SERVICE_TYPES = new Set<NotificationType>(["planChanged", "verified", "verificationRejected", "ticketReply", "inactivityWarning", "inactivityFinal", "productHidden", "productRestored"]);
+export const SERVICE_TYPES = new Set<NotificationType>(["planChanged", "planGift", "verified", "verificationRejected", "ticketReply", "inactivityWarning", "inactivityFinal", "productHidden", "productRestored"]);
 
 /** Bildirishnoma matni foydalanuvchi tilida (holat va tarif kodlari so'z bilan). Telegram va push uchun. */
 export function notificationText(t: ReturnType<typeof getDictionary>, type: NotificationType, params: Record<string, string | number>): string {

@@ -29,7 +29,7 @@ export default async function AdminBilling({ searchParams }: { searchParams: Pro
   const href = (f: Filter, page?: number) => `/admin/billing?status=${f}${page && page > 1 ? `&page=${page}` : ""}`;
   const label = { pending: b.filterPending, paid: b.filterPaid, rejected: b.filterRejected, all: b.filterAll } as const;
   const status = { paid: b.statusPaid, rejected: b.statusRejected, pending: b.statusPending, cancelled: b.statusCancelled } as const;
-  const source = { request: b.sourceRequest, admin: b.sourceAdmin, referral: b.sourceReferral } as const;
+  const source = { request: b.sourceRequest, admin: b.sourceAdmin, referral: b.sourceReferral, gift: b.sourceGift } as const;
 
   return (
     <section className="flex flex-col gap-4">

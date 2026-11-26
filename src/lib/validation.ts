@@ -299,6 +299,8 @@ export const adminUserSchema = z.object({
   extendMonths: z.coerce.number().int().min(-1).max(24).optional(),
   /** Qaysi tarif (extendMonths bilan). "free" — Bepulga o'tkazish. */
   plan: z.enum(PLAN_CODES).optional(),
+  /** Tarifni sovg'a qilish: to'lovsiz yoqiladi, kompaniyaga sovg'a xabari boradi. */
+  gift: z.boolean().optional(),
 });
 
 /** Kompaniya tarif so'rovi: pullik tarif va 1/3/12 oy. */
