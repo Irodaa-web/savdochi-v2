@@ -254,11 +254,16 @@ export const staffUpdateSchema = z.object({
 /** Omborchi/menejer: mahsulot qoldig'ini yangilash. */
 export const stockOnlySchema = z.object({ stock: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(10_000_000, "numberInvalid") });
 
-export const messageSchema = z.object({
-  text: z.string().trim().min(1, "messageEmpty").max(2000),
-  orderId: z.string().optional(),
-  productId: z.string().optional(),
-});
+export const messageSchema = z
+  .object({
+    text: z.string().trim().max(2000).default(""),
+    /** Biriktirilgan rasm — faqat platformaning o'z rasm omboridan (blobImage, pastda). */
+    image: z.string().trim().max(500).default(""),
+    orderId: z.string().optional(),
+    productId: z.string().optional(),
+  })
+  .refine((m) => m.image === "" || /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(m.image), { path: ["image"], message: "imageInvalid" })
+  .refine((m) => m.text !== "" || m.image !== "" || Boolean(m.orderId) || Boolean(m.productId), { path: ["text"], message: "messageEmpty" });
 
 export const stockSchema = z.object({
   productId: z.string().min(1),

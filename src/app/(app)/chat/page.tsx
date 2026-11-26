@@ -30,7 +30,13 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
   }
 
   return (
-    <section className="grid h-[calc(100dvh-11rem)] min-h-[420px] overflow-hidden glass-card rounded-2xl md:h-[calc(100dvh-8rem)] md:grid-cols-[300px_minmax(0,1fr)]">
+    // Telefonda suhbat ochilganda — butun ekran (yuqori panel va pastki menyu yashiriladi), "orqaga" tugmasi bilan.
+    <section
+      className={clsx(
+        "grid h-[calc(100dvh-11rem)] min-h-[420px] overflow-hidden glass-card rounded-2xl md:h-[calc(100dvh-8rem)] md:grid-cols-[300px_minmax(0,1fr)]",
+        active && "max-md:fixed max-md:inset-0 max-md:z-[70] max-md:h-[100dvh] max-md:min-h-0 max-md:rounded-none max-md:bg-[var(--c-bg)]",
+      )}
+    >
       <aside className={clsx("min-h-0 flex-col overflow-y-auto border-line md:flex md:border-r", active ? "hidden" : "flex")}>
         <h1 className="border-b border-line px-4 py-3 font-semibold">{t.header.chat}</h1>
         <ul>

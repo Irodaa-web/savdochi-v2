@@ -26,10 +26,14 @@ export const POST = withUser(null, async (user, request) => {
   if (!ext || file.size > MAX_BYTES) return fail("INVALID_INPUT", { file: "imageInvalid" });
   if (sniff(new Uint8Array(await file.slice(0, 12).arrayBuffer())) !== file.type) return fail("INVALID_INPUT", { file: "imageInvalid" });
   const kind = form?.get("kind");
-  // Mahsulot rasmi va banner — faqat kompaniya; hisob rasmi (logo) — har qanday hisob egasi.
-  if (kind !== "logo" && user.role !== "seller") return fail("FORBIDDEN");
-  if (kind === "logo" && user.staff) return fail("FORBIDDEN");
-  const folder = kind === "logo" || kind === "banner" ? `brand/${user.id}/${kind}` : `products/${user.id}`;
+  // Chat rasmi — har kim (xodim ham); hisob rasmi (logo) — hisob egasi; mahsulot rasmi va banner — kompaniya
+  // egasi yoki menejeri (agent faqat chatga rasm yubora oladi).
+  if (kind !== "chat") {
+    if (kind !== "logo" && user.role !== "seller") return fail("FORBIDDEN");
+    if (kind === "logo" && user.staff) return fail("FORBIDDEN");
+    if (user.staff && user.staff.role !== "manager") return fail("FORBIDDEN");
+  }
+  const folder = kind === "chat" ? `chat/${user.id}` : kind === "logo" || kind === "banner" ? `brand/${user.id}/${kind}` : `products/${user.id}`;
   const blob = await put(`${folder}/${crypto.randomUUID()}.${ext}`, file, { access: "public", contentType: file.type });
   return ok({ url: blob.url }, { status: 201 });
 });

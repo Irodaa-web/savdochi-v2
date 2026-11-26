@@ -55,9 +55,11 @@ const API: Rule[] = [
   [new RegExp(`^/products/${ID}/stock$`), ["PATCH"], ["manager", "warehouse"]],
   [/^\/products\/import(\/template)?$/, ["GET", "POST"], ["manager"]],
   [/^\/products\/export$/, ["GET"], ["manager"]],
-  [/^\/uploads$/, ["POST"], ["manager"]],
+  [/^\/uploads$/, ["POST"], ["manager", "agent"]], // agent — faqat chatga rasm (uploads route tekshiradi)
   [/^\/reports$/, ["GET"], ["manager"]],
   [/^\/chats(\/[^/]+)?$/, ["GET", "POST"], ["manager", "agent"]],
+  [/^\/chats\/[^/]+\/(typing|clear)$/, ["POST"], ["manager", "agent"]],
+  [/^\/chats\/[^/]+\/messages\/[^/]+$/, ["DELETE"], ["manager", "agent"]],
   [/^\/partnerships$/, ["GET", "POST"], ["manager", "agent"]],
   [new RegExp(`^/partnerships/${ID}$`), ["PATCH"], ["manager", "agent"]], // agent — faqat qabul/rad (route'da tekshiriladi)
   [new RegExp(`^/partners/${ID}/stock$`), ["GET"], ["manager", "agent"]],
