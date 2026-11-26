@@ -9,6 +9,7 @@ import { formatPhone } from "@/lib/phone";
 import { telegramStatus } from "@/server/telegram";
 import { PasswordForm } from "./PasswordForm";
 import { TelegramCard } from "./TelegramCard";
+import { DeviceCard } from "./DeviceCard";
 
 export const metadata = { title: "Sozlamalar" };
 
@@ -29,6 +30,11 @@ export default async function SettingsPage() {
             <span className="font-semibold">{t.settings.theme}</span>
             <ThemeToggle className="flex size-10 cursor-pointer items-center justify-center rounded-xl border border-line text-muted transition-colors hover:border-accent/40 hover:text-accent" />
           </Card>
+          {!user.staff && (
+            <Card>
+              <DeviceCard />
+            </Card>
+          )}
           {telegram.enabled && !user.staff && (
             <Card>
               <TelegramCard linked={telegram.linked} />

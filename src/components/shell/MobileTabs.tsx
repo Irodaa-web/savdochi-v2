@@ -27,7 +27,7 @@ export function MobileTabs({ user }: { user: SessionUser }) {
   const tabs = user.isAdmin
     ? adminTabs.map((tab) => ({ href: tab.href, Icon: tab.Icon, text: tab.label(t) }))
     : mobileTabs[user.role].filter((tab) => !user.staff || staffPageAllowed(user.staff.role, tab.href)).map((tab) => ({ href: tab.href, Icon: tab.Icon, text: t.nav[tab.label] }));
-  const count: Record<string, number> = { "/cart": badges.cart, "/chat": badges.chats, "/orders": badges.orders, "/admin/tickets": badges.tickets };
+  const count: Record<string, number> = { "/cart": badges.cart, "/chat": badges.chats, "/orders": badges.orders, "/admin/tickets": badges.tickets, "/admin/billing": badges.planRequests };
 
   return (
     <>

@@ -18,7 +18,8 @@ export async function Welcome({ user }: { user: SessionUser }) {
         <h1 className="relative mt-1.5 text-2xl font-bold tracking-tight sm:text-[28px]">{fmt(t.home.greeting, { name: user.name })}</h1>
         <p className="relative mt-2 max-w-xl text-header-muted">{user.role === "buyer" ? t.home.buyerLead : t.home.sellerLead}</p>
       </div>
-      {user.verification !== "verified" && (
+      {/* Kompaniya uchun batafsil ogohlantirish — VerifyBanner (holat va sabab bilan). */}
+      {user.role === "buyer" && user.verification !== "verified" && (
         <div className="flex items-start gap-3 rounded-2xl bg-accent-soft/90 px-4 py-3.5 ring-1 ring-accent/20 ring-inset">
           <ShieldAlert size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden />
           <p className="text-[13px] leading-relaxed">{t.home.verifyNote}</p>

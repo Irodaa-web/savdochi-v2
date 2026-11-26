@@ -84,6 +84,10 @@ function describe(r: AuditView, t: Dictionary): string {
     }
     case "admin.ticket.answer":
       return a.ticketAnswered;
+    case "admin.plan.approve":
+      return `${a.planApprove}: ${t.plans.names[d.plan as "standard" | "premium"] ?? ""}, ${String(d.months ?? "")}`;
+    case "admin.plan.reject":
+      return `${a.planReject}${d.reason ? ` — ${String(d.reason)}` : ""}`;
     case "admin.product.hide":
       return fmt(a.productHidden, { name: String(d.name ?? ""), reason: String(d.reason ?? "—") });
     case "admin.product.show":

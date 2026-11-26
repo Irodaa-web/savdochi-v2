@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { AlertTriangle, BadgeCheck, CalendarClock, CheckCircle2, CircleAlert, LifeBuoy, ServerCog, UserPlus } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CalendarClock, CheckCircle2, CircleAlert, LifeBuoy, ServerCog, UserPlus, Wallet } from "lucide-react";
 import Link from "next/link";
 import { DailySalesChart } from "@/components/dashboard/DailySalesChart";
 import { Card, PageTitle, Pill } from "@/components/ui/Card";
@@ -24,6 +24,7 @@ export default async function AdminHome() {
 
   const todo = [
     o.pending > 0 && { href: "/admin/users?status=pending", Icon: BadgeCheck, text: fmt(a.todoPending, { n: o.pending }) },
+    o.planRequests > 0 && { href: "/admin/billing", Icon: Wallet, text: fmt(t.billing.todo, { n: o.planRequests }) },
     o.openTickets > 0 && { href: "/admin/tickets", Icon: LifeBuoy, text: fmt(a.todoTickets, { n: o.openTickets }) },
     o.expiring.length > 0 && { href: "/admin/users?role=seller", Icon: CalendarClock, text: fmt(a.todoExpiring, { n: o.expiring.length }) },
   ].filter(Boolean) as { href: string; Icon: typeof BadgeCheck; text: string }[];

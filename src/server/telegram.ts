@@ -126,7 +126,7 @@ export async function unlink(userId: string): Promise<void> {
   if (chatId) await telegramApi("sendMessage", { chat_id: chatId, text: getDictionary(localeOf(u.locale)).telegram.unlinked });
 }
 
-const localeOf = (value: unknown): Locale => (isLocale(value) ? value : defaultLocale);
+export const localeOf = (value: unknown): Locale => (isLocale(value) ? value : defaultLocale);
 
 type Update = {
   message?: {
@@ -221,10 +221,18 @@ export async function handleUpdate(update: Update): Promise<void> {
   await telegramApi("sendMessage", { chat_id: chatId, text: u ? fmt(t.telegram.linked, { name: u.name }) : t.telegram.expired });
 }
 
-/** Bildirishnomani Telegram'ga ham yuboradi (foydalanuvchi ulagan bo'lsa). */
-/** Hisob haqidagi xizmat xabarlari — tarifdan qat'i nazar Telegram'ga boradi. */
-const SERVICE_TYPES = new Set<NotificationType>(["planChanged", "verified", "verificationRejected", "ticketReply", "inactivityWarning", "inactivityFinal", "productHidden", "productRestored"]);
+/** Hisob haqidagi xizmat xabarlari — tarifdan qat'i nazar Telegram va telefonga (push) boradi. */
+export const SERVICE_TYPES = new Set<NotificationType>(["planChanged", "verified", "verificationRejected", "ticketReply", "inactivityWarning", "inactivityFinal", "productHidden", "productRestored"]);
 
+/** Bildirishnoma matni foydalanuvchi tilida (holat va tarif kodlari so'z bilan). Telegram va push uchun. */
+export function notificationText(t: ReturnType<typeof getDictionary>, type: NotificationType, params: Record<string, string | number>): string {
+  const s = String(params.status ?? "");
+  const plan = String(params.plan ?? "");
+  const values = { ...params, status: (t.orderStatus as Record<string, string>)[s] ?? (t.paymentStatus as Record<string, string>)[s] ?? s, plan: (t.plans.names as Record<string, string>)[plan] ?? plan };
+  return fmt((t.notifications.types as Record<string, string>)[type] ?? type, values);
+}
+
+/** Bildirishnomani Telegram'ga ham yuboradi (foydalanuvchi ulagan bo'lsa). */
 export async function notifyTelegram(userId: unknown, type: NotificationType, params: Record<string, string | number>, link: string): Promise<void> {
   const cfg = telegramConfig();
   if (!cfg.enabled) return;
@@ -234,10 +242,7 @@ export async function notifyTelegram(userId: unknown, type: NotificationType, pa
   // Kompaniya: savdo xabarlari Telegram'ga Standart va Premium tariflarda (Bepulda — faqat saytda).
   if (u.role === "seller" && !SERVICE_TYPES.has(type) && !planHas(effectivePlan(u), "telegram")) return;
   const t = getDictionary(localeOf(u.locale));
-  const s = String(params.status ?? "");
-  const plan = String(params.plan ?? "");
-  const values = { ...params, status: (t.orderStatus as Record<string, string>)[s] ?? (t.paymentStatus as Record<string, string>)[s] ?? s, plan: (t.plans.names as Record<string, string>)[plan] ?? plan };
-  const text = fmt((t.notifications.types as Record<string, string>)[type] ?? type, values);
+  const text = notificationText(t, type, params);
   const url = cfg.appUrl && link ? `${cfg.appUrl}${link}` : null;
   await telegramApi("sendMessage", {
     chat_id: chatId,

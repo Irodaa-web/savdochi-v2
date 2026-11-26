@@ -68,6 +68,12 @@ export interface UserDoc {
   plan?: PlanCode;
   /** Hozirgi pullik tarif — ro'yxatdan o'tgandagi bepul sinov (administrator tarif yoqqanda false bo'ladi). */
   planTrial?: boolean;
+  /** Taklif havolasi kodi (kompaniya uchun, birinchi ochilganda yaratiladi). */
+  referralCode?: string;
+  /** Shu kompaniyani taklif qilgan kompaniya. */
+  referredBy?: Types.ObjectId | null;
+  /** Taklif sovg'asi berilganmi (administrator tasdiqlaganda — bir marta). */
+  referralRewarded?: boolean;
   /** Pullik tarif shu sanagacha amal qiladi (keyin — Bepul). null — muddatsiz. */
   subscriptionUntil: Date | null;
   demo: boolean;
@@ -145,6 +151,9 @@ const userSchema = new Schema<UserDoc>(
     favorites: { type: [Schema.Types.ObjectId], ref: "Product", default: [] },
     plan: { type: String, enum: PLAN_CODES },
     planTrial: { type: Boolean },
+    referralCode: { type: String, unique: true, sparse: true },
+    referredBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    referralRewarded: { type: Boolean },
     subscriptionUntil: { type: Date, default: null },
     demo: { type: Boolean, default: false },
     hidden: { type: Boolean, default: false },

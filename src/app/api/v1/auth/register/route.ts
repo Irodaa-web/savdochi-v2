@@ -26,7 +26,10 @@ export async function POST(request: Request) {
       if (!(await verifyCode(input.phone, "register", input.code))) return fail("CODE_INVALID", { code: "CODE_INVALID" });
     }
 
+    // Taklif: faqat kompaniya kompaniyani taklif qiladi; sovg'a administrator tasdiqlaganda beriladi.
+    const referrer = input.role === "seller" && input.ref ? await User.findOne({ referralCode: input.ref.toUpperCase(), role: "seller" }, { _id: 1 }).lean() : null;
     const user = await User.create({
+      ...(referrer ? { referredBy: referrer._id } : {}),
       role: input.role,
       name: input.name,
       phone: input.phone,

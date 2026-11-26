@@ -21,8 +21,11 @@ const RESEND_SECONDS = 60;
 export function RegisterForm({ sms = false }: { sms?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
-  const [role, setRole] = useState<Role>("buyer");
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
+  // Taklif havolasi (?ref=KOD) — kompaniyani taklif qilishgan: kompaniya roli tanlangan holda ochiladi.
+  const ref = params.get("ref")?.trim().slice(0, 16) || undefined;
+  const [role, setRole] = useState<Role>(ref ? "seller" : "buyer");
   const [form, setForm] = useState({ name: "", phone: "", region: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +64,7 @@ export function RegisterForm({ sms = false }: { sms?: boolean }) {
     setLoading(true);
     setError(null);
     setFields({});
-    const res = await api("/api/v1/auth/register", { body: { role, ...form, ...(sms ? { code } : {}) } });
+    const res = await api("/api/v1/auth/register", { body: { role, ...form, ...(sms ? { code } : {}), ...(ref ? { ref } : {}) } });
     if (res.ok) {
       router.replace(next);
       router.refresh();
@@ -89,6 +92,7 @@ export function RegisterForm({ sms = false }: { sms?: boolean }) {
         <h1 className="text-[26px] font-bold tracking-tight">{t.auth.registerTitle}</h1>
         <p className="mt-1.5 text-muted">{t.auth.registerSubtitle}</p>
       </div>
+      {ref && role === "seller" && <p className="rounded-xl bg-amber-50 px-3 py-2 text-[13px] text-amber-900 ring-1 ring-amber-300/60 ring-inset dark:bg-amber-400/10 dark:text-amber-200 dark:ring-amber-300/25">{t.referral.registerNote}</p>}
 
       {error && <Alert>{error}</Alert>}
 

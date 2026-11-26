@@ -45,6 +45,8 @@ export const registerSchema = z.object({
   password,
   /** SMS kod — SMS yoqilgan bo'lsa majburiy (server tekshiradi). */
   code: smsCode.optional(),
+  /** Taklif havolasidagi kod (kompaniya taklif qilgan bo'lsa). Noto'g'risi e'tiborsiz qoldiriladi. */
+  ref: z.string().trim().max(16).optional(),
 });
 
 export const smsRequestSchema = z.object({ phone, purpose: z.enum(["register", "reset"]) });
@@ -294,6 +296,18 @@ export const adminUserSchema = z.object({
   plan: z.enum(PLAN_CODES).optional(),
 });
 
+/** Kompaniya tarif so'rovi: pullik tarif va 1/3/12 oy. */
+export const planRequestSchema = z.object({
+  plan: z.enum(["standard", "premium"]),
+  months: z.coerce.number().refine((n) => n === 1 || n === 3 || n === 12, "numberInvalid"),
+});
+
+/** Administrator: so'rovni tasdiqlash (to'langan summa) yoki rad etish (sabab). */
+export const planDecisionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("approve"), paidAmount: z.coerce.number().int("numberInvalid").min(0, "numberInvalid").max(1_000_000_000, "numberInvalid") }),
+  z.object({ action: z.literal("reject"), reason: z.string().trim().min(3, "reasonRequired").max(500) }),
+]);
+
 const merchantId = z.string().trim().min(3, "numberInvalid").max(64, "numberInvalid");
 const secretKey = z.string().trim().max(200).optional();
 /** Kompaniyaning onlayn to'lov hisoblari. Kalit bo'sh — eskisi qoladi; null — o'chirish. */
@@ -303,3 +317,10 @@ export const onlinePaySchema = z.object({
 });
 
 export const startPaySchema = z.object({ provider: z.enum(["payme", "click"]) });
+
+/** Brauzerning Web Push obunasi (PushSubscription.toJSON()). */
+export const pushSubSchema = z.object({
+  endpoint: z.string().url().max(1000).refine((u) => u.startsWith("https://"), "invalid"),
+  keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(4).max(100) }),
+});
+export const pushUnsubSchema = z.object({ endpoint: z.string().url().max(1000) });
