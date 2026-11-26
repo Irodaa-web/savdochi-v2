@@ -3,6 +3,7 @@
 import { ImagePlus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
@@ -14,7 +15,8 @@ type Kind = "logo" | "banner";
  * Kompaniya logotipi va banneri: tanlanadi → brauzerda kichraytiriladi → yuklanadi → darhol saqlanadi.
  * Katalogdagi kompaniya kartasida va kompaniya sahifasida ko'rinadi.
  */
-export function BrandForm({ initial, name }: { initial: { logo: string; banner: string }; name: string }) {
+/** company — kompaniya: logotip va banner; do'kon — faqat hisob rasmi. */
+export function BrandForm({ initial, name, company }: { initial: { logo: string; banner: string }; name: string; company: boolean }) {
   const { t } = useI18n();
   const b = t.brand;
   const errors = t.errors as Record<string, string>;
@@ -85,10 +87,11 @@ export function BrandForm({ initial, name }: { initial: { logo: string; banner: 
   return (
     <section className="glass-card flex flex-col gap-4 rounded-2xl p-5">
       <div>
-        <h2 className="font-semibold">{b.title}</h2>
-        <p className="mt-1 text-[13px] text-muted">{b.lead}</p>
+        <h2 className="font-semibold">{company ? b.title : b.titleShop}</h2>
+        <p className="mt-1 text-[13px] text-muted">{company ? b.lead : b.leadShop}</p>
       </div>
 
+      {company && (
       <div className="flex flex-col gap-2">
         <span className="text-[13px] font-semibold">{b.banner}</span>
         <div className="relative aspect-[4/1] w-full overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 via-indigo-500 to-sky-400">
@@ -100,14 +103,19 @@ export function BrandForm({ initial, name }: { initial: { logo: string; banner: 
         {picker("banner")}
         {actions("banner")}
       </div>
+      )}
 
-      <div className="flex flex-col gap-2 border-t border-line pt-4">
-        <span className="text-[13px] font-semibold">{b.logo}</span>
+      <div className={company ? "flex flex-col gap-2 border-t border-line pt-4" : "flex flex-col gap-2"}>
+        <span className="text-[13px] font-semibold">{company ? b.logo : b.logoShop}</span>
         <div className="flex items-center gap-4">
-          <span className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-accent-soft text-[20px] font-bold text-accent ring-1 ring-line">
-            {/* eslint-disable-next-line @next/next/no-img-element -- oldindan ko'rish */}
-            {value.logo ? <img src={value.logo} alt="" className="absolute inset-0 size-full object-cover" /> : name.slice(0, 2).toUpperCase()}
-          </span>
+          {value.logo ? (
+            <span className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-white ring-1 ring-line">
+              {/* eslint-disable-next-line @next/next/no-img-element -- oldindan ko'rish: yuklangan manzil darhol ko'rinsin */}
+              <img src={value.logo} alt="" className="absolute inset-0 size-full object-cover" />
+            </span>
+          ) : (
+            <Avatar name={name} size="lg" className="size-20 text-[20px]" />
+          )}
           <div className="flex flex-col gap-2">
             <p className="text-[12px] text-muted">{b.logoHint}</p>
             {picker("logo")}

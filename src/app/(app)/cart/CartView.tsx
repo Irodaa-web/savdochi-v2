@@ -17,6 +17,7 @@ import { dayParts, nextDeliveryDay, termsForRegion } from "@/lib/delivery";
 import { formatAmount } from "@/lib/catalog";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
 import type { CartGroup, CartLine } from "@/server/cart";
+import { Avatar } from "@/components/ui/Avatar";
 
 type Defaults = { phone: string; region: RegionCode; address: string; point: Point };
 
@@ -38,7 +39,8 @@ function SellerGroup({ group: g, defaults }: { group: CartGroup; defaults: Defau
   return (
     <section className="overflow-hidden glass-card rounded-2xl">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <Link href={`/suppliers/${g.seller.id}`} className="flex items-center gap-1.5 font-semibold hover:text-accent">
+        <Link href={`/suppliers/${g.seller.id}`} className="flex items-center gap-2 font-semibold hover:text-accent">
+          <Avatar name={g.seller.name} src={g.seller.logo} size="sm" />
           {g.seller.name}
           {g.seller.verified && <BadgeCheck size={16} className="text-accent" aria-label={t.catalog.verified} />}
         </Link>

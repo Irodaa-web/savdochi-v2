@@ -22,6 +22,7 @@ import { listOrderLists } from "@/server/lists";
 import { OrderActions } from "./OrderActions";
 import { PayOnline } from "./PayOnline";
 import { ReorderButton } from "@/components/orders/ReorderButton";
+import { Avatar } from "@/components/ui/Avatar";
 
 export default async function OrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ placed?: string; paid?: string }> }) {
   const user = await requireUser();
@@ -198,7 +199,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
           <Card className="flex flex-col gap-2 text-[14px]">
             <span className="text-[12px] font-semibold tracking-wider text-muted uppercase">{isSeller ? t.roles.buyer : t.roles.seller}</span>
-            <Link href={isSeller ? `/partners/${partner.id}` : `/suppliers/${partner.id}`} className="font-semibold hover:text-accent">
+            <Link href={isSeller ? `/partners/${partner.id}` : `/suppliers/${partner.id}`} className="flex items-center gap-2.5 font-semibold hover:text-accent">
+              <Avatar name={partner.name} src={partner.logo} />
               {partner.name}
             </Link>
             {staffRole !== "warehouse" && <StartChatButton partnerId={partner.id} className="mt-1" />}

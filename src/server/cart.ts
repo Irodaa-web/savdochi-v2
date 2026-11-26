@@ -31,7 +31,7 @@ export type CartLine = {
 };
 
 export type CartGroup = {
-  seller: { id: string; name: string; verified: boolean };
+  seller: { id: string; name: string; verified: boolean; logo: string };
   /**
    * deliveryFee / minOrderTotal — tanlangan viloyat uchun amaldagisi; deliveryDays/regionRules — butun jadval
    * (do'kon buyurtma formasida boshqa viloyat tanlasa, shartlar brauzerda qayta hisoblanadi).
@@ -72,7 +72,7 @@ export async function getCart(buyerId: string, region?: string): Promise<CartVie
   const productBy = new Map(products.map((p) => [String(p._id), p]));
   const sellerIds = [...new Set(products.map((p) => String(p.seller)))];
   const [sellers, partnerships] = await Promise.all([
-    User.find({ _id: { $in: sellerIds } }, { name: 1, verification: 1, profile: 1, blocked: 1, demo: 1 }).lean(),
+    User.find({ _id: { $in: sellerIds } }, { name: 1, verification: 1, profile: 1, blocked: 1, demo: 1, logo: 1 }).lean(),
     Partnership.find({ buyer: buyerId, seller: { $in: sellerIds }, status: "active" }, { seller: 1, discount: 1 }).lean(),
   ]);
   const sellerBy = new Map(sellers.map((s) => [String(s._id), s]));
@@ -90,7 +90,7 @@ export async function getCart(buyerId: string, region?: string): Promise<CartVie
       const profile = profileOf(seller);
       const local = termsForRegion(profile, where);
       group = {
-        seller: { id: sellerId, name: seller.name, verified: seller.verification === "verified" },
+        seller: { id: sellerId, name: seller.name, verified: seller.verification === "verified", logo: seller.logo ?? "" },
         terms: {
           deliveryFee: local.fee,
           minOrderTotal: local.minOrderTotal,

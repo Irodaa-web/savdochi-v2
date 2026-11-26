@@ -136,6 +136,8 @@ export type AdminUserRow = {
   subscriptionUntil: string | null;
   /** Amaldagi tarif (kompaniya uchun). */
   plan: PlanCode;
+  /** Hisob rasmi ("" — yo'q). */
+  logo: string;
   planTrial: boolean;
   lastActiveAt: string | null;
   createdAt: string;
@@ -194,6 +196,7 @@ export async function listUsers(opts: { q?: string; role?: "buyer" | "seller"; s
       isAdmin: admins.has(u.phone),
       subscriptionUntil: u.subscriptionUntil ? u.subscriptionUntil.toISOString() : null,
       plan: effectivePlan(u),
+      logo: u.logo ?? "",
       planTrial: Boolean(u.planTrial),
       lastActiveAt: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : null,
       createdAt: u.createdAt.toISOString(),
@@ -248,6 +251,7 @@ export async function getUserDetail(id: string): Promise<AdminUserDetail | null>
     isAdmin: adminPhones().includes(u.phone),
     subscriptionUntil: u.subscriptionUntil ? u.subscriptionUntil.toISOString() : null,
     plan: effectivePlan(u),
+    logo: u.logo ?? "",
     planTrial: Boolean(u.planTrial),
     lastActiveAt: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : null,
     createdAt: u.createdAt.toISOString(),

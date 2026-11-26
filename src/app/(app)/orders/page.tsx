@@ -11,6 +11,7 @@ import { planHas } from "@/lib/plans";
 import { formatAmount } from "@/lib/catalog";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
 import { listOrders, orderCounts } from "@/server/orders";
+import { Avatar } from "@/components/ui/Avatar";
 
 export const metadata = { title: "Buyurtmalar" };
 
@@ -99,6 +100,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           {orders.map((o) => (
             <li key={o.id}>
               <Link href={`/orders/${o.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 glass-card rounded-2xl px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:border-accent/40 hover:shadow-[var(--c-shadow-lg)]">
+                <Avatar name={isSeller ? o.buyer.name : o.seller.name} src={isSeller ? o.buyer.logo : o.seller.logo} />
                 <span className="font-bold tabular-nums">№{o.number}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{isSeller ? o.buyer.name : o.seller.name}</span>

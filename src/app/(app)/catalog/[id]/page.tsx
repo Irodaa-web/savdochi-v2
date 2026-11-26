@@ -11,6 +11,7 @@ import { BuyBox } from "@/components/catalog/BuyBox";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { StartChatButton } from "@/components/chat/StartChatButton";
 import { getProduct, isFavorite } from "@/server/products";
+import { Avatar } from "@/components/ui/Avatar";
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -93,7 +94,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
           <div className="flex flex-col gap-2 glass-card rounded-2xl p-5">
             <span className="text-[12px] font-semibold tracking-wider text-muted uppercase">{t.catalog.seller}</span>
-            <span className="flex items-center gap-1.5 font-semibold">
+            <span className="flex items-center gap-2 font-semibold">
+              <Avatar name={p.seller.name} src={p.seller.logo} size="sm" />
               {p.seller.name}
               {p.seller.verified && <BadgeCheck size={16} className="text-accent" aria-label={t.catalog.verified} />}
             </span>

@@ -679,6 +679,9 @@ const en: Dictionary = {
     pushUnsupported: "This browser doesn’t support notifications.",
   },
   brand: {
+    titleShop: "Shop picture",
+    leadShop: "Your shop appears with this picture to partner companies, in chat and in orders.",
+    logoShop: "Picture or logo",
     title: "Logo and banner",
     lead: "Shown on your company card in the catalog and on your company page — shops recognize you faster.",
     banner: "Banner (cover image)",

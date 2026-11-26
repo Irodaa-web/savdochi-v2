@@ -15,6 +15,7 @@ import { listDebts } from "@/server/debts";
 import { listPartners, type PartnerView } from "@/server/partners";
 import { listSuppliers, type SupplierView } from "@/server/products";
 import { PartnerTerms } from "./PartnerTerms";
+import { Avatar } from "@/components/ui/Avatar";
 
 export const metadata = { title: "Hamkorlar" };
 
@@ -90,7 +91,8 @@ export default async function PartnersPage() {
             <li key={p.id}>
               <Card className="flex h-full flex-col gap-2.5">
                 <div className="flex items-start justify-between gap-2">
-                  <Link href={isSeller ? `/partners/${p.partner.id}` : `/suppliers/${p.partner.id}`} className="flex items-center gap-1.5 font-semibold hover:text-accent">
+                  <Link href={isSeller ? `/partners/${p.partner.id}` : `/suppliers/${p.partner.id}`} className="flex items-center gap-2 font-semibold hover:text-accent">
+                    <Avatar name={p.partner.name} src={p.partner.logo} size="sm" />
                     {p.partner.name}
                     {p.partner.verified && <BadgeCheck size={16} className="text-accent" aria-label={t.catalog.verified} />}
                   </Link>
@@ -166,7 +168,7 @@ export default async function PartnersPage() {
                   {suggestions.map((s) => (
                     <li key={s.id}>
                       <Link href={`/suppliers/${s.id}`} className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-accent-soft/70">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-[12px] font-bold text-accent">{s.name.slice(0, 2).toUpperCase()}</span>
+                        <Avatar name={s.name} src={s.logo} className="size-9" />
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1 truncate font-semibold">
                             <span className="truncate">{s.name}</span>

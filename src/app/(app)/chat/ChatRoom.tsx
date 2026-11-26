@@ -7,6 +7,7 @@ import { formatDateTime } from "@/i18n/format";
 import { useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import type { ConversationView, MessageView } from "@/server/chat";
+import { Avatar } from "@/components/ui/Avatar";
 
 const POLL_MS = 4000;
 
@@ -69,7 +70,8 @@ export function ChatRoom({ id, role }: { id: string; role: "buyer" | "seller" })
           <ArrowLeft size={18} aria-hidden />
         </Link>
         {conv && (
-          <Link href={role === "buyer" ? `/suppliers/${conv.partner.id}` : `/partners/${conv.partner.id}`} className="flex items-center gap-1.5 font-semibold hover:text-accent">
+          <Link href={role === "buyer" ? `/suppliers/${conv.partner.id}` : `/partners/${conv.partner.id}`} className="flex items-center gap-2 font-semibold hover:text-accent">
+            <Avatar name={conv.partner.name} src={conv.partner.logo} size="sm" />
             {conv.partner.name}
             {conv.partner.verified && <BadgeCheck size={16} className="text-accent" aria-label={t.catalog.verified} />}
           </Link>

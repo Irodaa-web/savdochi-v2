@@ -14,7 +14,6 @@ import { getProfile } from "@/server/profile";
 import { getOnlinePaySettings } from "@/server/onlinePay";
 import { OnlinePayForm } from "./OnlinePayForm";
 import { ProfileForm } from "./ProfileForm";
-import { BrandForm } from "./BrandForm";
 import { VerifyBanner } from "@/components/seller/VerifyBanner";
 
 export const metadata = { title: "Profil" };
@@ -87,7 +86,6 @@ export default async function ProfilePage() {
           </div>
         </div>
       )}
-      {user.role === "seller" && !user.staff && <BrandForm initial={{ logo: profile.logo, banner: profile.banner }} name={profile.name} />}
       <ProfileForm profile={profile} />
       {onlinePay && <OnlinePayForm sellerId={user.id} initial={onlinePay} />}
       </div>

@@ -12,6 +12,7 @@ import { formatPhone } from "@/lib/phone";
 import { getUserDetail } from "@/server/admin";
 import { UserStatusPills } from "../UserStatusPills";
 import { UserActions } from "./UserActions";
+import { Avatar } from "@/components/ui/Avatar";
 
 /** Administrator: bitta foydalanuvchi — ma'lumotlari, faolligi va amallar. */
 export default async function AdminUser({ params }: { params: Promise<{ id: string }> }) {
@@ -66,7 +67,10 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
           ) : undefined
         }
       >
-        {u.name}
+        <span className="flex items-center gap-3">
+          <Avatar name={u.name} src={u.logo} size="lg" />
+          {u.name}
+        </span>
       </PageTitle>
 
       {u.verification === "rejected" && u.verificationNote && <p className="rounded-xl border border-danger/30 bg-danger-soft/50 px-4 py-3 text-[14px]">{fmt(a.rejectedNote, { reason: u.verificationNote })}</p>}
