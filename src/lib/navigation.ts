@@ -183,7 +183,7 @@ export const sidebarNav: Record<Role, SideGroup[]> = {
       items: [
         { href: "/dashboard", Icon: LayoutDashboard, label: (t) => t.nav.dashboard, children: menuLinks("seller", "/dashboard").filter((l) => l.href.startsWith("/dashboard")) },
         { href: "/analytics", Icon: ChartColumn, label: (t) => t.navMenu.analytics },
-        { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders", children: orderStatuses.links },
+        { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders" }, // holat filtrlari buyurtmalar sahifasida
         { href: "/products", Icon: Package, label: (t) => t.nav.products, children: menuLinks("seller", "/products") },
       ],
     },
@@ -211,7 +211,7 @@ export const sidebarNav: Record<Role, SideGroup[]> = {
         // Katalog — oddiy havola: kompaniya/mahsulot ko'rinishi va kategoriyalar katalog sahifasining o'zida tanlanadi.
         { href: "/catalog", Icon: LayoutGrid, label: (t) => t.nav.catalog },
         { href: "/cart", Icon: ShoppingCart, label: (t) => t.nav.cart, badge: "cart" },
-        { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders", children: orderStatuses.links },
+        { href: "/orders", Icon: ClipboardList, label: (t) => t.nav.orders, badge: "orders" }, // holat filtrlari buyurtmalar sahifasida
         { href: "/lists", Icon: ListChecks, label: (t) => t.navMenu.lists },
       ],
     },
