@@ -18,6 +18,7 @@ import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 import { Stars } from "@/components/reviews/Stars";
 import type { Dictionary } from "@/i18n/dictionaries/uz";
 import { PremiumBadge } from "@/components/catalog/PremiumBadge";
+import { BrandImage } from "@/components/catalog/BrandImage";
 
 /** Kompaniya sahifasi: kim, qayerga, qanday shartlarda yetkazadi. */
 export default async function SupplierPage({ params }: { params: Promise<{ id: string }> }) {
@@ -48,9 +49,26 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
 
   return (
     <section className="flex flex-col gap-5">
-      <div className="hero relative isolate flex flex-col gap-3 overflow-hidden rounded-2xl px-6 py-7 shadow-[var(--c-shadow-lg)]">
-        <span aria-hidden className="orb -top-12 right-8 size-36" />
-        <span aria-hidden className="orb right-44 -bottom-14 size-24 [animation-delay:-4s]" />
+      <div className={`hero relative isolate flex flex-col gap-3 overflow-hidden rounded-2xl px-6 py-7 shadow-[var(--c-shadow-lg)] ${s.banner ? "min-h-56 justify-end" : ""}`}>
+        {s.banner ? (
+          <>
+            {/* Kompaniya banneri: matn o'qilishi uchun pastdan quyuq soya. */}
+            <span aria-hidden className="absolute inset-0 -z-10">
+              <BrandImage src={s.banner} sizes="(min-width: 1280px) 1100px, 100vw" priority className="object-cover" />
+            </span>
+            <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/75 via-black/40 to-black/10" />
+          </>
+        ) : (
+          <>
+            <span aria-hidden className="orb -top-12 right-8 size-36" />
+            <span aria-hidden className="orb right-44 -bottom-14 size-24 [animation-delay:-4s]" />
+          </>
+        )}
+        {s.logo && (
+          <span className="relative size-16 overflow-hidden rounded-2xl bg-white shadow-lg ring-2 ring-white/70">
+            <BrandImage src={s.logo} alt={s.name} sizes="64px" className="object-cover" />
+          </span>
+        )}
         <span className="text-[12px] font-semibold tracking-wider text-header-muted uppercase">
           {t.roles.seller} · {t.regions[s.region]}
         </span>

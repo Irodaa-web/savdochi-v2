@@ -32,10 +32,10 @@ export type ProductView = {
   description: string;
   images: string[];
   active: boolean;
-  seller: { id: string; name: string; region: RegionCode; verified: boolean };
+  seller: { id: string; name: string; region: RegionCode; verified: boolean; logo: string };
 };
 
-type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification: string; role?: string; plan?: string; subscriptionUntil?: Date | null };
+type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification: string; role?: string; plan?: string; subscriptionUntil?: Date | null; logo?: string; banner?: string };
 
 /**
  * Sota oladigan kompaniya: administrator tasdiqlagan, bloklanmagan, yashirilmagan va demo emas.
@@ -94,13 +94,14 @@ function toView(p: ProductDoc, seller: SellerInfo | undefined): ProductView {
       name: seller?.name ?? "—",
       region: seller?.region ?? "tashkent_city",
       verified: seller?.verification === "verified",
+      logo: seller?.logo ?? "",
     },
   };
 }
 
 async function withSellers(products: ProductDoc[]): Promise<ProductView[]> {
   const ids = [...new Set(products.map((p) => String(p.seller)))];
-  const sellers = await User.find({ _id: { $in: ids } }, { name: 1, region: 1, verification: 1 }).lean<SellerInfo[]>();
+  const sellers = await User.find({ _id: { $in: ids } }, { name: 1, region: 1, verification: 1, logo: 1 }).lean<SellerInfo[]>();
   const byId = new Map(sellers.map((s) => [String(s._id), s]));
   return products.map((p) => toView(p, byId.get(String(p.seller))));
 }
@@ -269,7 +270,7 @@ export async function getProductSeller(sellerId: string): Promise<string | null>
   return seller?.name ?? null;
 }
 
-export type SupplierView = { id: string; name: string; region: RegionCode; verified: boolean; premium: boolean; productCount: number; rating: Rating };
+export type SupplierView = { id: string; name: string; region: RegionCode; verified: boolean; premium: boolean; logo: string; banner: string; productCount: number; rating: Rating };
 
 export type SupplierQuery = { region?: RegionCode; q?: string };
 
@@ -283,7 +284,7 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
   const q = query.q?.trim();
   if (q) and.push({ name: { $regex: q.slice(0, 80).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } });
   if (and.length) filter.$and = and;
-  const found = await User.find(filter, { name: 1, region: 1, verification: 1, role: 1, plan: 1, subscriptionUntil: 1 }).sort({ name: 1 }).limit(200).lean<SellerInfo[]>();
+  const found = await User.find(filter, { name: 1, region: 1, verification: 1, role: 1, plan: 1, subscriptionUntil: 1, logo: 1, banner: 1 }).sort({ name: 1 }).limit(200).lean<SellerInfo[]>();
   // Premium kompaniyalar ro'yxatda birinchi (tartib barqaror: keyin — nomi bo'yicha).
   const sellers = [...found.filter((s) => effectivePlan(s) === "premium"), ...found.filter((s) => effectivePlan(s) !== "premium")];
   const [counts, ratings] = await Promise.all([
@@ -297,6 +298,8 @@ export async function listSuppliers(query: SupplierQuery = {}): Promise<Supplier
     region: s.region,
     verified: s.verification === "verified",
     premium: effectivePlan(s) === "premium",
+    logo: s.logo ?? "",
+    banner: s.banner ?? "",
     productCount: countBy.get(String(s._id)) ?? 0,
     rating: ratings.get(String(s._id)) ?? { average: 0, count: 0 },
   }));

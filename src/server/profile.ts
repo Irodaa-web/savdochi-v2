@@ -21,6 +21,9 @@ export type ProfileView = {
   verified: boolean;
   /** Premium tarifdagi kompaniya (katalogda belgi bilan ko'rinadi). */
   premium: boolean;
+  /** Kompaniya logotipi va banneri ("" — yo'q). */
+  logo: string;
+  banner: string;
   profile: Profile;
   subscriptionUntil: string | null;
   createdAt: string;
@@ -58,6 +61,8 @@ function toView(u: UserDoc): ProfileView {
     region: u.region,
     verified: u.verification === "verified",
     premium: u.role === "seller" && effectivePlan(u) === "premium",
+    logo: u.logo ?? "",
+    banner: u.banner ?? "",
     profile: profileOf(u),
     subscriptionUntil: u.subscriptionUntil ? u.subscriptionUntil.toISOString() : null,
     createdAt: u.createdAt.toISOString(),

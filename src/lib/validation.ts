@@ -324,3 +324,13 @@ export const pushSubSchema = z.object({
   keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(4).max(100) }),
 });
 export const pushUnsubSchema = z.object({ endpoint: z.string().url().max(1000) });
+
+/** Faqat platformaning o'z rasm omboridan (Vercel Blob) manzil — begona saytdagi rasmni qo'yib bo'lmaydi. */
+const blobImage = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((u) => u === "" || /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(u), "imageInvalid");
+
+/** Kompaniya logotipi va banneri ("" — olib tashlash). */
+export const brandSchema = z.object({ logo: blobImage.optional(), banner: blobImage.optional() });

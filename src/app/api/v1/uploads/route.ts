@@ -13,7 +13,10 @@ function sniff(head: Uint8Array): string | null {
   return null;
 }
 
-/** Mahsulot rasmi yuklash (multipart, maydon: file). Vercel Blob kerak: BLOB_READ_WRITE_TOKEN. */
+/**
+ * Rasm yuklash (multipart, maydon: file; kind: "logo" | "banner" — kompaniya brendi, aks holda mahsulot rasmi).
+ * Vercel Blob kerak: BLOB_READ_WRITE_TOKEN.
+ */
 export const POST = withUser("seller", async (user, request) => {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return fail("UPLOAD_DISABLED");
   const form = await request.formData().catch(() => null);
@@ -22,6 +25,8 @@ export const POST = withUser("seller", async (user, request) => {
   const ext = TYPES[file.type];
   if (!ext || file.size > MAX_BYTES) return fail("INVALID_INPUT", { file: "imageInvalid" });
   if (sniff(new Uint8Array(await file.slice(0, 12).arrayBuffer())) !== file.type) return fail("INVALID_INPUT", { file: "imageInvalid" });
-  const blob = await put(`products/${user.id}/${crypto.randomUUID()}.${ext}`, file, { access: "public", contentType: file.type });
+  const kind = form?.get("kind");
+  const folder = kind === "logo" || kind === "banner" ? `brand/${user.id}/${kind}` : `products/${user.id}`;
+  const blob = await put(`${folder}/${crypto.randomUUID()}.${ext}`, file, { access: "public", contentType: file.type });
   return ok({ url: blob.url }, { status: 201 });
 });

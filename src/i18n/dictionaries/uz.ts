@@ -676,6 +676,18 @@ const uz = {
     pushNeedsInstall: "iPhone’da bildirishnomalar faqat ekranga o‘rnatilgan ilovada ishlaydi: avval ilovani o‘rnating, keyin shu yerdan yoqing.",
     pushUnsupported: "Bu brauzer bildirishnomalarni qo‘llab-quvvatlamaydi.",
   },
+  brand: {
+    title: "Logotip va banner",
+    lead: "Katalogdagi kompaniya kartangizda va kompaniya sahifangizda ko‘rinadi — do‘konlar sizni tezroq taniydi.",
+    banner: "Banner (muqova rasmi)",
+    bannerHint: "Keng rasm: 1600×400 px atrofida (4:1). Mahsulotlaringiz, ombor yoki brendingiz surati. JPG, PNG yoki WEBP.",
+    bannerEmpty: "Banner yuklanmagan",
+    logo: "Logotip",
+    logoHint: "Kvadrat rasm, kamida 256×256 px. JPG, PNG yoki WEBP.",
+    upload: "Yuklash",
+    change: "Almashtirish",
+    remove: "Olib tashlash",
+  },
   sellerVerify: {
     unverifiedTitle: "Kompaniyangiz hali tasdiqlanmagan",
     unverifiedText: "Tasdiqlanmagan kompaniyaning mahsulotlari katalogda ko‘rinmaydi va buyurtma qabul qilinmaydi. Profilda manzil va STIR’ni to‘ldiring — administrator tekshirib tasdiqlaydi.",
