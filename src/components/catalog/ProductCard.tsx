@@ -5,6 +5,7 @@ import type { Dictionary } from "@/i18n/dictionaries/uz";
 import { fmt } from "@/i18n/format";
 import { formatAmount, saleDay } from "@/lib/catalog";
 import type { ProductView } from "@/server/products";
+import { BrandImage } from "./BrandImage";
 
 /** note — kartaning tepasida ko'rsatiladigan qisqa belgi (masalan, "120 dona sotilgan"). */
 export function ProductCard({ product: p, t, note, priority = false }: { product: ProductView; t: Dictionary; note?: string; priority?: boolean }) {
@@ -29,6 +30,11 @@ export function ProductCard({ product: p, t, note, priority = false }: { product
           {p.name}
         </Link>
         <span className="flex items-center gap-1 text-[12px] text-muted">
+          {p.seller.logo && (
+            <span className="relative size-4 shrink-0 overflow-hidden rounded" aria-hidden>
+              <BrandImage src={p.seller.logo} sizes="16px" className="object-cover" />
+            </span>
+          )}
           {p.seller.name}
           {p.seller.verified && <BadgeCheck size={14} className="text-accent" aria-label={t.catalog.verified} />}
         </span>

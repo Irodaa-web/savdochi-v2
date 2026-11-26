@@ -678,6 +678,18 @@ const en: Dictionary = {
     pushNeedsInstall: "On iPhone, notifications only work in the installed app: install it first, then turn them on here.",
     pushUnsupported: "This browser doesn’t support notifications.",
   },
+  brand: {
+    title: "Logo and banner",
+    lead: "Shown on your company card in the catalog and on your company page — shops recognize you faster.",
+    banner: "Banner (cover image)",
+    bannerHint: "A wide image around 1600×400 px (4:1): your products, warehouse or brand. JPG, PNG or WEBP.",
+    bannerEmpty: "No banner yet",
+    logo: "Logo",
+    logoHint: "A square image, at least 256×256 px. JPG, PNG or WEBP.",
+    upload: "Upload",
+    change: "Replace",
+    remove: "Remove",
+  },
   sellerVerify: {
     unverifiedTitle: "Your company is not verified yet",
     unverifiedText: "Products of an unverified company are hidden from the catalog and can’t be ordered. Fill in your address and tax ID (STIR) in your profile — an administrator will review and verify it.",

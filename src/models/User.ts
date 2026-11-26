@@ -68,6 +68,9 @@ export interface UserDoc {
   plan?: PlanCode;
   /** Hozirgi pullik tarif — ro'yxatdan o'tgandagi bepul sinov (administrator tarif yoqqanda false bo'ladi). */
   planTrial?: boolean;
+  /** Kompaniya logotipi va banneri (Vercel Blob manzili; bo'sh — yo'q). Profil formasidan alohida saqlanadi. */
+  logo?: string;
+  banner?: string;
   /** Taklif havolasi kodi (kompaniya uchun, birinchi ochilganda yaratiladi). */
   referralCode?: string;
   /** Shu kompaniyani taklif qilgan kompaniya. */
@@ -151,6 +154,8 @@ const userSchema = new Schema<UserDoc>(
     favorites: { type: [Schema.Types.ObjectId], ref: "Product", default: [] },
     plan: { type: String, enum: PLAN_CODES },
     planTrial: { type: Boolean },
+    logo: { type: String, default: "", maxlength: 500 },
+    banner: { type: String, default: "", maxlength: 500 },
     referralCode: { type: String, unique: true, sparse: true },
     referredBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     referralRewarded: { type: Boolean },
