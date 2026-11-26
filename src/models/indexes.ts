@@ -1,6 +1,7 @@
 import "server-only";
 import mongoose from "mongoose";
 // Barcha modellar ro'yxatdan o'tishi uchun (har biri o'z indekslarini e'lon qiladi).
+import "./AppSetting";
 import "./AuditLog";
 import "./Cart";
 import "./Chat";
@@ -11,6 +12,8 @@ import "./Order";
 import "./OrderList";
 import "./Partnership";
 import "./Payment";
+import "./PlanOrder";
+import "./PushSub";
 import "./Product";
 import "./RateLimit";
 import "./Review";

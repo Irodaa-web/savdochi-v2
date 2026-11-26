@@ -13,6 +13,7 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { VerifyBanner } from "@/components/seller/VerifyBanner";
 import { PlanBanner } from "@/components/plans/PlanBanner";
+import { FirstSteps } from "@/components/seller/FirstSteps";
 import { formatAmount } from "@/lib/catalog";
 import { listDebts } from "@/server/debts";
 import { sellerOnlineMethods } from "@/server/onlinePay";
@@ -47,6 +48,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <Welcome user={user} />
       <VerifyBanner user={user} t={t} />
       <PlanBanner user={user} t={t} />
+      <FirstSteps user={user} t={t} />
       {onlineMethods.length === 0 && (
         <Alert tone="info">
           {t.onlinePay.connectHint}{" "}

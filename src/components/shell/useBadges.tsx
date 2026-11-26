@@ -10,8 +10,8 @@ export function refreshBadges(): void {
   window.dispatchEvent(new Event(BADGES_EVENT));
 }
 
-/** tickets — administrator uchun javob kutayotgan murojaatlar. */
-export type Badges = { cart: number; chats: number; notifications: number; orders: number; tickets: number };
+/** tickets — administrator uchun javob kutayotgan murojaatlar; planRequests — ko'rib chiqilmagan tarif so'rovlari. */
+export type Badges = { cart: number; chats: number; notifications: number; orders: number; tickets: number; planRequests: number };
 
 const BadgesContext = createContext<[Badges, () => void] | null>(null);
 
@@ -22,7 +22,7 @@ const BadgesContext = createContext<[Badges, () => void] | null>(null);
  */
 export function BadgesProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [badges, setBadges] = useState<Badges>({ cart: 0, chats: 0, notifications: 0, orders: 0, tickets: 0 });
+  const [badges, setBadges] = useState<Badges>({ cart: 0, chats: 0, notifications: 0, orders: 0, tickets: 0, planRequests: 0 });
   const last = useRef(0);
   const refresh = useCallback(() => {
     last.current = Date.now();

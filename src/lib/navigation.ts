@@ -168,7 +168,7 @@ export const mainNav: Record<Role, NavItem[]> = {
 };
 
 /** Sidebar bandi: belgi, nom, raqamli belgi (savat/chat/buyurtmalar) va ochiladigan ichki sahifalar. */
-export type SideItem = { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; badge?: "cart" | "chats" | "orders" | "tickets"; children?: NavLink[]; exact?: boolean };
+export type SideItem = { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; badge?: "cart" | "chats" | "orders" | "tickets" | "planRequests"; children?: NavLink[]; exact?: boolean };
 export type SideGroup = { title: (t: Dictionary) => string; items: SideItem[] };
 
 const menuLinks = (role: Role, href: string): NavLink[] => mainNav[role].find((i) => i.href === href)?.menu?.flatMap((s) => s.links) ?? [];
@@ -273,6 +273,7 @@ export const adminNav: SideGroup[] = [
       },
       { href: "/admin/products", Icon: Package, label: (t) => t.adminNav.products },
       { href: "/admin/orders", Icon: ClipboardList, label: (t) => t.adminNav.orders },
+      { href: "/admin/billing", Icon: Wallet, label: (t) => t.adminNav.billing, badge: "planRequests" },
       { href: "/admin/tickets", Icon: LifeBuoy, label: (t) => t.adminNav.tickets, badge: "tickets" },
       { href: "/admin/audit", Icon: ScrollText, label: (t) => t.adminNav.audit },
     ],
@@ -280,7 +281,7 @@ export const adminNav: SideGroup[] = [
 ];
 
 /** Telefondagi pastki panel — administrator uchun. */
-export const adminTabs: { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; badge?: "tickets" }[] = [
+export const adminTabs: { href: string; Icon: LucideIcon; label: (t: Dictionary) => string; badge?: "tickets" | "planRequests" }[] = [
   { href: "/admin", Icon: LayoutDashboard, label: (t) => t.adminNav.overview },
   { href: "/admin/users", Icon: Users, label: (t) => t.adminNav.users },
   { href: "/admin/tickets", Icon: LifeBuoy, label: (t) => t.adminNav.tickets, badge: "tickets" },

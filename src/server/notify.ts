@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { AuditLog } from "@/models/AuditLog";
 import { Notification, type NotificationType } from "@/models/Notification";
 import { User } from "@/models/User";
+import { notifyPush } from "./push";
 import { notifyTelegram } from "./telegram";
 
 /** Bildirishnoma yaratadi. Xato bo'lsa asosiy amalni to'xtatmaydi. */
@@ -13,7 +14,11 @@ export async function notify(user: unknown, type: NotificationType, params: Reco
     console.error("notify failed", error);
   }
   // Telegram javobni kutdirmasin: so'rov tugagach yuboriladi (Vercel'da waitUntil orqali).
-  const send = () => notifyTelegram(user, type, params, link).catch((error) => console.error("telegram notify failed", error));
+  const send = () =>
+    Promise.all([
+      notifyTelegram(user, type, params, link).catch((error) => console.error("telegram notify failed", error)),
+      notifyPush(user, type, params, link).catch((error) => console.error("push notify failed", error)),
+    ]);
   try {
     after(send);
   } catch {

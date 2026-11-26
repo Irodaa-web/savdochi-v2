@@ -8,6 +8,12 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { daysLeft, PLANS } from "@/lib/plans";
 import { planUsage } from "@/server/plans";
+import { myPlanOrders, myReferral } from "@/server/billing";
+import { CopyLink } from "@/components/ui/CopyLink";
+import { Gift } from "lucide-react";
+import { CancelPlanRequest, RequestPlan } from "@/components/plans/RequestPlan";
+import { formatAmount } from "@/lib/catalog";
+import { Clock } from "lucide-react";
 
 export const metadata = { title: "Tarif" };
 
@@ -18,7 +24,10 @@ export default async function BillingPage() {
   const locale = await getLocale();
   const t = getDictionary(locale);
   const p = t.plans;
-  const usage = await planUsage(user.id);
+  const [usage, orders, referral] = await Promise.all([planUsage(user.id), myPlanOrders(user.id), myReferral(user.id)]);
+  const b = t.billing;
+  const statusText = { paid: b.statusPaid, rejected: b.statusRejected, pending: b.statusPending, cancelled: b.statusCancelled } as const;
+  const sourceText = { request: b.sourceRequest, admin: b.sourceAdmin, referral: b.sourceReferral } as const;
   const spec = PLANS[user.plan];
   const left = daysLeft(user);
   const until = user.plan !== "free" && user.subscriptionUntil ? fmt(p.until, { date: formatDateTime(user.subscriptionUntil, locale, false) }) : user.plan !== "free" ? p.unlimited : null;
@@ -65,7 +74,52 @@ export default async function BillingPage() {
         </div>
       </div>
 
-      <PlanCards t={t} current={user.plan} />
+      {orders.pending && (
+        <div role="status" className="flex flex-col gap-3 rounded-2xl bg-accent-soft/80 p-4 ring-1 ring-accent/25 ring-inset sm:flex-row sm:items-center">
+          <Clock size={20} className="shrink-0 text-accent" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{b.pendingTitle}</p>
+            <p className="text-[13px] text-muted">
+              {fmt(b.pendingText, { plan: p.names[orders.pending.plan], months: orders.pending.months, sum: formatAmount(orders.pending.amount) })}
+            </p>
+          </div>
+          <CancelPlanRequest id={orders.pending.id} />
+        </div>
+      )}
+
+      <PlanCards t={t} current={user.plan} footer={(code) => (code === "free" ? null : <RequestPlan plan={code} price={PLANS[code].price} />)} />
+
+      {orders.history.length > 0 && (
+        <div className="glass-card flex flex-col gap-2 rounded-2xl p-5">
+          <h2 className="font-semibold">{b.historyTitle}</h2>
+          <ul className="flex flex-col divide-y divide-line text-[14px]">
+            {orders.history.map((o) => (
+              <li key={o.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+                <span>
+                  <b>{p.names[o.plan]}</b> · {fmt(b.months, { n: o.months })} <span className="text-muted">· {sourceText[o.source]}</span>
+                </span>
+                <span className="flex items-center gap-3 text-[13px]">
+                  <span className={o.status === "paid" ? "text-success" : "text-danger"}>{statusText[o.status]}</span>
+                  <span className="text-muted">{o.decidedAt ? formatDateTime(o.decidedAt, locale, false) : ""}</span>
+                </span>
+                {o.status === "rejected" && o.note && <span className="w-full text-[13px] text-danger">{o.note}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="glass-card flex flex-col gap-3 rounded-2xl p-5 sm:flex-row sm:items-start">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300">
+          <Gift size={19} aria-hidden />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <h2 className="font-semibold">{t.referral.title}</h2>
+          <p className="text-[14px] text-muted">{t.referral.text}</p>
+          <CopyLink path={`/register?ref=${referral.code}`} />
+          <p className="text-[13px] text-muted">{fmt(t.referral.stats, { invited: referral.invited, rewarded: referral.rewarded })}</p>
+        </div>
+      </div>
 
       <div className="glass-card flex flex-col gap-3 rounded-2xl p-5 sm:flex-row sm:items-start">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">

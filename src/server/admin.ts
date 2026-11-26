@@ -9,13 +9,15 @@ import type { RegionCode } from "@/lib/regions";
 import { TIME_ZONE } from "@/i18n/format";
 import { AuditLog } from "@/models/AuditLog";
 import { Order } from "@/models/Order";
+import { PlanOrder } from "@/models/PlanOrder";
 import { Partnership } from "@/models/Partnership";
 import { Product } from "@/models/Product";
 import { Staff } from "@/models/Staff";
 import { Ticket } from "@/models/Ticket";
 import { User, type Verification } from "@/models/User";
 import { audit, notify } from "./notify";
-import { effectivePlan, type PlanCode } from "@/lib/plans";
+import { effectivePlan, PLANS, type PlanCode } from "@/lib/plans";
+import { applyPlanTo, recordPlanOrder, rewardReferral, type PaidPlan } from "./billing";
 import { forgetHiddenSellers } from "./products";
 import { smsEnabled } from "./sms";
 import { telegramConfig } from "./telegram";
@@ -37,6 +39,8 @@ export type AdminOverview = {
   newWeek: number;
   pending: number;
   openTickets: number;
+  /** Ko'rib chiqilmagan tarif so'rovlari. */
+  planRequests: number;
   blocked: number;
   inactive: number;
   activeProducts: number;
@@ -61,13 +65,14 @@ export async function adminOverview(): Promise<AdminOverview> {
     const [r] = await Order.aggregate<{ n: number; value: number }>([{ $match: { ...live, createdAt: { $gte: since } } }, { $group: { _id: null, n: { $sum: 1 }, value: { $sum: "$total" } } }]);
     return { n: r?.n ?? 0, value: r?.value ?? 0 };
   };
-  const [sellers, buyers, newToday, newWeek, pending, openTickets, blocked, inactive, activeProducts, oToday, oWeek, oMonth, activeSellers, daily, expiring, expired, recent] = await Promise.all([
+  const [sellers, buyers, newToday, newWeek, pending, openTickets, planRequests, blocked, inactive, activeProducts, oToday, oWeek, oMonth, activeSellers, daily, expiring, expired, recent] = await Promise.all([
     User.countDocuments({ role: "seller" }),
     User.countDocuments({ role: "buyer" }),
     User.countDocuments({ createdAt: { $gte: today } }),
     User.countDocuments({ createdAt: { $gte: week } }),
     User.countDocuments({ verification: "pending" }),
     Ticket.countDocuments({ status: "open" }),
+    PlanOrder.countDocuments({ status: "pending" }),
     User.countDocuments({ blocked: true }),
     User.countDocuments({ inactive: true }),
     Product.countDocuments({ active: true }),
@@ -90,6 +95,7 @@ export async function adminOverview(): Promise<AdminOverview> {
     newWeek,
     pending,
     openTickets,
+    planRequests,
     blocked,
     inactive,
     activeProducts,
@@ -295,16 +301,15 @@ export async function adminUpdateUser(adminId: string, id: string, input: AdminU
     planNote = { plan: "free", until: null };
   } else if (u.role === "seller" && input.extendMonths && input.extendMonths > 0) {
     const current = effectivePlan(u);
-    const plan: PlanCode = input.plan ?? (current === "free" ? "premium" : current);
-    const keep = current === plan && !u.planTrial && u.subscriptionUntil && u.subscriptionUntil.getTime() > Date.now();
-    const base = keep ? new Date(u.subscriptionUntil!) : new Date();
-    base.setMonth(base.getMonth() + input.extendMonths);
-    u.plan = plan;
-    u.subscriptionUntil = base;
-    u.planTrial = false;
-    planNote = { plan, until: base };
+    const plan: PaidPlan = input.plan && input.plan !== "free" ? input.plan : current === "free" ? "premium" : current;
+    planNote = { plan, until: applyPlanTo(u, plan, input.extendMonths) };
   }
   await u.save();
+  // Taklif bilan kelgan kompaniya tasdiqlansa — ikkala kompaniyaga sovg'a (bir marta).
+  if (input.verification === "verified" && u.role === "seller") await rewardReferral(u._id);
+  // To'lovlar jurnali: administrator to'g'ridan-to'g'ri yoqqan tarif — narx bo'yicha to'langan deb yoziladi.
+  if (planNote && planNote.plan !== "free" && input.extendMonths && input.extendMonths > 0)
+    await recordPlanOrder({ company: u._id, plan: planNote.plan, months: input.extendMonths, paidAmount: PLANS[planNote.plan].price * input.extendMonths, source: "admin", adminId });
   forgetSessionUser(id);
   forgetHiddenSellers();
   if (planNote) await notify(u._id, "planChanged", { plan: planNote.plan, until: planNote.until ? planNote.until.toISOString().slice(0, 10) : "" }, "/billing");
