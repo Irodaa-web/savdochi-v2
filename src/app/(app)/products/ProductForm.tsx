@@ -20,7 +20,8 @@ function errorText(errors: Record<string, string>, code: string | undefined): st
   return errors[code] ?? errors.INVALID_INPUT;
 }
 
-export function ProductForm({ product }: { product?: ProductView }) {
+/** canSale — tarifda aksiya bormi (Premium); yo'q bo'lsa aksiya maydonlari yopiq, borini olib tashlash mumkin. */
+export function ProductForm({ product, canSale = true, owner = true }: { product?: ProductView; canSale?: boolean; owner?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
   const errors = t.errors as Record<string, string>;
@@ -154,12 +155,22 @@ export function ProductForm({ product }: { product?: ProductView }) {
               {t.products.saleTitle}
             </h2>
             <p className="mt-1 text-[13px] text-muted">{t.products.saleHint}</p>
+            {!canSale && (
+              <p className="mt-1.5 text-[13px] font-semibold text-amber-700 dark:text-amber-300">
+                {t.plans.saleLocked}{" "}
+                {owner && (
+                  <Link href="/billing" className="underline">
+                    {t.plans.lockedCta}
+                  </Link>
+                )}
+              </p>
+            )}
           </div>
           {percent != null && <span className="rounded-full bg-danger-soft px-2.5 py-1 text-[12px] font-bold text-danger">{fmt(t.products.salePreview, { n: percent })}</span>}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <TextField label={t.products.salePrice} {...num} min={1} value={form.salePrice} onChange={set("salePrice")} error={errorText(errors, fields.salePrice)} />
-          <TextField label={t.products.saleUntil} type="date" min={today} value={form.saleUntil} onChange={set("saleUntil")} error={errorText(errors, fields.saleUntil)} />
+          <TextField label={t.products.salePrice} {...num} min={1} value={form.salePrice} onChange={set("salePrice")} error={errorText(errors, fields.salePrice)} disabled={!canSale} />
+          <TextField label={t.products.saleUntil} type="date" min={today} value={form.saleUntil} onChange={set("saleUntil")} error={errorText(errors, fields.saleUntil)} disabled={!canSale} />
         </div>
         {(form.salePrice || form.saleUntil) && (
           <button type="button" onClick={() => setForm((f) => ({ ...f, salePrice: "", saleUntil: "" }))} className="flex w-fit cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-danger hover:underline">

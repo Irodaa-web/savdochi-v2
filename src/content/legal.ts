@@ -47,10 +47,10 @@ const terms: Record<Locale, LegalDoc> = {
         ],
       },
       {
-        title: "4. Obuna",
+        title: "4. Tariflar",
         items: [
-          "Kompaniyalar Platformadan oylik obuna asosida foydalanadi. Obuna narxi va sinov muddati Platformada ko‘rsatiladi.",
-          "Obuna muddati tugaganda Kompaniya mahsulotlari katalogda ko‘rinmaydi; ma’lumotlar saqlanib qoladi.",
+          "Kompaniyalar uchun Bepul, Standart va Premium tariflar mavjud. Tariflarning narxi, chegaralari va sinov muddati Platformaning «Tariflar» bo‘limida ko‘rsatiladi.",
+          "Pullik tarif muddati tugaganda Kompaniya Bepul tarifga o‘tadi: mahsulotlari katalogda qoladi va ma’lumotlari saqlanadi, ammo Bepul tarif chegaralari amal qiladi.",
         ],
       },
       {
@@ -107,10 +107,10 @@ const terms: Record<Locale, LegalDoc> = {
         ],
       },
       {
-        title: "4. Подписка",
+        title: "4. Тарифы",
         items: [
-          "Компании пользуются Платформой по ежемесячной подписке. Стоимость и пробный период указываются на Платформе.",
-          "По окончании подписки товары Компании не отображаются в каталоге; данные сохраняются.",
+          "Для Компаний доступны тарифы Бесплатный, Стандарт и Премиум. Стоимость, лимиты и пробный период указаны в разделе «Тарифы» Платформы.",
+          "По окончании платного тарифа Компания переходит на бесплатный: товары остаются в каталоге, данные сохраняются, но действуют лимиты бесплатного тарифа.",
         ],
       },
       {
@@ -167,10 +167,10 @@ const terms: Record<Locale, LegalDoc> = {
         ],
       },
       {
-        title: "4. Subscription",
+        title: "4. Plans",
         items: [
-          "Companies use the Platform on a monthly subscription. The price and trial period are shown on the Platform.",
-          "When a subscription expires, the Company’s products are hidden from the catalog; the data is kept.",
+          "Companies can use the Free, Standard or Premium plan. Prices, limits and the trial period are shown in the Plans section of the Platform.",
+          "When a paid plan ends, the Company moves to the Free plan: its products stay in the catalog and its data is kept, but the Free plan limits apply.",
         ],
       },
       {

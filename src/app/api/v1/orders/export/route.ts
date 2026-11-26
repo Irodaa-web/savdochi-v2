@@ -4,6 +4,7 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
 import { listOrders } from "@/server/orders";
 import { withUser } from "@/server/handler";
+import { requireFeature } from "@/server/plans";
 
 const FILTERS = ["open", ...ORDER_STATUSES] as const;
 
@@ -12,6 +13,7 @@ const FILTERS = ["open", ...ORDER_STATUSES] as const;
  * Kompaniya uchun hamkor — do'kon, do'kon uchun — kompaniya. 5000 tagacha buyurtma.
  */
 export const GET = withUser(null, async (user, request) => {
+  requireFeature(user, "excel"); // Excel — Premium tarif imkoniyati (do'konlarga tegmaydi)
   const locale = await getLocale();
   const t = getDictionary(locale);
   const url = new URL(request.url);

@@ -12,12 +12,12 @@ import { fmt, formatDateTime, formatDay } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { VerifyBanner } from "@/components/seller/VerifyBanner";
+import { PlanBanner } from "@/components/plans/PlanBanner";
 import { formatAmount } from "@/lib/catalog";
 import { listDebts } from "@/server/debts";
 import { sellerOnlineMethods } from "@/server/onlinePay";
 import { listOrders } from "@/server/orders";
 import { listSellerProducts } from "@/server/products";
-import { subscriptionActive } from "@/server/profile";
 import { sellerReport } from "@/server/reports";
 import { lowStockAcrossPartners } from "@/server/stock";
 
@@ -46,7 +46,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <div className="flex flex-col gap-5">
       <Welcome user={user} />
       <VerifyBanner user={user} t={t} />
-      {!subscriptionActive(user.subscriptionUntil) && <Alert>{t.subscription.expiredNote}</Alert>}
+      <PlanBanner user={user} t={t} />
       {onlineMethods.length === 0 && (
         <Alert tone="info">
           {t.onlinePay.connectHint}{" "}

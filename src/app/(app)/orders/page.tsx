@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDateTime } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
+import { planHas } from "@/lib/plans";
 import { formatAmount } from "@/lib/catalog";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
 import { listOrders, orderCounts } from "@/server/orders";
@@ -19,7 +20,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const user = await requireUser();
   // Omborchi summalarni ko'rmaydi; Excel eksport — ega va menejer.
   const showMoney = user.staff?.role !== "warehouse";
-  const canExport = !user.staff || user.staff.role === "manager";
+  // Excel eksport: do'konga bepul; kompaniyaga — Premium tarifda (ega va menejer).
+  const canExport = (!user.staff || user.staff.role === "manager") && (user.role === "buyer" || planHas(user.plan, "excel"));
   const locale = await getLocale();
   const t = getDictionary(locale);
   const sp = await searchParams;

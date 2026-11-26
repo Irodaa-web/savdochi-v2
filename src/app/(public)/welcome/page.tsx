@@ -6,6 +6,7 @@ import { Logo } from "@/components/ui/Logo";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { LiveDemo } from "./LiveDemo";
 import { Reveal } from "./Reveal";
+import { PlanCards } from "@/components/plans/PlanCards";
 
 export const metadata = {
   title: "Savdochi — ulgurji savdo platformasi",
@@ -180,6 +181,25 @@ export default async function WelcomePage() {
               </ul>
             </div>
           ))}
+        </section>
+
+        {/* ---------------- Tariflar ---------------- */}
+        <section id="pricing" className="flex scroll-mt-6 flex-col gap-8">
+          <div data-reveal className="flex max-w-2xl flex-col gap-2">
+            <h2 className="text-[28px] font-bold tracking-tight sm:text-[34px]">{t.plans.landingTitle}</h2>
+            <p className="text-[16px] text-muted">{t.plans.landingLead}</p>
+            <p className="flex w-fit items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-[13px] font-semibold text-amber-800 dark:bg-amber-400/15 dark:text-amber-200">{t.plans.landingTrial}</p>
+          </div>
+          <div data-reveal>
+            <PlanCards
+              t={t}
+              footer={() => (
+                <Link href="/register" className="mt-1 inline-flex h-10 items-center justify-center rounded-xl bg-accent px-4 text-[14px] font-semibold text-accent-fg hover:opacity-90">
+                  {t.plans.landingCta}
+                </Link>
+              )}
+            />
+          </div>
         </section>
 
         {/* ---------------- Chaqiriq ---------------- */}

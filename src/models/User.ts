@@ -2,6 +2,7 @@ import type { RegionRule } from "@/lib/delivery";
 import mongoose, { Schema, type Model, type Types } from "mongoose";
 import { PROFILE_PAYMENT_METHODS, type PaymentMethod } from "@/lib/orders";
 import { REGION_CODES, type RegionCode } from "@/lib/regions";
+import { PLAN_CODES, type PlanCode } from "@/lib/plans";
 
 export type Verification = "unverified" | "pending" | "verified" | "rejected";
 
@@ -60,7 +61,14 @@ export interface UserDoc {
   profile: Profile;
   /** Do'kon saqlagan mahsulotlar. */
   favorites: Types.ObjectId[];
-  /** Kompaniya obunasi shu sanagacha amal qiladi. null — cheklovsiz (eski hisoblar). */
+  /**
+   * Kompaniya tarifi (lib/plans). Maydon yo'q — eski hisob (Premium deb olinadi).
+   * Ataylab standart qiymatsiz: eski hujjat saqlanganda "free" yozilib, kompaniya bilmasdan tushib qolmasin.
+   */
+  plan?: PlanCode;
+  /** Hozirgi pullik tarif — ro'yxatdan o'tgandagi bepul sinov (administrator tarif yoqqanda false bo'ladi). */
+  planTrial?: boolean;
+  /** Pullik tarif shu sanagacha amal qiladi (keyin — Bepul). null — muddatsiz. */
   subscriptionUntil: Date | null;
   demo: boolean;
   /** Administrator kompaniyani katalogdan yashirgan (masalan, demo yoki tekshiruvdagi). */
@@ -135,6 +143,8 @@ const userSchema = new Schema<UserDoc>(
     },
     profile: { type: profileSchema, default: () => ({}) },
     favorites: { type: [Schema.Types.ObjectId], ref: "Product", default: [] },
+    plan: { type: String, enum: PLAN_CODES },
+    planTrial: { type: Boolean },
     subscriptionUntil: { type: Date, default: null },
     demo: { type: Boolean, default: false },
     hidden: { type: Boolean, default: false },

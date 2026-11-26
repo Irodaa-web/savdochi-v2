@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/i18n/client";
+import { fmt } from "@/i18n/format";
 import { api } from "@/lib/apiClient";
 import type { Verification } from "@/models/User";
 
@@ -27,6 +28,7 @@ export function UserActions({ id, role, verification, blocked, inactive, hidden,
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState(false);
+  const [plan, setPlan] = useState<"standard" | "premium">("premium");
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
 
@@ -90,17 +92,29 @@ export function UserActions({ id, role, verification, blocked, inactive, hidden,
 
       {role === "seller" && (
         <div className={group}>
-          <span className={title}>{t.subscription.title}</span>
+          <span className={title}>{t.plans.adminSet}</span>
+          <div role="radiogroup" aria-label={t.plans.title} className="flex w-fit gap-1 rounded-xl border border-line bg-surface-2/60 p-1">
+            {(["standard", "premium"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                role="radio"
+                aria-checked={plan === p}
+                onClick={() => setPlan(p)}
+                className={`cursor-pointer rounded-lg px-3 py-1.5 text-[13px] font-semibold ${plan === p ? "bg-accent text-accent-fg" : "text-muted hover:text-text"}`}
+              >
+                {t.plans.names[p]}
+              </button>
+            ))}
+          </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" onClick={() => act("m1", { extendMonths: 1 }, a.doneExtended)} loading={busy === "m1"}>
-              <CalendarPlus size={16} aria-hidden />
-              {t.admin.extend1}
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => act("m12", { extendMonths: 12 }, a.doneExtended)} loading={busy === "m12"}>
-              <CalendarPlus size={16} aria-hidden />
-              {t.admin.extend12}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => act("stop", { extendMonths: -1 }, a.doneStopped, a.stopConfirm)} loading={busy === "stop"}>
+            {[1, 3, 12].map((n) => (
+              <Button key={n} type="button" variant="secondary" onClick={() => act(`m${n}`, { plan, extendMonths: n }, a.doneExtended)} loading={busy === `m${n}`}>
+                <CalendarPlus size={16} aria-hidden />
+                {fmt(t.plans.adminMonths, { n })}
+              </Button>
+            ))}
+            <Button type="button" variant="ghost" onClick={() => act("stop", { plan: "free" }, a.doneStopped, a.stopConfirm)} loading={busy === "stop"}>
               <CalendarX size={16} aria-hidden />
               {a.stopSubscription}
             </Button>

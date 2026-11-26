@@ -31,7 +31,8 @@ export function NotificationsMenu({ count, onChange }: { count: number; onChange
   const texts = t.notifications.types as Record<string, string>;
   const statusText = (p: Record<string, string | number>) => {
     const s = String(p.status ?? "");
-    return { ...p, status: (t.orderStatus as Record<string, string>)[s] ?? (t.paymentStatus as Record<string, string>)[s] ?? s };
+    const plan = String(p.plan ?? "");
+    return { ...p, status: (t.orderStatus as Record<string, string>)[s] ?? (t.paymentStatus as Record<string, string>)[s] ?? s, plan: (t.plans.names as Record<string, string>)[plan] ?? plan };
   };
 
   return (

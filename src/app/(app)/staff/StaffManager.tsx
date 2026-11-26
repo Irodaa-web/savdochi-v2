@@ -15,7 +15,8 @@ import { MAX_STAFF, STAFF_ROLES, type StaffRole } from "@/lib/staff";
 import type { StaffView } from "@/server/staff";
 
 /** Kompaniya egasi: xodim qo'shish, rolini o'zgartirish, bloklash, parolini yangilash, o'chirish. */
-export function StaffManager({ staff, lastActive }: { staff: StaffView[]; lastActive: Record<string, string> }) {
+/** max — tarif va umumiy chegaradan kichigi; faol (bloklanmagan) xodimlar shu songacha qo'shiladi. */
+export function StaffManager({ staff, lastActive, max = MAX_STAFF }: { staff: StaffView[]; lastActive: Record<string, string>; max?: number }) {
   const { t } = useI18n();
   const router = useRouter();
   const errors = t.errors as Record<string, string>;
@@ -67,8 +68,8 @@ export function StaffManager({ staff, lastActive }: { staff: StaffView[]; lastAc
     <div className="flex flex-col gap-4">
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-[13px] text-muted">{fmt(t.staff.count, { n: staff.length, max: MAX_STAFF })}</span>
-        <Button type="button" onClick={() => setAdding(true)} disabled={staff.length >= MAX_STAFF}>
+        <span className="text-[13px] text-muted">{fmt(t.staff.count, { n: staff.filter((s) => !s.blocked).length, max })}</span>
+        <Button type="button" onClick={() => setAdding(true)} disabled={staff.length >= MAX_STAFF || staff.filter((s) => !s.blocked).length >= max}>
           <UserPlus size={17} aria-hidden />
           {t.staff.add}
         </Button>

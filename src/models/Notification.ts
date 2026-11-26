@@ -24,6 +24,7 @@ export const NOTIFICATION_TYPES = [
   "ticketMessage",
   "verificationRejected",
   "verificationPending",
+  "planChanged",
   "verified",
   "inactivityWarning",
   "inactivityFinal",

@@ -1,7 +1,7 @@
 import { getLocale } from "@/i18n/server";
 import { AppError, clientIp, fail, ok, readJson } from "@/lib/api";
 import { burnTime, verifyPassword } from "@/lib/auth/password";
-import { startSession } from "@/lib/auth/session";
+import { startSession, staffSeatOk } from "@/lib/auth/session";
 import { connectDb } from "@/lib/db";
 import { hit, reset } from "@/lib/rateLimit";
 import { fieldErrors, loginSchema } from "@/lib/validation";
@@ -32,10 +32,12 @@ export async function POST(request: Request) {
         await burnTime(password);
         return fail("INVALID_CREDENTIALS");
       }
-      const company = await User.findById(staff.company, { role: 1, name: 1, blocked: 1, inactive: 1, demo: 1 }).lean();
+      const company = await User.findById(staff.company, { role: 1, name: 1, blocked: 1, inactive: 1, demo: 1, plan: 1, subscriptionUntil: 1 }).lean();
       if (staff.blocked || !company || company.blocked || company.demo || !(await verifyPassword(password, staff.passwordHash))) return fail("INVALID_CREDENTIALS");
       // Kompaniya hisobi nofaol (egasi 15 kun kirmagan) bo'lsa — ega SMS bilan qayta faollashtirishi kerak.
       if (company.inactive) return fail("COMPANY_INACTIVE");
+      // Tarif xodimlar sonini cheklaydi (Bepul — 0, Standart — 2): ortiqcha xodim kira olmaydi.
+      if (!(await staffSeatOk(company, staff))) return fail("STAFF_SEAT");
       await reset(phoneKey);
       await Staff.updateOne({ _id: staff._id }, { $set: { lastActiveAt: new Date() } });
       const token = await startSession({ id: String(company._id), role: "seller", authVersion: staff.authVersion, staff: { id: String(staff._id), role: staff.role } });

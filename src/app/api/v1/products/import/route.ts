@@ -1,7 +1,7 @@
 import { fail, ok } from "@/lib/api";
 import { withUser } from "@/server/handler";
 import { IMPORT_MAX_BYTES, importProducts } from "@/server/productImport";
-import { subscriptionActive } from "@/server/profile";
+import { requireFeature } from "@/server/plans";
 
 /**
  * Excel'dan mahsulot yuklash (multipart): file — .xlsx, commit — "1" bo'lsa saqlaydi.
@@ -9,7 +9,7 @@ import { subscriptionActive } from "@/server/profile";
  * Nomi mavjud mahsulot bilan bir xil bo'lsa — yangilanadi, aks holda yangi yaratiladi.
  */
 export const POST = withUser("seller", async (user, request) => {
-  if (!subscriptionActive(user.subscriptionUntil)) return fail("SUBSCRIPTION_EXPIRED");
+  requireFeature(user, "excel"); // Excel — Premium tarif imkoniyati
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File) || file.size === 0) return fail("INVALID_INPUT", { file: "excelInvalid" });

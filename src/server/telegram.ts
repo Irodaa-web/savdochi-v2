@@ -9,6 +9,7 @@ import { User } from "@/models/User";
 import { normalizePhone } from "@/lib/phone";
 import { hit } from "@/lib/rateLimit";
 import { storeOneTimeCode } from "./sms";
+import { effectivePlan, planHas } from "@/lib/plans";
 
 /**
  * Telegram bot: bildirishnomalar va parolni tiklash.
@@ -221,15 +222,21 @@ export async function handleUpdate(update: Update): Promise<void> {
 }
 
 /** Bildirishnomani Telegram'ga ham yuboradi (foydalanuvchi ulagan bo'lsa). */
+/** Hisob haqidagi xizmat xabarlari — tarifdan qat'i nazar Telegram'ga boradi. */
+const SERVICE_TYPES = new Set<NotificationType>(["planChanged", "verified", "verificationRejected", "ticketReply", "inactivityWarning", "inactivityFinal", "productHidden", "productRestored"]);
+
 export async function notifyTelegram(userId: unknown, type: NotificationType, params: Record<string, string | number>, link: string): Promise<void> {
   const cfg = telegramConfig();
   if (!cfg.enabled) return;
-  const u = await User.findById(userId, { telegram: 1, locale: 1 }).lean();
+  const u = await User.findById(userId, { telegram: 1, locale: 1, role: 1, plan: 1, subscriptionUntil: 1 }).lean();
   const chatId = u?.telegram?.chatId;
   if (!chatId) return;
+  // Kompaniya: savdo xabarlari Telegram'ga Standart va Premium tariflarda (Bepulda — faqat saytda).
+  if (u.role === "seller" && !SERVICE_TYPES.has(type) && !planHas(effectivePlan(u), "telegram")) return;
   const t = getDictionary(localeOf(u.locale));
   const s = String(params.status ?? "");
-  const values = { ...params, status: (t.orderStatus as Record<string, string>)[s] ?? (t.paymentStatus as Record<string, string>)[s] ?? s };
+  const plan = String(params.plan ?? "");
+  const values = { ...params, status: (t.orderStatus as Record<string, string>)[s] ?? (t.paymentStatus as Record<string, string>)[s] ?? s, plan: (t.plans.names as Record<string, string>)[plan] ?? plan };
   const text = fmt((t.notifications.types as Record<string, string>)[type] ?? type, values);
   const url = cfg.appUrl && link ? `${cfg.appUrl}${link}` : null;
   await telegramApi("sendMessage", {

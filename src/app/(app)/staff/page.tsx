@@ -1,10 +1,13 @@
 import { Boxes, BriefcaseBusiness, Handshake, ShieldCheck } from "lucide-react";
 import { redirect } from "next/navigation";
 import { PageTitle } from "@/components/ui/Card";
-import { formatDateTime } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
-import { STAFF_ROLES } from "@/lib/staff";
+import { atLimit, PLANS } from "@/lib/plans";
+import { MAX_STAFF, STAFF_ROLES } from "@/lib/staff";
+import Link from "next/link";
+import { Alert } from "@/components/ui/Alert";
+import { fmt, formatDateTime } from "@/i18n/format";
 import { listStaff } from "@/server/staff";
 import { StaffManager } from "./StaffManager";
 
@@ -19,6 +22,9 @@ export default async function StaffPage() {
   const locale = await getLocale();
   const t = getDictionary(locale);
   const staff = await listStaff(user);
+  // Tarif: Bepul — 0, Standart — 2, Premium — cheksiz (umumiy chegara MAX_STAFF).
+  const limit = PLANS[user.plan].staff;
+  const active = staff.filter((s) => !s.blocked).length;
   const lastActive = Object.fromEntries(staff.flatMap((s) => (s.lastActiveAt ? [[s.id, formatDateTime(s.lastActiveAt, locale)]] : [])));
 
   return (
@@ -44,7 +50,15 @@ export default async function StaffPage() {
         <ShieldCheck size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden />
         {t.staff.ownerOnly}
       </p>
-      <StaffManager staff={staff} lastActive={lastActive} />
+      {atLimit(limit, active) && (
+        <Alert tone="info">
+          {limit === 0 ? t.plans.staffNoneText : fmt(t.plans.staffLimit, { limit: limit ?? 0 })}{" "}
+          <Link href="/billing" className="font-semibold underline">
+            {t.plans.lockedCta}
+          </Link>
+        </Alert>
+      )}
+      <StaffManager staff={staff} lastActive={lastActive} max={Math.min(MAX_STAFF, limit ?? MAX_STAFF)} />
     </section>
   );
 }

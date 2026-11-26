@@ -10,7 +10,6 @@ import { requireAdmin } from "@/lib/auth/guard";
 import { formatAmount } from "@/lib/catalog";
 import { formatPhone } from "@/lib/phone";
 import { getUserDetail } from "@/server/admin";
-import { subscriptionActive } from "@/server/profile";
 import { UserStatusPills } from "../UserStatusPills";
 import { UserActions } from "./UserActions";
 
@@ -33,7 +32,9 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
     [a.registeredAt, formatDateTime(u.createdAt, locale)],
     [a.lastActive, u.lastActiveAt ? formatDateTime(u.lastActiveAt, locale) : "—"],
     [a.telegram, u.telegram ? a.yes : a.no],
-    ...(seller ? ([[t.subscription.title, u.subscriptionUntil ? `${formatDateTime(u.subscriptionUntil, locale, false)}${subscriptionActive(u.subscriptionUntil) ? "" : ` · ${a.expired}`}` : t.subscription.unlimited]] as [string, string][]) : []),
+    ...(seller
+      ? ([[t.plans.title, `${t.plans.names[u.plan]}${u.plan !== "free" ? ` · ${u.subscriptionUntil ? fmt(t.plans.until, { date: formatDateTime(u.subscriptionUntil, locale, false) }) : t.plans.unlimited}` : ""}`]] as [string, string][])
+      : []),
   ];
   const stats: [string, string][] = [
     [a.statOrders, String(u.stats.orders)],

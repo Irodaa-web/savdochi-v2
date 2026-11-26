@@ -8,6 +8,9 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { fmt } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
+import { atLimit, planHas, PLANS } from "@/lib/plans";
+import { PlanLocked } from "@/components/plans/PlanLocked";
+import { Alert } from "@/components/ui/Alert";
 import { VerifyBanner } from "@/components/seller/VerifyBanner";
 import { WarehouseStock } from "./WarehouseStock";
 import { formatAmount, saleDay } from "@/lib/catalog";
@@ -40,24 +43,36 @@ export default async function ProductsPage() {
     { Icon: FileText, text: t.products.fixDescription, items: products.filter((p) => p.description.trim().length < 20) },
   ].filter((f) => f.items.length > 0);
 
+  // Tarif: Excel — Premium; mahsulotlar soni chegarasi (Bepul — 10, Standart — 100).
+  const excel = planHas(user.plan, "excel");
+  const limit = PLANS[user.plan].products;
+  const full = atLimit(limit, products.length);
   const addButton = (
-    <div className="flex flex-wrap gap-2">
-      <LinkButton href="/products/import" variant="secondary">
-        <FileSpreadsheet size={16} aria-hidden />
-        {t.products.importButton}
-      </LinkButton>
-      <a
-        href="/api/v1/products/export"
-        download
-        className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-[var(--c-glass-strong)] px-4 text-[14px] font-semibold hover:border-accent"
-      >
-        <Download size={16} aria-hidden />
-        {t.products.exportButton}
-      </a>
-      <LinkButton href="/products/new">
-        <Plus size={16} aria-hidden />
-        {t.products.add}
-      </LinkButton>
+    <div className="flex flex-wrap items-center gap-2">
+      {excel ? (
+        <>
+          <LinkButton href="/products/import" variant="secondary">
+            <FileSpreadsheet size={16} aria-hidden />
+            {t.products.importButton}
+          </LinkButton>
+          <a
+            href="/api/v1/products/export"
+            download
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-[var(--c-glass-strong)] px-4 text-[14px] font-semibold hover:border-accent"
+          >
+            <Download size={16} aria-hidden />
+            {t.products.exportButton}
+          </a>
+        </>
+      ) : (
+        <PlanLocked feature="excel" t={t} owner={!user.staff} compact />
+      )}
+      {!full && (
+        <LinkButton href="/products/new">
+          <Plus size={16} aria-hidden />
+          {t.products.add}
+        </LinkButton>
+      )}
     </div>
   );
 
@@ -67,6 +82,16 @@ export default async function ProductsPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t.products.title}</h1>
         {products.length > 0 && addButton}
       </div>
+      {full && limit !== null && (
+        <Alert tone="info">
+          {products.length > limit ? fmt(t.plans.overLimit, { n: products.length, limit }) : fmt(t.plans.productLimit, { limit })}{" "}
+          {!user.staff && (
+            <Link href="/billing" className="font-semibold underline">
+              {t.plans.lockedCta}
+            </Link>
+          )}
+        </Alert>
+      )}
       <VerifyBanner user={user} t={t} />
 
       {carts.shops > 0 && (

@@ -3,6 +3,7 @@ import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { after } from "next/server";
 import { connectDb } from "@/lib/db";
+import { effectivePlan, PLANS, type PlanCode } from "@/lib/plans";
 import type { RegionCode } from "@/lib/regions";
 import type { StaffRole } from "@/lib/staff";
 import { Staff } from "@/models/Staff";
@@ -18,8 +19,12 @@ export type SessionUser = {
   verification: Verification;
   isAdmin: boolean;
   demo: boolean;
-  /** Kompaniya obunasi: null — cheklovsiz. */
+  /** Pullik tarif tugash sanasi: null — muddatsiz yoki bepul. */
   subscriptionUntil: string | null;
+  /** Kompaniyaning amaldagi tarifi (muddati tugagan pullik tarif — "free"). Do'konlar uchun ahamiyatsiz. */
+  plan: PlanCode;
+  /** Amaldagi tarif — ro'yxatdan o'tgandagi bepul sinov. */
+  planTrial: boolean;
   /** Kompaniya xodimi kirgan bo'lsa: kim va qanday rolda. null — hisob egasi. */
   staff: { id: string; name: string; role: StaffRole } | null;
 };
@@ -59,7 +64,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const valid = payload.st
     ? user && user.role === "seller" && !user.blocked && !user.inactive && !user.demo && staff && !staff.blocked && staff.authVersion === payload.v
     : user && !user.blocked && !user.inactive && !user.demo && user.authVersion === payload.v;
-  if (!user || !valid) {
+  if (!user || !valid || (staff && !(await staffSeatOk(user, staff)))) {
     sessionCache.delete(key);
     return null;
   }
@@ -95,12 +100,24 @@ function touchLater(userId: unknown): void {
 }
 const sessionCache = new Map<string, { user: SessionUser; until: number }>();
 
+/**
+ * Xodim kompaniya tarifidagi o'rinlarga sig'adimi: eng avval qo'shilgan faol xodimlar ishlaydi,
+ * tarif chegarasidan ortiqlari (masalan, Premium tugab Bepulga o'tganda) kira olmaydi.
+ */
+export async function staffSeatOk(company: { _id: unknown; plan?: string; subscriptionUntil?: Date | null; role?: string }, staff: { createdAt?: Date }): Promise<boolean> {
+  const limit = PLANS[effectivePlan(company)].staff;
+  if (limit === null) return true;
+  if (limit === 0) return false;
+  const before = await Staff.countDocuments({ company: company._id, blocked: { $ne: true }, createdAt: { $lt: staff.createdAt ?? new Date() } });
+  return before < limit;
+}
+
 /** Profil yoki obuna o'zgarganda keshdagi eski ma'lumotni o'chirish. */
 export function forgetSessionUser(userId: string): void {
   for (const key of sessionCache.keys()) if (key.startsWith(`${userId}:`)) sessionCache.delete(key);
 }
 
-function toSessionUser(user: { _id: unknown; role: Role; name: string; phone: string; region: RegionCode; verification: Verification; demo?: boolean; subscriptionUntil?: Date | null }): SessionUser {
+function toSessionUser(user: { _id: unknown; role: Role; name: string; phone: string; region: RegionCode; verification: Verification; demo?: boolean; plan?: string; planTrial?: boolean; subscriptionUntil?: Date | null }): SessionUser {
   return {
     id: String(user._id),
     role: user.role,
@@ -111,6 +128,8 @@ function toSessionUser(user: { _id: unknown; role: Role; name: string; phone: st
     isAdmin: adminPhones().has(user.phone),
     demo: Boolean(user.demo),
     subscriptionUntil: user.subscriptionUntil ? new Date(user.subscriptionUntil).toISOString() : null,
+    plan: effectivePlan(user),
+    planTrial: Boolean(user.planTrial) && effectivePlan(user) !== "free",
     staff: null,
   };
 }

@@ -15,6 +15,7 @@ import { Staff } from "@/models/Staff";
 import { Ticket } from "@/models/Ticket";
 import { User, type Verification } from "@/models/User";
 import { audit, notify } from "./notify";
+import { effectivePlan, type PlanCode } from "@/lib/plans";
 import { forgetHiddenSellers } from "./products";
 import { smsEnabled } from "./sms";
 import { telegramConfig } from "./telegram";
@@ -127,6 +128,9 @@ export type AdminUserRow = {
   demo: boolean;
   isAdmin: boolean;
   subscriptionUntil: string | null;
+  /** Amaldagi tarif (kompaniya uchun). */
+  plan: PlanCode;
+  planTrial: boolean;
   lastActiveAt: string | null;
   createdAt: string;
 };
@@ -183,6 +187,8 @@ export async function listUsers(opts: { q?: string; role?: "buyer" | "seller"; s
       demo: Boolean(u.demo),
       isAdmin: admins.has(u.phone),
       subscriptionUntil: u.subscriptionUntil ? u.subscriptionUntil.toISOString() : null,
+      plan: effectivePlan(u),
+      planTrial: Boolean(u.planTrial),
       lastActiveAt: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : null,
       createdAt: u.createdAt.toISOString(),
     })),
@@ -235,6 +241,8 @@ export async function getUserDetail(id: string): Promise<AdminUserDetail | null>
     demo: Boolean(u.demo),
     isAdmin: adminPhones().includes(u.phone),
     subscriptionUntil: u.subscriptionUntil ? u.subscriptionUntil.toISOString() : null,
+    plan: effectivePlan(u),
+    planTrial: Boolean(u.planTrial),
     lastActiveAt: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : null,
     createdAt: u.createdAt.toISOString(),
     telegram: Boolean(u.telegram?.chatId),
@@ -246,7 +254,7 @@ export async function getUserDetail(id: string): Promise<AdminUserDetail | null>
   };
 }
 
-export type AdminUserInput = { verification?: Verification; reason?: string; blocked?: boolean; extendMonths?: number; hidden?: boolean; reactivate?: boolean };
+export type AdminUserInput = { verification?: Verification; reason?: string; blocked?: boolean; extendMonths?: number; plan?: PlanCode; hidden?: boolean; reactivate?: boolean };
 
 /**
  * Administrator amallari. Himoya: o'zini va boshqa administratorni bloklab bo'lmaydi.
@@ -277,16 +285,29 @@ export async function adminUpdateUser(adminId: string, id: string, input: AdminU
     u.lastActiveAt = new Date();
     u.inactivity = { warned12At: null, warned14At: null };
   }
-  if (input.extendMonths === -1) {
-    u.subscriptionUntil = new Date(Date.now() - 1000);
-  } else if (input.extendMonths && input.extendMonths > 0) {
-    const base = u.subscriptionUntil && u.subscriptionUntil.getTime() > Date.now() ? new Date(u.subscriptionUntil) : new Date();
+  // Tarif (faqat kompaniya): Bepulga o'tkazish yoki pullik tarifni N oyga yoqish/uzaytirish.
+  // Xuddi shu tarif hali amalda bo'lsa — muddat davom ettiriladi, aks holda bugundan boshlanadi.
+  let planNote: { plan: PlanCode; until: Date | null } | null = null;
+  if (u.role === "seller" && (input.extendMonths === -1 || input.plan === "free")) {
+    u.plan = "free";
+    u.subscriptionUntil = null;
+    u.planTrial = false;
+    planNote = { plan: "free", until: null };
+  } else if (u.role === "seller" && input.extendMonths && input.extendMonths > 0) {
+    const current = effectivePlan(u);
+    const plan: PlanCode = input.plan ?? (current === "free" ? "premium" : current);
+    const keep = current === plan && !u.planTrial && u.subscriptionUntil && u.subscriptionUntil.getTime() > Date.now();
+    const base = keep ? new Date(u.subscriptionUntil!) : new Date();
     base.setMonth(base.getMonth() + input.extendMonths);
+    u.plan = plan;
     u.subscriptionUntil = base;
+    u.planTrial = false;
+    planNote = { plan, until: base };
   }
   await u.save();
   forgetSessionUser(id);
   forgetHiddenSellers();
+  if (planNote) await notify(u._id, "planChanged", { plan: planNote.plan, until: planNote.until ? planNote.until.toISOString().slice(0, 10) : "" }, "/billing");
   await audit(adminId, "admin.user.update", `user:${id}`, input as Record<string, unknown>, ip);
 }
 
