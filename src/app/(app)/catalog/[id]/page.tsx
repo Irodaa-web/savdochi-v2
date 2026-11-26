@@ -114,7 +114,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <Link href={`/catalog?seller=${p.seller.id}`} className="text-[13px] font-semibold text-accent hover:underline">
               {t.catalog.sellerProducts}
             </Link>
-            {user.role === "buyer" && !user.isAdmin && <StartChatButton partnerId={p.seller.id} className="mt-2" />}
+            {user.role === "buyer" && !user.isAdmin && <StartChatButton partnerId={p.seller.id} productId={p.id} className="mt-2" />}
           </div>
         </aside>
       </div>
