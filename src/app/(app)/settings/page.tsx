@@ -10,11 +10,16 @@ import { telegramStatus } from "@/server/telegram";
 import { PasswordForm } from "./PasswordForm";
 import { TelegramCard } from "./TelegramCard";
 import { DeviceCard } from "./DeviceCard";
+import { BrandForm } from "./BrandForm";
+import { connectDb } from "@/lib/db";
+import { User } from "@/models/User";
 
 export const metadata = { title: "Sozlamalar" };
 
 export default async function SettingsPage() {
   const user = await requireUser();
+  // Hisob rasmi va banner (xodimlar o'zgartirmaydi).
+  const brand = user.staff ? null : (await connectDb(), await User.findById(user.id, { logo: 1, banner: 1 }).lean());
   const t = getDictionary(await getLocale());
   const telegram = await telegramStatus(user.id);
   return (
@@ -22,6 +27,7 @@ export default async function SettingsPage() {
       <PageTitle>{t.header.settings}</PageTitle>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-5">
+          {!user.staff && <BrandForm initial={{ logo: brand?.logo ?? "", banner: brand?.banner ?? "" }} name={user.name} company={user.role === "seller"} />}
           <Card className="flex flex-wrap items-center justify-between gap-3">
             <span className="font-semibold">{t.header.language}</span>
             <LanguageSwitch />

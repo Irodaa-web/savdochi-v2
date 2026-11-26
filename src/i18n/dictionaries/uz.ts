@@ -677,6 +677,9 @@ const uz = {
     pushUnsupported: "Bu brauzer bildirishnomalarni qo‘llab-quvvatlamaydi.",
   },
   brand: {
+    titleShop: "Do‘kon rasmi",
+    leadShop: "Hamkor kompaniyalar, chat va buyurtmalarda do‘koningiz shu rasm bilan ko‘rinadi.",
+    logoShop: "Rasm yoki logotip",
     title: "Logotip va banner",
     lead: "Katalogdagi kompaniya kartangizda va kompaniya sahifangizda ko‘rinadi — do‘konlar sizni tezroq taniydi.",
     banner: "Banner (muqova rasmi)",

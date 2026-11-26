@@ -6,10 +6,14 @@ import { User } from "@/models/User";
 import { parseBody, withUser } from "@/server/handler";
 import { forgetHiddenSellers } from "@/server/products";
 
-/** Kompaniya logotipi va banneri — faqat hisob egasi (xodimlarga yopiq, lib/staff). "" — olib tashlash. */
-export const PUT = withUser("seller", async (user, request) => {
+/**
+ * Hisob rasmi (logo) — har qanday hisob egasi; banner — faqat kompaniya (katalogda ko'rinadi).
+ * Xodimlarga yopiq. "" — olib tashlash.
+ */
+export const PUT = withUser(null, async (user, request) => {
   if (user.staff) throw new AppError("FORBIDDEN");
   const input = await parseBody(request, brandSchema);
+  if (input.banner !== undefined && user.role !== "seller") throw new AppError("FORBIDDEN");
   const set: Record<string, string> = {};
   if (input.logo !== undefined) set.logo = input.logo;
   if (input.banner !== undefined) set.banner = input.banner;

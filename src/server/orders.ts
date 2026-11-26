@@ -21,8 +21,8 @@ import { notify } from "./notify";
 export type OrderView = {
   id: string;
   number: number;
-  buyer: { id: string; name: string; phone: string };
-  seller: { id: string; name: string; phone: string };
+  buyer: { id: string; name: string; phone: string; logo: string };
+  seller: { id: string; name: string; phone: string; logo: string };
   items: { productId: string; name: string; unit: string; quantity: number; unitPrice: number; total: number }[];
   subtotal: number;
   discountPercent: number;
@@ -45,11 +45,11 @@ export type OrderView = {
 
 async function toViews(docs: OrderDoc[]): Promise<OrderView[]> {
   const ids = [...new Set(docs.flatMap((d) => [String(d.buyer), String(d.seller)]))];
-  const users = await User.find({ _id: { $in: ids } }, { name: 1, phone: 1 }).lean();
+  const users = await User.find({ _id: { $in: ids } }, { name: 1, phone: 1, logo: 1 }).lean();
   const by = new Map(users.map((u) => [String(u._id), u]));
   const party = (id: unknown) => {
     const u = by.get(String(id));
-    return { id: String(id), name: u?.name ?? "—", phone: u?.phone ?? "" };
+    return { id: String(id), name: u?.name ?? "—", phone: u?.phone ?? "", logo: u?.logo ?? "" };
   };
   return docs.map((d) => ({
     id: String(d._id),

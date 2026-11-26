@@ -17,7 +17,7 @@ function sniff(head: Uint8Array): string | null {
  * Rasm yuklash (multipart, maydon: file; kind: "logo" | "banner" — kompaniya brendi, aks holda mahsulot rasmi).
  * Vercel Blob kerak: BLOB_READ_WRITE_TOKEN.
  */
-export const POST = withUser("seller", async (user, request) => {
+export const POST = withUser(null, async (user, request) => {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return fail("UPLOAD_DISABLED");
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
@@ -26,6 +26,9 @@ export const POST = withUser("seller", async (user, request) => {
   if (!ext || file.size > MAX_BYTES) return fail("INVALID_INPUT", { file: "imageInvalid" });
   if (sniff(new Uint8Array(await file.slice(0, 12).arrayBuffer())) !== file.type) return fail("INVALID_INPUT", { file: "imageInvalid" });
   const kind = form?.get("kind");
+  // Mahsulot rasmi va banner — faqat kompaniya; hisob rasmi (logo) — har qanday hisob egasi.
+  if (kind !== "logo" && user.role !== "seller") return fail("FORBIDDEN");
+  if (kind === "logo" && user.staff) return fail("FORBIDDEN");
   const folder = kind === "logo" || kind === "banner" ? `brand/${user.id}/${kind}` : `products/${user.id}`;
   const blob = await put(`${folder}/${crypto.randomUUID()}.${ext}`, file, { access: "public", contentType: file.type });
   return ok({ url: blob.url }, { status: 201 });

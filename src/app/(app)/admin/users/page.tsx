@@ -9,6 +9,7 @@ import { requireAdmin } from "@/lib/auth/guard";
 import { formatPhone } from "@/lib/phone";
 import { listUsers, USER_STATUSES, type UserStatusFilter } from "@/server/admin";
 import { UserStatusPills } from "./UserStatusPills";
+import { Avatar } from "@/components/ui/Avatar";
 
 export const metadata = { title: "Foydalanuvchilar" };
 
@@ -68,6 +69,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
           {data.items.map((u) => (
             <li key={u.id}>
               <Link href={`/admin/users/${u.id}`} className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors hover:bg-accent-soft/40">
+                <Avatar name={u.name} src={u.logo} />
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-1.5">
                     <b className="truncate">{u.name}</b>

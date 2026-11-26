@@ -8,7 +8,7 @@ import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import { User } from "@/models/User";
 
-export type ConversationView = { id: string; partner: { id: string; name: string; verified: boolean }; lastText: string; lastAt: string; unread: number };
+export type ConversationView = { id: string; partner: { id: string; name: string; verified: boolean; logo: string }; lastText: string; lastAt: string; unread: number };
 export type MessageView = {
   id: string;
   mine: boolean;
@@ -24,13 +24,13 @@ export async function listConversations(user: SessionUser): Promise<Conversation
   await connectDb();
   const s = side(user);
   const docs = await Conversation.find({ [s.me]: user.id }).sort({ lastAt: -1 }).limit(100).lean<ConversationDoc[]>();
-  const users = await User.find({ _id: { $in: docs.map((d) => d[s.other]) } }, { name: 1, verification: 1 }).lean();
+  const users = await User.find({ _id: { $in: docs.map((d) => d[s.other]) } }, { name: 1, verification: 1, logo: 1 }).lean();
   const by = new Map(users.map((u) => [String(u._id), u]));
   return docs.map((d) => {
     const u = by.get(String(d[s.other]));
     return {
       id: String(d._id),
-      partner: { id: String(d[s.other]), name: u?.name ?? "—", verified: u?.verification === "verified" },
+      partner: { id: String(d[s.other]), name: u?.name ?? "—", verified: u?.verification === "verified", logo: u?.logo ?? "" },
       lastText: d.lastText,
       lastAt: d.lastAt.toISOString(),
       unread: d[s.unread],
@@ -78,14 +78,14 @@ export async function listMessages(user: SessionUser, id: string, after?: string
   const [orders, products, partner] = await Promise.all([
     Order.find({ _id: { $in: docs.map((d) => d.order).filter(Boolean) } }, { number: 1 }).lean(),
     Product.find({ _id: { $in: docs.map((d) => d.product).filter(Boolean) } }, { name: 1 }).lean(),
-    User.findById(conv[s.other], { name: 1, verification: 1 }).lean(),
+    User.findById(conv[s.other], { name: 1, verification: 1, logo: 1 }).lean(),
   ]);
   const orderBy = new Map(orders.map((o) => [String(o._id), o.number]));
   const productBy = new Map(products.map((p) => [String(p._id), p.name]));
   return {
     conversation: {
       id: String(conv._id),
-      partner: { id: String(conv[s.other]), name: partner?.name ?? "—", verified: partner?.verification === "verified" },
+      partner: { id: String(conv[s.other]), name: partner?.name ?? "—", verified: partner?.verification === "verified", logo: partner?.logo ?? "" },
       lastText: conv.lastText,
       lastAt: conv.lastAt.toISOString(),
       unread: 0,

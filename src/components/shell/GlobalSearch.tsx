@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { ArrowRight, BadgeCheck, Building2, Loader2, Search, X } from "lucide-react";
+import { ArrowRight, BadgeCheck, Loader2, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -10,10 +10,11 @@ import { fmt, useI18n } from "@/i18n/client";
 import { api } from "@/lib/apiClient";
 import { formatAmount, type CategoryCode, type UnitCode } from "@/lib/catalog";
 import type { RegionCode } from "@/lib/regions";
+import { Avatar } from "@/components/ui/Avatar";
 
 type Result = {
   products: { id: string; name: string; price: number; unit: UnitCode; category: CategoryCode; image: string | null; seller: string }[];
-  companies: { id: string; name: string; region: RegionCode; verified: boolean; productCount: number }[];
+  companies: { id: string; name: string; region: RegionCode; verified: boolean; productCount: number; logo?: string }[];
   totalProducts: number;
 };
 type Option = { key: string; href: string };
@@ -211,9 +212,7 @@ export function GlobalSearch({ className }: { className?: string }) {
                 <Group title={t.search.companies} count={result.companies.length}>
                   {result.companies.map((c) => (
                     <Link key={c.id} id={`${listId}-c${c.id}`} role="option" aria-selected={active === indexOf(`c${c.id}`)} href={`/catalog?seller=${c.id}`} onClick={() => setOpen(false)} className={optionClass(`c${c.id}`)}>
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
-                        <Building2 size={18} aria-hidden />
-                      </span>
+                      <Avatar name={c.name} src={c.logo} />
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1 truncate text-[14px] font-medium">
                           <Mark text={c.name} term={term} />

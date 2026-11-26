@@ -5,6 +5,7 @@ import { fmt, formatDateTime } from "@/i18n/format";
 import type { ReviewView } from "@/server/reviews";
 import { ReplyForm } from "./ReviewForm";
 import { Stars } from "./Stars";
+import { Avatar } from "@/components/ui/Avatar";
 
 /**
  * Kompaniya sahifasidagi sharhlar: o'rtacha baho, yulduzlar bo'yicha taqsimot va sharhlar ro'yxati.
@@ -58,7 +59,10 @@ export function ReviewsSection({
               <li key={r.id}>
                 <Card className="flex flex-col gap-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold">{r.buyerName}</span>
+                    <span className="flex items-center gap-2 font-semibold">
+                      <Avatar name={r.buyerName} src={r.buyerLogo} size="sm" />
+                      {r.buyerName}
+                    </span>
                     <span className="text-[12px] text-muted">{formatDateTime(r.createdAt, locale, false)}</span>
                   </div>
                   <Stars value={r.rating} size={15} />

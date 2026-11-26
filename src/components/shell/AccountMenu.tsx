@@ -23,15 +23,8 @@ import type { SessionUser } from "@/lib/auth/session";
 import { formatPhone } from "@/lib/phone";
 import { staffPageAllowed } from "@/lib/staff";
 import { usePopover } from "./usePopover";
+import { Avatar } from "@/components/ui/Avatar";
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("");
-}
 
 const itemClass =
   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-text transition-colors hover:bg-accent-soft/70 hover:text-accent";
@@ -62,9 +55,10 @@ export function AccountMenu({ user }: { user: SessionUser }) {
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="btn-primary flex size-9 cursor-pointer items-center justify-center rounded-full text-[13px] font-bold transition-transform duration-200 hover:scale-105 active:scale-95"
+        className="flex cursor-pointer rounded-xl transition-transform duration-200 hover:scale-105 active:scale-95"
       >
-        {initials(user.staff?.name ?? user.name) || "S"}
+        {/* Hisob rasmi (xodim uchun — kompaniya logotipi), bo'lmasa — rangli fonda bosh harflar. */}
+        <Avatar name={user.staff?.name ?? user.name} src={user.logo} size="sm" className="size-9" />
       </button>
 
       {open && (

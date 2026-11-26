@@ -9,15 +9,16 @@ import { User } from "@/models/User";
 import { notify } from "./notify";
 
 export type Rating = { average: number; count: number };
-export type ReviewView = { id: string; rating: number; text: string; reply: string; repliedAt: string | null; buyerName: string; orderNumber: number; orderId: string; createdAt: string };
+export type ReviewView = { id: string; rating: number; text: string; reply: string; repliedAt: string | null; buyerName: string; buyerLogo: string; orderNumber: number; orderId: string; createdAt: string };
 
-const toView = (r: ReviewDoc, buyerName: string): ReviewView => ({
+const toView = (r: ReviewDoc, buyerName: string, buyerLogo = ""): ReviewView => ({
   id: String(r._id),
   rating: r.rating,
   text: r.text,
   reply: r.reply,
   repliedAt: r.repliedAt ? r.repliedAt.toISOString() : null,
   buyerName,
+  buyerLogo,
   orderNumber: r.orderNumber,
   orderId: String(r.order),
   createdAt: r.createdAt.toISOString(),
@@ -76,9 +77,9 @@ export async function sellerReviews(sellerId: string, limit = 20): Promise<{ rat
   const stars = [1, 2, 3, 4, 5].map((s) => dist.find((d) => d._id === s)?.n ?? 0);
   const count = stars.reduce((a, b) => a + b, 0);
   const average = count ? stars.reduce((sum, n, i) => sum + n * (i + 1), 0) / count : 0;
-  const buyers = await User.find({ _id: { $in: docs.map((d) => d.buyer) } }, { name: 1 }).lean();
-  const names = new Map(buyers.map((b) => [String(b._id), b.name]));
-  return { rating: { average, count }, stars, items: docs.map((d) => toView(d, names.get(String(d.buyer)) ?? "—")) };
+  const buyers = await User.find({ _id: { $in: docs.map((d) => d.buyer) } }, { name: 1, logo: 1 }).lean();
+  const by = new Map(buyers.map((b) => [String(b._id), b]));
+  return { rating: { average, count }, stars, items: docs.map((d) => toView(d, by.get(String(d.buyer))?.name ?? "—", by.get(String(d.buyer))?.logo ?? "")) };
 }
 
 /** Bir nechta kompaniyaning reytingi (katalog kartalari uchun) — bitta agregatsiya. */

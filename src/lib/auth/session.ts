@@ -25,6 +25,8 @@ export type SessionUser = {
   plan: PlanCode;
   /** Amaldagi tarif — ro'yxatdan o'tgandagi bepul sinov. */
   planTrial: boolean;
+  /** Hisob rasmi (kompaniya logotipi / do'kon rasmi). "" — yo'q. */
+  logo: string;
   /** Kompaniya xodimi kirgan bo'lsa: kim va qanday rolda. null — hisob egasi. */
   staff: { id: string; name: string; role: StaffRole } | null;
 };
@@ -117,7 +119,7 @@ export function forgetSessionUser(userId: string): void {
   for (const key of sessionCache.keys()) if (key.startsWith(`${userId}:`)) sessionCache.delete(key);
 }
 
-function toSessionUser(user: { _id: unknown; role: Role; name: string; phone: string; region: RegionCode; verification: Verification; demo?: boolean; plan?: string; planTrial?: boolean; subscriptionUntil?: Date | null }): SessionUser {
+function toSessionUser(user: { _id: unknown; role: Role; name: string; phone: string; region: RegionCode; verification: Verification; demo?: boolean; plan?: string; planTrial?: boolean; subscriptionUntil?: Date | null; logo?: string }): SessionUser {
   return {
     id: String(user._id),
     role: user.role,
@@ -130,6 +132,7 @@ function toSessionUser(user: { _id: unknown; role: Role; name: string; phone: st
     subscriptionUntil: user.subscriptionUntil ? new Date(user.subscriptionUntil).toISOString() : null,
     plan: effectivePlan(user),
     planTrial: Boolean(user.planTrial) && effectivePlan(user) !== "free",
+    logo: user.logo ?? "",
     staff: null,
   };
 }

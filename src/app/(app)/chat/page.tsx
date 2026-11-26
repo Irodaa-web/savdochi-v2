@@ -9,6 +9,7 @@ import { getDictionary, getLocale } from "@/i18n/server";
 import { requireUser } from "@/lib/auth/guard";
 import { listConversations } from "@/server/chat";
 import { ChatRoom } from "./ChatRoom";
+import { Avatar } from "@/components/ui/Avatar";
 
 export const metadata = { title: "Biznes chat" };
 
@@ -35,7 +36,9 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
         <ul>
           {conversations.map((c) => (
             <li key={c.id}>
-              <Link href={`/chat?c=${c.id}`} aria-current={c.id === active ? "page" : undefined} className={clsx("flex flex-col gap-0.5 border-b border-line px-4 py-3 hover:bg-surface-2", c.id === active && "bg-surface-2")}>
+              <Link href={`/chat?c=${c.id}`} aria-current={c.id === active ? "page" : undefined} className={clsx("flex items-center gap-3 border-b border-line px-4 py-3 hover:bg-surface-2", c.id === active && "bg-surface-2")}>
+                <Avatar name={c.partner.name} src={c.partner.logo} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="flex items-center justify-between gap-2">
                   <span className="flex min-w-0 items-center gap-1 truncate font-semibold">
                     {c.partner.name}
@@ -44,6 +47,7 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
                   {c.unread > 0 && <span className="rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-fg">{c.unread}</span>}
                 </span>
                 <span className="truncate text-[13px] text-muted">{c.lastText || "…"}</span>
+                </span>
                 <span className="text-[11px] text-muted">{formatDateTime(c.lastAt, locale)}</span>
               </Link>
             </li>

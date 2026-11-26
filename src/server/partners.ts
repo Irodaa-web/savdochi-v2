@@ -20,7 +20,7 @@ export type PartnerView = {
   shareStock: boolean;
   creditLimit: number;
   paymentDays: number;
-  partner: { id: string; name: string; region: RegionCode; verified: boolean; phone: string };
+  partner: { id: string; name: string; region: RegionCode; verified: boolean; phone: string; logo: string };
   orderCount: number;
   orderValue: number;
   lastOrderAt: string | null;
@@ -36,7 +36,7 @@ export async function listPartners(user: SessionUser): Promise<PartnerView[]> {
   const docs = await Partnership.find({ [me]: user.id }).sort({ updatedAt: -1 }).lean<PartnershipDoc[]>();
   const otherIds = docs.map((d) => d[other]);
   const [users, stats] = await Promise.all([
-    User.find({ _id: { $in: otherIds } }, { name: 1, region: 1, verification: 1, phone: 1 }).lean(),
+    User.find({ _id: { $in: otherIds } }, { name: 1, region: 1, verification: 1, phone: 1, logo: 1 }).lean(),
     Order.aggregate<{ _id: Types.ObjectId; n: number; sum: number; last: Date }>([
       { $match: { [me]: new Types.ObjectId(user.id), [other]: { $in: otherIds }, status: { $ne: "cancelled" } } },
       { $group: { _id: `$${other}`, n: { $sum: 1 }, sum: { $sum: "$total" }, last: { $max: "$createdAt" } } },
@@ -59,7 +59,7 @@ export async function listPartners(user: SessionUser): Promise<PartnerView[]> {
         shareStock: d.shareStock,
         creditLimit: d.creditLimit ?? 0,
         paymentDays: d.paymentDays ?? 14,
-        partner: { id: String(u._id), name: u.name, region: u.region, verified: u.verification === "verified", phone: d.status === "active" ? u.phone : "" },
+        partner: { id: String(u._id), name: u.name, region: u.region, verified: u.verification === "verified", phone: d.status === "active" ? u.phone : "", logo: u.logo ?? "" },
         orderCount: s?.n ?? 0,
         orderValue: s?.sum ?? 0,
         lastOrderAt: s?.last ? s.last.toISOString() : null,
