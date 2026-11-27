@@ -47,11 +47,11 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
         </div>
       )}
       {sp.seller ? (
-        <SellerProducts sp={sp} q={q} category={category} t={t} />
+        <SellerProducts sp={sp} q={q} category={category} t={t} demo={user.demo} />
       ) : view === "products" ? (
-        <AllProducts sp={sp} q={q} category={category} t={t} />
+        <AllProducts sp={sp} q={q} category={category} t={t} demo={user.demo} />
       ) : (
-        <Companies sp={sp} q={q} t={t} />
+        <Companies sp={sp} q={q} t={t} demo={user.demo} />
       )}
     </section>
   );
@@ -117,10 +117,10 @@ function Header({ title, count, children }: { title: string; count: string; chil
   );
 }
 
-async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }) {
+async function Companies({ sp, q, t, demo }: { sp: Params; q?: string; t: Dictionary; demo: boolean }) {
   const region = (REGION_CODES as readonly string[]).includes(sp.region ?? "") ? (sp.region as RegionCode) : undefined;
   // Qidiruv bo'lmasa: kompaniyalar ostida kategoriyalar va yangi mahsulotlar (katalogning "vitrinasi").
-  const [suppliers, counts, latest] = await Promise.all([listSuppliers({ region, q }), q ? null : categoryCounts(), q ? null : listCatalog({})]);
+  const [suppliers, counts, latest] = await Promise.all([listSuppliers({ region, q, demo }), q ? null : categoryCounts(demo), q ? null : listCatalog({ demo })]);
   return (
     <>
       <Header title={q ? fmt(t.suppliers.resultsFor, { q }) : t.catalog.title} count={fmt(t.suppliers.count, { n: suppliers.length })}>
@@ -184,11 +184,11 @@ async function Companies({ sp, q, t }: { sp: Params; q?: string; t: Dictionary }
   );
 }
 
-async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary }) {
+async function AllProducts({ sp, q, category, t, demo }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary; demo: boolean }) {
   const sort = sortOf(sp);
   const inStock = sp.stock === "1";
   const onSale = sp.sale === "1";
-  const result = await listCatalog({ q, category, page: Number(sp.page) || 1, sort, inStock, onSale });
+  const result = await listCatalog({ q, category, page: Number(sp.page) || 1, sort, inStock, onSale, demo });
   const base: Params = { q, category, view: "products", sort: sort === "new" ? undefined : sort, stock: inStock ? "1" : undefined, sale: onSale ? "1" : undefined };
   return (
     <>
@@ -220,12 +220,12 @@ async function AllProducts({ sp, q, category, t }: { sp: Params; q?: string; cat
   );
 }
 
-async function SellerProducts({ sp, q, category, t }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary }) {
+async function SellerProducts({ sp, q, category, t, demo }: { sp: Params; q?: string; category?: CategoryCode; t: Dictionary; demo: boolean }) {
   const seller = sp.seller!;
   const sort = sortOf(sp);
   const inStock = sp.stock === "1";
   const onSale = sp.sale === "1";
-  const [result, sellerName] = await Promise.all([listCatalog({ q, category, seller, page: Number(sp.page) || 1, sort, inStock, onSale }), getProductSeller(seller)]);
+  const [result, sellerName] = await Promise.all([listCatalog({ q, category, seller, page: Number(sp.page) || 1, sort, inStock, onSale, demo }), getProductSeller(seller)]);
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-3">

@@ -32,7 +32,7 @@ export default async function PartnersPage() {
   const active = all.filter((p) => p.status === "active");
   const totalValue = all.reduce((sum, p) => sum + p.orderValue, 0);
   // Do'kon uchun: hududiga yetkazadigan, hali hamkor bo'lmagan kompaniyalar (bo'lmasa — umuman).
-  const suggestions = isSeller ? [] : await suggestSuppliers(user.region, new Set(all.filter((p) => p.status !== "rejected").map((p) => p.partner.id)));
+  const suggestions = isSeller ? [] : await suggestSuppliers(user.region, user.demo, new Set(all.filter((p) => p.status !== "rejected").map((p) => p.partner.id)));
 
   const tone = (p: PartnerView) => (p.status === "active" ? "success" : p.status === "rejected" ? "danger" : "accent");
 
@@ -200,8 +200,8 @@ export default async function PartnersPage() {
 }
 
 /** Tavsiya: avval do'kon hududiga yetkazadiganlar, bo'lmasa barcha kompaniyalar; hamkorlar chiqarib tashlanadi. */
-async function suggestSuppliers(region: SupplierView["region"], exclude: Set<string>): Promise<SupplierView[]> {
+async function suggestSuppliers(region: SupplierView["region"], demo: boolean, exclude: Set<string>): Promise<SupplierView[]> {
   const pick = (list: SupplierView[]) => list.filter((s) => !exclude.has(s.id)).slice(0, 4);
-  const local = pick(await listSuppliers({ region }));
-  return local.length ? local : pick(await listSuppliers({}));
+  const local = pick(await listSuppliers({ region, demo }));
+  return local.length ? local : pick(await listSuppliers({ demo }));
 }

@@ -2,13 +2,13 @@ import { fail, ok, readJson } from "@/lib/api";
 import { fieldErrors, productSchema } from "@/lib/validation";
 import { withUser } from "@/server/handler";
 import { planHas } from "@/lib/plans";
-import { archiveProduct, getProduct, updateProduct } from "@/server/products";
+import { archiveProduct, getProduct, productVisibleTo, updateProduct } from "@/server/products";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export const GET = withUser<Ctx>(null, async (_user, _request, { params }) => {
+export const GET = withUser<Ctx>(null, async (user, _request, { params }) => {
   const product = await getProduct((await params).id);
-  return product && product.active ? ok(product) : fail("NOT_FOUND");
+  return product && product.active && productVisibleTo(product, user) ? ok(product) : fail("NOT_FOUND");
 });
 
 export const PATCH = withUser<Ctx>("seller", async (user, request, { params }) => {

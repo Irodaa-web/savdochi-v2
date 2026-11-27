@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       return ok({ token, user: { id: String(company._id), role: "seller", name: company.name, staff: { name: staff.name, role: staff.role } } });
     }
     // Admin bloklagan hisob kirmaydi va nofaollik mexanizmi orqali ham ochilmaydi.
-    // Demo hisoblar vaqtincha o'chirilgan (kod "demo-saqlangan" branchida saqlanadi).
+    // Demo (sinov) hisoblarga parol bilan kirib bo'lmaydi — faqat administrator admin paneldan kiradi.
     if (user.blocked || user.demo || !(await verifyPassword(password, user.passwordHash))) return fail("INVALID_CREDENTIALS");
 
     if (user.inactive) {

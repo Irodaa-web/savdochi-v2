@@ -106,10 +106,10 @@ export async function changePassword(userId: string, current: string, next: stri
 
 /** Kompaniyaning ommaviy sahifasi uchun: profil + mahsulotlar soni. */
 /**
- * Kompaniyaning ochiq sahifasi. Tasdiqlanmagan yoki demo kompaniya boshqalarga ko'rinmaydi —
+ * Kompaniyaning ochiq sahifasi. Tasdiqlanmagan kompaniya boshqalarga, demo kompaniya esa haqiqiy hisoblarga ko'rinmaydi —
  * faqat o'zi (qanday ko'rinishini tekshirish uchun) va administrator ko'radi.
  */
-export async function getSellerPublic(sellerId: string, viewer?: { id: string; isAdmin: boolean }): Promise<(ProfileView & { productCount: number }) | null> {
+export async function getSellerPublic(sellerId: string, viewer?: { id: string; isAdmin: boolean; demo?: boolean }): Promise<(ProfileView & { productCount: number }) | null> {
   if (!isValidObjectId(sellerId)) return null;
   const [view, productCount, demo] = await Promise.all([
     getProfile(sellerId),
@@ -118,6 +118,7 @@ export async function getSellerPublic(sellerId: string, viewer?: { id: string; i
   ]);
   if (!view || view.role !== "seller") return null;
   const privileged = viewer && (viewer.isAdmin || viewer.id === sellerId);
-  if (!privileged && (demo || !view.verified)) return null;
+  // Sinov muhiti: demo kompaniyani faqat demo hisoblar ko'radi, haqiqiy kompaniyani — haqiqiylar.
+  if (!privileged && (Boolean(demo) !== Boolean(viewer?.demo) || !view.verified)) return null;
   return { ...view, productCount };
 }

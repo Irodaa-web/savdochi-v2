@@ -32,40 +32,54 @@ export type ProductView = {
   description: string;
   images: string[];
   active: boolean;
-  seller: { id: string; name: string; region: RegionCode; verified: boolean; logo: string };
+  seller: { id: string; name: string; region: RegionCode; verified: boolean; logo: string; demo: boolean };
 };
 
-type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification: string; role?: string; plan?: string; subscriptionUntil?: Date | null; logo?: string; banner?: string };
+type SellerInfo = { _id: unknown; name: string; region: RegionCode; verification: string; demo?: boolean; role?: string; plan?: string; subscriptionUntil?: Date | null; logo?: string; banner?: string };
 
 /**
  * Sota oladigan kompaniya: administrator tasdiqlagan, bloklanmagan, yashirilmagan va demo emas.
  * Tarif sotishni to'xtatmaydi — Bepul tarif ham sotadi (faqat chegara va imkoniyatlar kamroq).
  * Tasdiqlanmagan (yangi, tekshiruvdagi yoki rad etilgan) kompaniya katalogda ko'rinmaydi va buyurtma olmaydi.
  */
-export function sellingFilter(): Record<string, unknown> {
+export function sellingFilter(demo = false): Record<string, unknown> {
+  // Sinov muhiti: demo do'kon faqat demo kompaniyalarni ko'radi, haqiqiy foydalanuvchilar esa ularni ko'rmaydi.
+  if (demo) return { role: "seller", demo: true, blocked: { $ne: true }, hidden: { $ne: true } };
   return { role: "seller", verification: "verified", blocked: { $ne: true }, hidden: { $ne: true }, demo: { $ne: true } };
 }
 
+/** Foydalanuvchi sinov (demo) hisobimi — savat va katalog qaysi kompaniyalarni ko'rsatishini belgilaydi. */
+export async function isDemoUser(userId: unknown): Promise<boolean> {
+  if (!isValidObjectId(userId)) return false;
+  await connectDb();
+  return Boolean(await User.exists({ _id: userId, demo: true }));
+}
+
 /** Kompaniya hozir sota oladimi (savatga qo'shishda — keshsiz, aniq tekshiruv). */
-export async function sellerCanSell(sellerId: unknown): Promise<boolean> {
-  return Boolean(await User.exists({ _id: sellerId, ...sellingFilter() }));
+export async function sellerCanSell(sellerId: unknown, demo = false): Promise<boolean> {
+  return Boolean(await User.exists({ _id: sellerId, ...sellingFilter(demo) }));
 }
 
 /**
  * Katalog uchun sota oladigan kompaniyalar ro'yxati — server xotirasida 60 soniya saqlanadi.
  * Ruxsat ro'yxati: yangi ro'yxatdan o'tgan kompaniya keshda yo'q, demak avtomatik yashirin qoladi.
  */
-let sellingCache: { at: number; ids: unknown[]; premium: unknown[] } | null = null;
+type SellingCache = { at: number; ids: unknown[]; premium: unknown[] };
+const sellingCache: { real: SellingCache | null; demo: SellingCache | null } = { real: null, demo: null };
 /** Admin kompaniya holatini yoki tarifini o'zgartirganda — katalog darhol yangilansin. */
 export function forgetHiddenSellers(): void {
-  sellingCache = null;
+  sellingCache.real = null;
+  sellingCache.demo = null;
 }
 /** ids — sota oladiganlar; premium — ulardan Premium tarifdagilari (katalogda birinchi chiqadi). */
-async function sellingSellers(): Promise<{ ids: unknown[]; premium: unknown[] }> {
-  if (sellingCache && Date.now() - sellingCache.at < 60_000) return sellingCache;
-  const rows = await User.find(sellingFilter(), { _id: 1, role: 1, plan: 1, subscriptionUntil: 1 }).lean();
-  sellingCache = { at: Date.now(), ids: rows.map((r) => r._id), premium: rows.filter((r) => effectivePlan(r) === "premium").map((r) => r._id) };
-  return sellingCache;
+async function sellingSellers(demo = false): Promise<{ ids: unknown[]; premium: unknown[] }> {
+  const key = demo ? "demo" : "real";
+  const hit = sellingCache[key];
+  if (hit && Date.now() - hit.at < 60_000) return hit;
+  const rows = await User.find(sellingFilter(demo), { _id: 1, role: 1, plan: 1, subscriptionUntil: 1 }).lean();
+  const fresh = { at: Date.now(), ids: rows.map((r) => r._id), premium: rows.filter((r) => effectivePlan(r) === "premium").map((r) => r._id) };
+  sellingCache[key] = fresh;
+  return fresh;
 }
 
 function saleOf(p: ProductDoc): ProductView["sale"] {
@@ -95,19 +109,21 @@ function toView(p: ProductDoc, seller: SellerInfo | undefined): ProductView {
       region: seller?.region ?? "tashkent_city",
       verified: seller?.verification === "verified",
       logo: seller?.logo ?? "",
+      demo: Boolean(seller?.demo),
     },
   };
 }
 
 async function withSellers(products: ProductDoc[]): Promise<ProductView[]> {
   const ids = [...new Set(products.map((p) => String(p.seller)))];
-  const sellers = await User.find({ _id: { $in: ids } }, { name: 1, region: 1, verification: 1, logo: 1 }).lean<SellerInfo[]>();
+  const sellers = await User.find({ _id: { $in: ids } }, { name: 1, region: 1, verification: 1, demo: 1, logo: 1 }).lean<SellerInfo[]>();
   const byId = new Map(sellers.map((s) => [String(s._id), s]));
   return products.map((p) => toView(p, byId.get(String(p.seller))));
 }
 
 export type CatalogSort = "new" | "cheap" | "expensive";
-export type CatalogQuery = { q?: string; category?: CategoryCode; seller?: string; page?: number; ids?: string[]; sort?: CatalogSort; inStock?: boolean; onSale?: boolean };
+/** demo — sinov hisobi so'rayapti: faqat demo kompaniyalar mahsulotlari. */
+export type CatalogQuery = { demo?: boolean; q?: string; category?: CategoryCode; seller?: string; page?: number; ids?: string[]; sort?: CatalogSort; inStock?: boolean; onSale?: boolean };
 const SORTS: Record<CatalogSort, Record<string, 1 | -1>> = { new: { createdAt: -1 }, cheap: { price: 1, createdAt: -1 }, expensive: { price: -1, createdAt: -1 } };
 export const PAGE_SIZE = 24;
 
@@ -128,7 +144,7 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
   if (query.inStock) filter.$expr = { $gte: ["$stock", "$minOrder"] };
   // Faqat amaldagi aksiyalar.
   if (query.onSale) Object.assign(filter, { salePrice: { $ne: null }, saleUntil: { $gt: new Date() } });
-  const selling = await sellingSellers();
+  const selling = await sellingSellers(query.demo);
   filter.seller = { ...(filter.seller ? { $eq: filter.seller } : {}), $in: selling.ids };
 
   const page = Math.max(1, query.page ?? 1);
@@ -156,9 +172,9 @@ export async function listCatalog(query: CatalogQuery): Promise<{ items: Product
 }
 
 /** Katalogdagi faol mahsulotlar soni kategoriyalar bo'yicha (bloklangan / obunasi tugagan kompaniyalarsiz). */
-export async function categoryCounts(): Promise<Record<CategoryCode, number>> {
+export async function categoryCounts(demo = false): Promise<Record<CategoryCode, number>> {
   await connectDb();
-  const match: Record<string, unknown> = { active: true, hiddenByAdmin: { $ne: true }, seller: { $in: (await sellingSellers()).ids } };
+  const match: Record<string, unknown> = { active: true, hiddenByAdmin: { $ne: true }, seller: { $in: (await sellingSellers(demo)).ids } };
   const rows = await Product.aggregate<{ _id: CategoryCode; n: number }>([{ $match: match }, { $group: { _id: "$category", n: { $sum: 1 } } }]);
   const counts = Object.fromEntries(CATEGORY_CODES.map((c) => [c, 0])) as Record<CategoryCode, number>;
   for (const row of rows) if (row._id in counts) counts[row._id] = row.n;
@@ -172,6 +188,12 @@ export async function getProduct(id: string): Promise<ProductView | null> {
   if (!doc) return null;
   const [view] = await withSellers([doc]);
   return view ?? null;
+}
+
+/** Mahsulot sahifasini kim ko'radi: egasi va administrator — doim; boshqalar — sotuvdagi va o'z muhitidagi (demo/haqiqiy) bo'lsa. */
+export function productVisibleTo(p: ProductView, viewer: { id: string; isAdmin: boolean; demo: boolean }): boolean {
+  if (p.seller.id === viewer.id || viewer.isAdmin) return true;
+  return !p.moderation.hidden && p.seller.verified && p.seller.demo === viewer.demo;
 }
 
 export async function listSellerProducts(sellerId: string): Promise<ProductView[]> {
@@ -240,10 +262,10 @@ export async function archiveProduct(sellerId: string, id: string): Promise<bool
 /** Do'kon saqlagan mahsulotlar. */
 export async function listFavorites(buyerId: string): Promise<ProductView[]> {
   await connectDb();
-  const u = await User.findById(buyerId, { favorites: 1 }).lean();
+  const u = await User.findById(buyerId, { favorites: 1, demo: 1 }).lean();
   const ids = (u?.favorites ?? []).map(String);
   if (!ids.length) return [];
-  return (await listCatalog({ ids, page: 1 })).items;
+  return (await listCatalog({ ids, page: 1, demo: Boolean(u?.demo) })).items;
 }
 
 export async function toggleFavorite(buyerId: string, productId: string): Promise<boolean> {
@@ -272,12 +294,12 @@ export async function getProductSeller(sellerId: string): Promise<string | null>
 
 export type SupplierView = { id: string; name: string; region: RegionCode; verified: boolean; premium: boolean; logo: string; banner: string; productCount: number; rating: Rating };
 
-export type SupplierQuery = { region?: RegionCode; q?: string };
+export type SupplierQuery = { region?: RegionCode; q?: string; demo?: boolean };
 
 /** Kompaniyalar ro'yxati va qidiruvi: nomi bo'yicha (?q=) va viloyat bo'yicha (?region=). */
 export async function listSuppliers(query: SupplierQuery = {}): Promise<SupplierView[]> {
   await connectDb();
-  const filter: Record<string, unknown> = sellingFilter();
+  const filter: Record<string, unknown> = sellingFilter(query.demo);
   const and: Record<string, unknown>[] = [];
   // Viloyat: kompaniya shu yerda joylashgan yoki shu yerga yetkazib beradi.
   if (query.region) and.push({ $or: [{ region: query.region }, { "profile.deliveryRegions": query.region }] });
@@ -358,7 +380,8 @@ export async function getSellerHighlights(sellerId: string, limit = 4): Promise<
 
   const ids = [...new Set([...soldRows, ...popularRows].map((r) => r.id))];
   if (!ids.length) return { bestSelling: [], popular: [] };
-  const { items } = await listCatalog({ ids, seller: sellerId, page: 1 });
+  // Demo kompaniya sahifasi ham o'z (demo) katalogidan to'ladi.
+  const { items } = await listCatalog({ ids, seller: sellerId, page: 1, demo: await isDemoUser(sellerId) });
   const byId = new Map(items.map((p) => [p.id, p]));
   const rank = (rows: { id: string; value: number }[]) =>
     rows.flatMap((r) => {
