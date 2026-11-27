@@ -29,7 +29,7 @@ export default async function Home() {
     listDebts(user),
     listOrders(user, { status: "open", limit: 4 }),
     listMyStock(user.id),
-    listCatalog({}),
+    listCatalog({ demo: user.demo }),
   ]);
   const low = stock.filter((r) => r.low).slice(0, 5);
   const units = t.units as Record<string, string>;

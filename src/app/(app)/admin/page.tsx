@@ -1,9 +1,10 @@
 import clsx from "clsx";
-import { AlertTriangle, BadgeCheck, CalendarClock, CheckCircle2, CircleAlert, LifeBuoy, ServerCog, UserPlus, Wallet } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CalendarClock, CheckCircle2, CircleAlert, FlaskConical, LifeBuoy, ServerCog, UserPlus, Wallet } from "lucide-react";
 import Link from "next/link";
 import { DailySalesChart } from "@/components/dashboard/DailySalesChart";
 import { Card, PageTitle, Pill } from "@/components/ui/Card";
 import { SideCard } from "@/components/ui/SideCard";
+import { DemoLogin } from "@/components/admin/DemoLogin";
 import { fmt, formatDateTime, formatDay } from "@/i18n/format";
 import { getDictionary, getLocale } from "@/i18n/server";
 import { requireAdmin } from "@/lib/auth/guard";
@@ -108,6 +109,10 @@ export default async function AdminHome() {
           </ul>
         </SideCard>
       </div>
+
+      <SideCard Icon={FlaskConical} title={a.demoTitle}>
+        <DemoLogin />
+      </SideCard>
 
       <SideCard Icon={ServerCog} title={a.systemTitle}>
         <ul className="grid gap-3 md:grid-cols-2">

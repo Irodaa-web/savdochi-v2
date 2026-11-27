@@ -395,6 +395,11 @@ const uz = {
   adminPanel: {
     homeTitle: "Bosh panel",
     homeLead: "Platforma holati, sizni kutayotgan ishlar va tizim sozlamalari.",
+    demoTitle: "Sinov hisoblari",
+    demoText: "Platformani o‘zingiz sinab ko‘rish uchun: demo do‘kon va demo kompaniya. Ular alohida sinov muhitida — demo do‘kon faqat demo kompaniyalarni ko‘radi, haqiqiy foydalanuvchilar esa ularni ko‘rmaydi. Haqiqiy kompaniyalarga hech qanday buyurtma bormaydi.",
+    demoAsBuyer: "Demo do‘kon sifatida kirish",
+    demoAsSeller: "Demo kompaniya sifatida kirish",
+    demoHint: "Kirgach, yuqoridagi “Adminga qaytish” tugmasi bilan admin paneliga qaytasiz.",
     todoPending: "{n} ta hisob tekshiruvni kutyapti",
     todoTickets: "{n} ta murojaat javob kutyapti",
     todoExpiring: "{n} ta kompaniya obunasi 7 kunda tugaydi",
@@ -542,6 +547,7 @@ const uz = {
     staffRemoved: "xodimni o‘chirdi",
     deactivated: "{n} ta hisobni nofaol qildi (15 kun kirilmagan)",
     selfReactivated: "hisobini SMS/Telegram orqali qayta faollashtirdi",
+    demoLogin: "sinov hisobiga kirdi ({role})",
   },
   billing: {
     requestTitle: "Tarif so‘rash",
@@ -1598,6 +1604,11 @@ const uz = {
     status: "Holat",
     noTickets: "Murojaatlar yo‘q.",
     noAudit: "Jurnal bo‘sh.",
+  },
+  demoMode: {
+    banner: "Sinov (demo) hisobi: {name}.",
+    note: "Bu yerdagi amallar haqiqiy foydalanuvchilarga ko‘rinmaydi.",
+    back: "Adminga qaytish",
   },
 };
 

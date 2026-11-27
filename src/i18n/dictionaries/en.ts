@@ -397,6 +397,11 @@ const en: Dictionary = {
   adminPanel: {
     homeTitle: "Overview",
     homeLead: "Platform status, tasks waiting for you and system settings.",
+    demoTitle: "Test accounts",
+    demoText: "Try the platform yourself: a demo shop and a demo company. They live in a separate test sandbox — the demo shop sees only demo companies, and real users never see them. No orders ever reach real companies.",
+    demoAsBuyer: "Sign in as demo shop",
+    demoAsSeller: "Sign in as demo company",
+    demoHint: "Once inside, use “Back to admin” at the top to return to the admin panel.",
     todoPending: "{n} accounts awaiting verification",
     todoTickets: "{n} support requests awaiting a reply",
     todoExpiring: "{n} company subscriptions end within 7 days",
@@ -544,6 +549,7 @@ const en: Dictionary = {
     staffRemoved: "removed a staff member",
     deactivated: "deactivated {n} accounts (no sign-in for 15 days)",
     selfReactivated: "reactivated their account",
+    demoLogin: "signed in to a test account ({role})",
   },
   billing: {
     requestTitle: "Request a plan",
@@ -1600,6 +1606,11 @@ const en: Dictionary = {
     status: "Status",
     noTickets: "No requests.",
     noAudit: "The log is empty.",
+  },
+  demoMode: {
+    banner: "Test (demo) account: {name}.",
+    note: "Actions here are not visible to real users.",
+    back: "Back to admin",
   },
 };
 

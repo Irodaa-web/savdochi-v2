@@ -9,6 +9,7 @@ import { MobileTabs } from "@/components/shell/MobileTabs";
 import { ShellProvider } from "@/components/shell/Shell";
 import { BadgesProvider } from "@/components/shell/useBadges";
 import { Aurora } from "@/components/ui/Aurora";
+import { DemoBanner } from "@/components/shell/DemoBanner";
 import { getSessionUser } from "@/lib/auth/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <ShellProvider initialCollapsed={collapsed}>
           <AppSidebar user={user} />
           <div className="flex min-w-0 flex-1 flex-col">
+            {user.demo && <DemoBanner name={user.name} />}
             <AppHeader user={user} />
             {/* page-in: sahifa bo'limlari navbat bilan yengil ko'tarilib chiqadi. */}
             <main className="page-in mx-auto w-full max-w-[1320px] flex-1 px-4 pt-6 pb-28 sm:px-6 md:pb-12">{children}</main>

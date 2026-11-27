@@ -83,6 +83,8 @@ function describe(r: AuditView, t: Dictionary): string {
       if (d.reactivate) parts.push(a.reactivated);
       return parts.join(", ") || a.userUpdated;
     }
+    case "admin.demo.login":
+      return fmt(a.demoLogin, { role: t.roles[d.role === "seller" ? "seller" : "buyer"] });
     case "admin.ticket.answer":
       return a.ticketAnswered;
     case "admin.plan.approve":

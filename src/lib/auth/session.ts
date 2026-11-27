@@ -65,7 +65,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   // Xodim: kompaniya hisobi faol bo'lishi, xodim bloklanmagan va sessiyasi eskirmagan bo'lishi kerak.
   const valid = payload.st
     ? user && user.role === "seller" && !user.blocked && !user.inactive && !user.demo && staff && !staff.blocked && staff.authVersion === payload.v
-    : user && !user.blocked && !user.inactive && !user.demo && user.authVersion === payload.v;
+    : user && !user.blocked && !user.inactive && user.authVersion === payload.v;
   if (!user || !valid || (staff && !(await staffSeatOk(user, staff)))) {
     sessionCache.delete(key);
     return null;
@@ -150,5 +150,36 @@ export async function startSession(user: { id: string; role: Role; authVersion: 
 }
 
 export async function endSession(): Promise<void> {
-  (await cookies()).delete(SESSION_COOKIE);
+  const jar = await cookies();
+  jar.delete(SESSION_COOKIE);
+  jar.delete(ADMIN_RETURN_COOKIE);
+}
+
+/** Administrator demo hisobga kirganda o'z sessiyasini shu yerda saqlaydi — "Adminga qaytish" uchun. */
+const ADMIN_RETURN_COOKIE = "sv_admin_return";
+const ADMIN_RETURN_TTL_SECONDS = 60 * 60 * 24;
+
+/** Joriy (administrator) sessiyasini eslab qoladi. Demo hisobga o'tishdan oldin chaqiriladi. */
+export async function rememberAdminSession(): Promise<void> {
+  const jar = await cookies();
+  const token = jar.get(SESSION_COOKIE)?.value;
+  if (!token) return;
+  jar.set(ADMIN_RETURN_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: ADMIN_RETURN_TTL_SECONDS });
+}
+
+/**
+ * Saqlangan administrator sessiyasini qaytaradi. Token imzosi, hisob holati va admin ro'yxati qayta tekshiriladi:
+ * bloklangan, paroli o'zgargan yoki adminlikdan olingan hisobga qaytib bo'lmaydi.
+ */
+export async function restoreAdminSession(): Promise<boolean> {
+  const jar = await cookies();
+  const token = jar.get(ADMIN_RETURN_COOKIE)?.value;
+  jar.delete(ADMIN_RETURN_COOKIE);
+  const payload = await verifyToken(token);
+  if (!token || !payload || payload.st) return false;
+  await connectDb();
+  const user = await User.findById(payload.sub, { phone: 1, blocked: 1, authVersion: 1, demo: 1 }).lean();
+  if (!user || user.blocked || user.demo || user.authVersion !== payload.v || !adminPhones().has(user.phone)) return false;
+  jar.set(SESSION_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: SESSION_TTL_SECONDS });
+  return true;
 }

@@ -10,7 +10,7 @@ import { RatingBadge } from "@/components/reviews/Stars";
 import { BuyBox } from "@/components/catalog/BuyBox";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { StartChatButton } from "@/components/chat/StartChatButton";
-import { getProduct, isFavorite } from "@/server/products";
+import { getProduct, isFavorite, productVisibleTo } from "@/server/products";
 import { Avatar } from "@/components/ui/Avatar";
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,9 +18,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const t = getDictionary(await getLocale());
   const p = await getProduct((await params).id);
   if (!p || !p.active) notFound();
-  // Administrator yashirgan mahsulot — faqat egasi va administrator ko'radi.
-  // Yashirilgan mahsulot yoki tasdiqlanmagan kompaniya mahsuloti — faqat egasi va administratorga.
-  if ((p.moderation.hidden || !p.seller.verified) && p.seller.id !== user.id && !user.isAdmin) notFound();
+  // Yashirilgan mahsulot, tasdiqlanmagan kompaniya mahsuloti yoki boshqa muhit (demo/haqiqiy) — faqat egasi va administratorga.
+  if (!productVisibleTo(p, user)) notFound();
   const sellerRating = (await ratingsFor([p.seller.id])).get(p.seller.id) ?? null;
   const unit = t.units[p.unit];
 

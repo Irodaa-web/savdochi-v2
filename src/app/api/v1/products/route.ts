@@ -6,7 +6,7 @@ import { createProduct, listCatalog } from "@/server/products";
 import { assertProductRoom, requireFeature } from "@/server/plans";
 
 /** Katalog: ?q=&category=&seller=&page= */
-export const GET = withUser(null, async (_user, request) => {
+export const GET = withUser(null, async (user, request) => {
   const params = new URL(request.url).searchParams;
   const category = params.get("category");
   const result = await listCatalog({
@@ -14,6 +14,7 @@ export const GET = withUser(null, async (_user, request) => {
     category: (CATEGORY_CODES as readonly string[]).includes(category ?? "") ? (category as CategoryCode) : undefined,
     seller: params.get("seller") ?? undefined,
     page: Number(params.get("page")) || 1,
+    demo: user.demo,
   });
   return ok(result);
 });

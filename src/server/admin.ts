@@ -60,22 +60,25 @@ export async function adminOverview(): Promise<AdminOverview> {
   const today = periodStart(now, 1);
   const week = periodStart(now, 7);
   const month = periodStart(now, 30);
-  const live = { status: { $ne: "cancelled" } };
+  // Sinov (demo) hisoblari va ularning buyurtmalari platforma statistikasiga kirmaydi.
+  const demoIds = await User.distinct("_id", { demo: true });
+  const real = { demo: { $ne: true } };
+  const live = { status: { $ne: "cancelled" }, seller: { $nin: demoIds } };
   const sum = async (since: Date) => {
     const [r] = await Order.aggregate<{ n: number; value: number }>([{ $match: { ...live, createdAt: { $gte: since } } }, { $group: { _id: null, n: { $sum: 1 }, value: { $sum: "$total" } } }]);
     return { n: r?.n ?? 0, value: r?.value ?? 0 };
   };
   const [sellers, buyers, newToday, newWeek, pending, openTickets, planRequests, blocked, inactive, activeProducts, oToday, oWeek, oMonth, activeSellers, daily, expiring, expired, recent] = await Promise.all([
-    User.countDocuments({ role: "seller" }),
-    User.countDocuments({ role: "buyer" }),
-    User.countDocuments({ createdAt: { $gte: today } }),
-    User.countDocuments({ createdAt: { $gte: week } }),
+    User.countDocuments({ role: "seller", ...real }),
+    User.countDocuments({ role: "buyer", ...real }),
+    User.countDocuments({ createdAt: { $gte: today }, ...real }),
+    User.countDocuments({ createdAt: { $gte: week }, ...real }),
     User.countDocuments({ verification: "pending" }),
     Ticket.countDocuments({ status: "open" }),
     PlanOrder.countDocuments({ status: "pending" }),
     User.countDocuments({ blocked: true }),
     User.countDocuments({ inactive: true }),
-    Product.countDocuments({ active: true }),
+    Product.countDocuments({ active: true, seller: { $nin: demoIds } }),
     sum(today),
     sum(week),
     sum(month),
@@ -86,7 +89,7 @@ export async function adminOverview(): Promise<AdminOverview> {
     ]),
     User.find({ role: "seller", blocked: false, subscriptionUntil: { $gt: new Date(now), $lt: new Date(now + 7 * DAY) } }, { name: 1, subscriptionUntil: 1 }).sort({ subscriptionUntil: 1 }).limit(10).lean(),
     User.countDocuments({ role: "seller", subscriptionUntil: { $ne: null, $lt: new Date(now) } }),
-    User.find({}, { name: 1, role: 1, createdAt: 1, verification: 1 }).sort({ createdAt: -1 }).limit(6).lean(),
+    User.find(real, { name: 1, role: 1, createdAt: 1, verification: 1 }).sort({ createdAt: -1 }).limit(6).lean(),
   ]);
   return {
     sellers,
